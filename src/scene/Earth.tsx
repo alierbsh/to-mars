@@ -22,6 +22,8 @@ function atmosphereMaterial(halo: boolean): THREE.ShaderMaterial {
     blending: THREE.AdditiveBlending,
     side: halo ? THREE.BackSide : THREE.FrontSide,
     vertexShader: `
+      #include <common>
+      #include <logdepthbuf_pars_vertex>
       varying vec3 vNormal; varying vec3 vView; varying vec3 vWorldN;
       void main() {
         vNormal = normalize(normalMatrix * normal);
@@ -29,10 +31,14 @@ function atmosphereMaterial(halo: boolean): THREE.ShaderMaterial {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         vView = normalize(-mv.xyz);
         gl_Position = projectionMatrix * mv;
+        #include <logdepthbuf_vertex>
       }`,
     fragmentShader: `
+      #include <common>
+      #include <logdepthbuf_pars_fragment>
       uniform vec3 sunDir; uniform vec3 color; uniform float halo; varying vec3 vNormal; varying vec3 vView; varying vec3 vWorldN;
       void main() {
+        #include <logdepthbuf_fragment>
         float rim = 1.0 - abs(dot(vNormal, vView));
         float day = smoothstep(-0.3, 0.3, dot(vWorldN, sunDir));
         // halo: back faces beyond the planet's silhouette, brightest right at the limb

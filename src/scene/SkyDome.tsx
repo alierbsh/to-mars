@@ -15,9 +15,21 @@ export function skyMaterial(horizon: string, zenith: string): THREE.ShaderMateri
     depthWrite: false,
     transparent: true,
     fog: false,
-    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float haze; uniform vec3 horizon; uniform vec3 zenith; varying vec3 vDir;
+    vertexShader: `
+      #include <common>
+      #include <logdepthbuf_pars_vertex>
+      varying vec3 vDir;
       void main(){
+        vDir = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        #include <logdepthbuf_vertex>
+      }`,
+    fragmentShader: `
+      #include <common>
+      #include <logdepthbuf_pars_fragment>
+      uniform float haze; uniform vec3 horizon; uniform vec3 zenith; varying vec3 vDir;
+      void main(){
+        #include <logdepthbuf_fragment>
         float up = clamp(vDir.y, -0.2, 1.0);
         vec3 c = mix(horizon, zenith, smoothstep(0.0, 0.6, up));
         float a = haze * (up > -0.015 ? 1.0 : 0.0);

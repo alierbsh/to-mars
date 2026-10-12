@@ -78,7 +78,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const fragments = useMemo(() => makeFragments(9, N_FRAGMENTS, isShip ? 45 : 75, isShip ? 6 : 1.7), [isShip])
   const tmp = useMemo(() => ({ o: new THREE.Object3D(), origin: new THREE.Vector3() }), [])
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }, rawDt) => {
+    // a background tab hands back a huge delta on return: never let one frame jump far
+    const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()
     const e = result ? entryAt(result, t) : undefined
     const phase = result?.phases.find((p) => p.phase === 'entry')
@@ -240,6 +242,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       camera.position.z += (Math.random() - 0.5) * a
     }
     camera.lookAt(0, impact && ended ? groundY + L * 0.4 : 0, 0)
+    camera.up.set(0, 1, 0)
     camera.near = 0.5
     camera.far = 6_000_000
     camera.updateProjectionMatrix()

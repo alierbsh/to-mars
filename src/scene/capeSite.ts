@@ -492,7 +492,7 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   box([vab[0] - 1200, vab[1] + 2200], 1600, 1200, '#5f6558') // industrial area
   // water becomes transparent: the water surface mesh shows through
   if (ponds) {
-    mctx.imageSmoothingEnabled = false
+    mctx.imageSmoothingEnabled = true
     mctx.drawImage(ponds, 0, 0, n, n)
   }
   ctx.globalCompositeOperation = 'destination-out'

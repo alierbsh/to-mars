@@ -38,7 +38,9 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const zenith = useMemo(() => new THREE.Color(), [])
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }, rawDt) => {
+    // a background tab hands back a huge delta on return: never let one frame jump far
+    const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()
     const s = result ? ascentAt(result, t) : undefined
     const alt = s?.alt ?? 0
@@ -104,6 +106,8 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       camState.init = true
     } else camera.position.lerp(target, 0.06)
     camera.lookAt(centre.x, centre.y - size * (0.22 + 0.2 * pull), centre.z)
+    camera.up.set(0, 1, 0)
+    camera.near = 0.5
     camera.far = 4_000_000
     camera.updateProjectionMatrix()
   })

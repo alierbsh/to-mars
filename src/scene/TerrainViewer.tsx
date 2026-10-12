@@ -20,7 +20,7 @@ export default function TerrainViewer({ kind, alt, az, pitch, x, z, pad }: { kin
   const sky = mars ? (alt > 40_000 ? '#05070c' : '#b8864f') : '#6f9bd1'
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#000' }}>
-      <Canvas camera={{ position: pos.toArray(), fov: 45, near: 1, far: 6_000_000 }} dpr={1} onCreated={({ camera }) => camera.lookAt(target)}>
+      <Canvas camera={{ position: pos.toArray(), fov: 45, near: 1, far: 6_000_000 }} dpr={1} gl={{ logarithmicDepthBuffer: true }} onCreated={({ camera }) => camera.lookAt(target)}>
         <color attach="background" args={[sky]} />
         <fog attach="fog" args={[sky, (60_000 + alt * 40) * 0.35, 60_000 + alt * 40]} />
         {mars ? (

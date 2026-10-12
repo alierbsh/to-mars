@@ -10,7 +10,12 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { useAppStore } from '../state/store'
-import { PAD_DECK } from './capeSite'
+import { PAD_DECK, PAD_MOUND, padHeight } from './capeSite'
+
+/** ground level at (x, z) around a pad: the deck sits on the mound top; the terrain falls away beyond it */
+function siteY(pad: PadId, x: number, z: number): number {
+  return -PAD_DECK[pad] - PAD_MOUND[pad] + padHeight(pad, x, z)
+}
 
 /** seconds since liftoff (the mission clock starts at ignition), clamped at 0 */
 function liftoffTime(): number {
@@ -127,10 +132,11 @@ function Cyl({ p, r, h, material = white, rTop, segments = 24 }: { p: [number, n
 }
 
 /** propellant storage: vertical tanks (Starship GSE) or spheres (LC-39 LOX/LH2) */
-function TankFarm({ x, z, kind }: { x: number; z: number; kind: 'vertical' | 'spheres' | 'horizontal' }) {
+function TankFarm({ pad, x, z, kind }: { pad: PadId; x: number; z: number; kind: 'vertical' | 'spheres' | 'horizontal' }) {
+  const y = siteY(pad, x, z)
   if (kind === 'spheres')
     return (
-      <group>
+      <group position={[0, y, 0]}>
         <mesh position={[x, 11, z]} material={white} castShadow>
           <sphereGeometry args={[10.5, 24, 16]} />
         </mesh>
@@ -141,7 +147,7 @@ function TankFarm({ x, z, kind }: { x: number; z: number; kind: 'vertical' | 'sp
     )
   if (kind === 'horizontal')
     return (
-      <group>
+      <group position={[0, y, 0]}>
         {Array.from({ length: 4 }, (_, i) => (
           <mesh key={i} position={[x, 3.2, z + i * 9]} rotation={[0, 0, Math.PI / 2]} material={white} castShadow>
             <capsuleGeometry args={[2.8, 18, 6, 16]} />
@@ -150,7 +156,7 @@ function TankFarm({ x, z, kind }: { x: number; z: number; kind: 'vertical' | 'sp
       </group>
     )
   return (
-    <group>
+    <group position={[0, y, 0]}>
       {Array.from({ length: 7 }, (_, i) => (
         <Cyl key={i} p={[x + (i % 2) * 11, 14, z + i * 11]} r={4.6} h={28} material={white} />
       ))}
@@ -160,9 +166,9 @@ function TankFarm({ x, z, kind }: { x: number; z: number; kind: 'vertical' | 'sp
 }
 
 /** the LC-39 water tower: 88 m, a sphere on a slender shaft */
-function WaterTower({ x, z }: { x: number; z: number }) {
+function WaterTower({ pad, x, z }: { pad: PadId; x: number; z: number }) {
   return (
-    <group>
+    <group position={[0, siteY(pad, x, z), 0]}>
       <Cyl p={[x, 38, z]} r={2.2} h={76} material={white} segments={16} />
       <mesh position={[x, 80, z]} material={white} castShadow>
         <sphereGeometry args={[8, 20, 14]} />
@@ -176,9 +182,9 @@ function WaterTower({ x, z }: { x: number; z: number }) {
 }
 
 /** lightning protection: a lattice with a fibreglass mast and a catenary spur */
-function LightningTower({ x, z, h = 120 }: { x: number; z: number; h?: number }) {
+function LightningTower({ pad, x, z, h = 120 }: { pad: PadId; x: number; z: number; h?: number }) {
   return (
-    <group>
+    <group position={[0, siteY(pad, x, z), 0]}>
       <Lattice x={x} z={z} w={6} h={h * 0.8} bay={8} member={0.35} material={steelGrey} />
       <Cyl p={[x, h * 0.9, z]} r={0.35} h={h * 0.2} material={white} segments={8} />
     </group>
@@ -227,8 +233,8 @@ function StarshipPad() {
       </group>
       {/* booster QD at the mount */}
       <Box p={[tx + 14, -1, 0]} s={[22, 3, 4]} material={steel} />
-      <TankFarm x={-150} z={-120} kind="vertical" />
-      <WaterTower x={-210} z={90} />
+      <TankFarm pad="lc39a-starship" x={-150} z={-120} kind="vertical" />
+      <WaterTower pad="lc39a-starship" x={-210} z={90} />
     </group>
   )
 }
@@ -258,11 +264,11 @@ function MobileLauncherPad() {
       <Slab y={deck - 0.6} w={60} d={150} trench={18} />
       {[0, 1, 2].map((i) => {
         const a = (i / 3) * Math.PI * 2 + 0.5
-        return <LightningTower key={i} x={Math.cos(a) * 210} z={Math.sin(a) * 210} h={180} />
+        return <LightningTower key={i} pad="lc39b-ml" x={Math.cos(a) * 210} z={Math.sin(a) * 210} h={180} />
       })}
-      <WaterTower x={-240} z={-60} />
-      <TankFarm x={200} z={-330} kind="spheres" />
-      <TankFarm x={200} z={330} kind="spheres" />
+      <WaterTower pad="lc39b-ml" x={-240} z={-60} />
+      <TankFarm pad="lc39b-ml" x={200} z={-330} kind="spheres" />
+      <TankFarm pad="lc39b-ml" x={200} z={330} kind="spheres" />
     </group>
   )
 }
@@ -296,9 +302,9 @@ function FssPad() {
         <Box key={z} p={[0, deck + 4.6, z]} s={[16, 0.8, 3]} material={dark} />
       ))}
       <Slab y={deck + 0.6} w={70} d={70} trench={18} />
-      <WaterTower x={-230} z={70} />
-      <TankFarm x={220} z={-330} kind="spheres" />
-      <TankFarm x={220} z={330} kind="spheres" />
+      <WaterTower pad="lc39a-fss" x={-230} z={70} />
+      <TankFarm pad="lc39a-fss" x={220} z={-330} kind="spheres" />
+      <TankFarm pad="lc39a-fss" x={220} z={330} kind="spheres" />
     </group>
   )
 }
@@ -320,9 +326,9 @@ function LutPad() {
         <SwingArm key={i} x={tx + 6} z={i % 2 ? 2 : -2} y={y} len={18} material={white} h={2.2} w={2.6} />
       ))}
       <Slab y={deck + 0.6} w={80} d={80} trench={18} />
-      <WaterTower x={-230} z={70} />
-      <TankFarm x={220} z={-330} kind="spheres" />
-      <TankFarm x={220} z={330} kind="spheres" />
+      <WaterTower pad="lc39a-lut" x={-230} z={70} />
+      <TankFarm pad="lc39a-lut" x={220} z={-330} kind="spheres" />
+      <TankFarm pad="lc39a-lut" x={220} z={330} kind="spheres" />
     </group>
   )
 }
@@ -337,11 +343,11 @@ function Lc36Pad() {
       {[20, 44, 68, 86].map((y) => (
         <Box key={y} p={[0, y, -6]} s={[10, 1.4, 4]} material={dark} />
       ))}
-      <LightningTower x={-90} z={60} h={110} />
-      <LightningTower x={90} z={-70} h={110} />
+      <LightningTower pad="lc36" x={-90} z={60} h={110} />
+      <LightningTower pad="lc36" x={90} z={-70} h={110} />
       <Slab y={deck + 0.6} w={90} d={90} trench={14} />
-      <TankFarm x={180} z={-40} kind="horizontal" />
-      <WaterTower x={-200} z={-120} />
+      <TankFarm pad="lc36" x={180} z={-40} kind="horizontal" />
+      <WaterTower pad="lc36" x={-200} z={-120} />
     </group>
   )
 }
@@ -360,11 +366,11 @@ function UmbilicalPad() {
       <Box p={[tx, deck + 98, 0]} s={[13, 2, 13]} material={steelLight} />
       {[0, 1, 2, 3].map((i) => {
         const a = (i / 4) * Math.PI * 2 + 0.4
-        return <LightningTower key={i} x={Math.cos(a) * 150} z={Math.sin(a) * 150} h={100} />
+        return <LightningTower key={i} pad="slc37" x={Math.cos(a) * 150} z={Math.sin(a) * 150} h={100} />
       })}
       <Slab y={deck + 0.6} w={80} d={80} trench={16} />
-      <TankFarm x={200} z={-200} kind="spheres" />
-      <WaterTower x={-200} z={120} />
+      <TankFarm pad="slc37" x={200} z={-200} kind="spheres" />
+      <WaterTower pad="slc37" x={-200} z={120} />
     </group>
   )
 }

@@ -22,7 +22,7 @@ export default function Scene() {
   }, [])
 
   return (
-    <Canvas shadows camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={[1, 1.5]}>
+    <Canvas shadows camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={[1, 1.5]} gl={{ logarithmicDepthBuffer: true, antialias: true }}>
       <color attach="background" args={['#070b12']} />
       <fog attach="fog" args={['#070b12', 2000, 60_000]} />
       <Suspense fallback={null}>

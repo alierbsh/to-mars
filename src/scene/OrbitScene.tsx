@@ -24,7 +24,9 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
   const { scene } = useThree()
   const state = useMemo(() => ({ ang: 0, init: false }), [])
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }, rawDt) => {
+    // a background tab hands back a huge delta on return: never let one frame jump far
+    const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()
     scene.background = new THREE.Color('#02040a')
     if (scene.fog) (scene.fog as THREE.Fog).color.set('#02040a')
