@@ -343,7 +343,7 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   // computed per pixel at 512² (cheap) and upsampled, so the first frame is not held up
   let ponds: HTMLCanvasElement | null = null
   {
-    const m = 512
+    const m = 768
     const lc = document.createElement('canvas')
     lc.width = lc.height = m
     const lctx = lc.getContext('2d')!
@@ -366,12 +366,14 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
           g = g * (1 - w) + 58 * w
           b = b * (1 - w) + 36 * w
         }
-        if (pond > 0.66) {
-          r = 28
-          g = 56
-          b = 78
+        // ponds and marsh pools: a soft-edged threshold on the noise, so they come out rounded
+        const pa = Math.max(0, Math.min(1, (pond - 0.655) / 0.03))
+        if (pa > 0) {
+          r = r * (1 - pa) + 28 * pa
+          g = g * (1 - pa) + 56 * pa
+          b = b * (1 - pa) + 78 * pa
           pondMask.data[k] = pondMask.data[k + 1] = pondMask.data[k + 2] = 255
-          pondMask.data[k + 3] = 255
+          pondMask.data[k + 3] = 255 * pa
         }
         img.data[k] = r
         img.data[k + 1] = g
