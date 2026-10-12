@@ -81,15 +81,19 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const size = Math.max(h - bottom, 12)
     const centreModel = (bottom + h) / 2
     const centre = rig.current ? rig.current.localToWorld(new THREE.Vector3(0, centreModel - h * 0.5, 0)) : new THREE.Vector3(0, centreModel, 0)
-    const dist = size * 2.1 + Math.min(size, alt / 600)
+    // open close and low on the pad, pull out over the first 15 s, then keep framing the stack
+    const ta = s?.t ?? 0
+    const open = 1 - Math.min(1, ta / 15)
+    const pull = open * open
+    const dist = size * (2.1 - 0.9 * pull) + Math.min(size, alt / 600)
     // climb above the vehicle as it rises, so the Cape falls away in the frame behind it
     const lift = Math.min(alt * 0.25, size * 1.4)
-    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * 0.12 + lift, centre.z + Math.sin(camState.az) * dist)
+    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * (0.12 - 0.3 * pull) + lift, centre.z + Math.sin(camState.az) * dist)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
     } else camera.position.lerp(target, 0.06)
-    camera.lookAt(centre)
+    camera.lookAt(centre.x, centre.y - size * 0.25 * pull, centre.z)
     camera.far = 4_000_000
     camera.updateProjectionMatrix()
   })

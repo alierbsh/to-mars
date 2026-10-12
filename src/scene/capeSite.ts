@@ -487,6 +487,7 @@ export function padMap(pad: PadId): THREE.CanvasTexture {
   ctx.arc(m(0), m(0), (lc39 ? 250 : 200) * s, 0, Math.PI * 2)
   ctx.fillStyle = '#85847c'
   ctx.fill()
+  multiplyGrain(ctx, n, 0.35, 0.07, 11)
   // crawlerway / access road leaving west
   ctx.fillStyle = '#9a9478'
   ctx.fillRect(m(-half), m(-20), (half - 200) * s, 40 * s)

@@ -9,6 +9,7 @@ import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap } from './capeSite'
+import { LaunchClouds } from './LaunchClouds'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 
@@ -98,6 +99,7 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
       <Suspense fallback={null}>
         <PadStructures pad={pad} />
       </Suspense>
+      <LaunchClouds deck={deck} />
     </group>
   )
 }

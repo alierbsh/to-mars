@@ -5,10 +5,21 @@
  * model (NASA-3D-Resources, public domain).
  */
 import { useGLTF } from '@react-three/drei'
-import { useLayoutEffect, useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
+import { useAppStore } from '../state/store'
 import { PAD_DECK } from './capeSite'
+
+/** seconds since liftoff (the mission clock starts at ignition), clamped at 0 */
+function liftoffTime(): number {
+  return Math.max(0, useAppStore.getState().t)
+}
+const ease = (v: number) => {
+  const x = Math.min(1, Math.max(0, v))
+  return x * x * (3 - 2 * x)
+}
 
 const BASE_URL = import.meta.env.BASE_URL
 
@@ -157,6 +168,10 @@ function SwingArm({ x, z, y, len, toward = 1, material = white, h = 2.6, w = 3 }
 function StarshipPad() {
   const deck = -PAD_DECK['lc39a-starship']
   const tx = -32
+  const qd = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (qd.current) qd.current.rotation.y = -1.2 * ease(liftoffTime() / 4)
+  })
   return (
     <group>
       {/* orbital launch mount: hexagonal table on six legs */}
@@ -181,8 +196,10 @@ function StarshipPad() {
       <Box p={[tx + 7.5, 66, 0]} s={[3, 10, 14]} material={steel} />
       <Box p={[tx + 9 + 17, 66, -9.5]} s={[36, 3.2, 2.4]} material={steel} r={[0, 0.12, 0]} />
       <Box p={[tx + 9 + 17, 66, 9.5]} s={[36, 3.2, 2.4]} material={steel} r={[0, -0.12, 0]} />
-      {/* ship quick-disconnect arm */}
-      <SwingArm x={tx + 7} z={-2} y={79} len={20} material={steel} h={3} w={4} />
+      {/* ship quick-disconnect arm: swings clear in the first seconds */}
+      <group ref={qd} position={[tx + 7, 0, 0]}>
+        <SwingArm x={0} z={-2} y={79} len={20} material={steel} h={3} w={4} />
+      </group>
       {/* booster QD at the mount */}
       <Box p={[tx + 14, -1, 0]} s={[22, 3, 4]} material={steel} />
       <TankFarm x={-150} z={-120} kind="vertical" />
@@ -229,6 +246,10 @@ function MobileLauncherPad() {
 function FssPad() {
   const deck = -PAD_DECK['lc39a-fss']
   const fx = -36
+  const te = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (te.current) te.current.rotation.x = -0.12 * ease(liftoffTime() / 3)
+  })
   return (
     <group>
       <Lattice x={fx} z={-8} y0={deck} w={12} h={81} bay={9} member={0.6} material={steelGrey} />
@@ -237,13 +258,15 @@ function FssPad() {
       {/* crew access arm + white room at the capsule hatch */}
       <SwingArm x={fx + 6} z={-6} y={62} len={22} material={white} h={3.2} w={3.6} />
       <Box p={[fx + 29, 62, -6]} s={[4, 4, 4]} material={white} />
-      {/* transporter-erector: strongback against the rocket, launch mount at the base */}
-      <Lattice x={0} z={9.5} y0={deck} w={6} h={70} bay={7} member={0.45} material={dark} />
+      {/* transporter-erector: strongback against the rocket, tilting back at liftoff; launch mount at the base */}
+      <group ref={te} position={[0, deck, 12.5]}>
+        <Lattice x={0} z={-3} y0={0} w={6} h={70} bay={7} member={0.45} material={dark} />
+        {[14, 30, 46, 60].map((y) => (
+          <Box key={y} p={[0, y - deck, -7.5]} s={[9, 1.2, 3]} material={dark} />
+        ))}
+      </group>
       <Box p={[0, deck + 2.5, 2]} s={[16, 5, 22]} material={steelGrey} />
       <Box p={[0, deck + 4, 0]} s={[3, 3, 3]} material={dark} />
-      {[14, 30, 46, 60].map((y) => (
-        <Box key={y} p={[0, y, 5]} s={[9, 1.2, 3]} material={dark} />
-      ))}
       <Box p={[0, deck + 0.6, 0]} s={[70, 1.2, 70]} material={concrete} />
       <WaterTower x={-230} z={70} />
       <TankFarm x={220} z={-330} kind="spheres" />

@@ -9,9 +9,10 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 ## Site
 - [ ] **Intro screen.** The site opens on a landing screen instead of starting the simulation: why building a city on Mars matters (the case for a multi-planetary civilisation — backup for life, the frontier, what it takes), a few lines, then "Start the mission" → the simulation. Same register as the rest (black, tracked labels), with the Mars globe or a still of the pad behind it.
 - [x] "Built by arbash" byline under the wordmark.
-- [ ] Starship landing: smoother flip and touchdown, engines cut at touchdown, landing dust.
-- [ ] Orion (and the other capsules) crashing on Mars: a proper impact — debris, dust, scorch, flash, camera shake.
-- [ ] Launch camera: open on a close-up at T-0 and pull out; the Starship catch arms swing clear after liftoff.
+- [x] Starship landing: smoother flip and touchdown, engines cut at touchdown, landing dust.
+- [x] Orion (and the other capsules) crashing on Mars: a proper impact — debris, dust, scorch, flash, camera shake.
+- [x] Launch: ignition steam/exhaust clouds, close opening camera, QD arm / strongback moving at liftoff.
+- [ ] Launch, next: Mach diamonds in the plume, water deluge spray, the catch arms swinging clear, the ocean with a wave texture, a hazier horizon.
 - [ ] Starship Mars ship: landing legs.
 
 ## Model
