@@ -54,7 +54,10 @@ export function entryAt(r: MissionResult, t: number): EntrySample | undefined {
   const s = interp(r.entry.telemetry, t - p.start)
   if (!s) return
   const [a, b, f] = s
-  return { ...a, t: lerp(a.t, b.t, f), alt: lerp(a.alt, b.alt, f), vel: lerp(a.vel, b.vel, f), mach: lerp(a.mach, b.mach, f), gLoad: lerp(a.gLoad, b.gLoad, f), heatFlux: lerp(a.heatFlux, b.heatFlux, f), heatLoad: lerp(a.heatLoad, b.heatLoad, f), mass: lerp(a.mass, b.mass, f), downrange: lerp(a.downrange, b.downrange, f), q: lerp(a.q, b.q, f), fpa: lerp(a.fpa, b.fpa, f), burning: f < 0.5 ? a.burning : b.burning }
+  // after the phase (touchdown or impact) the engines are off and the vehicle is at rest
+  const over = t >= p.end
+  const onGround = over && (r.verdict.outcome === 'landed' || r.verdict.outcome === 'crashed')
+  return { ...a, t: lerp(a.t, b.t, f), alt: onGround ? 0 : lerp(a.alt, b.alt, f), vel: over ? 0 : lerp(a.vel, b.vel, f), mach: over ? 0 : lerp(a.mach, b.mach, f), gLoad: over ? 0 : lerp(a.gLoad, b.gLoad, f), heatFlux: over ? 0 : lerp(a.heatFlux, b.heatFlux, f), heatLoad: lerp(a.heatLoad, b.heatLoad, f), mass: lerp(a.mass, b.mass, f), downrange: lerp(a.downrange, b.downrange, f), q: over ? 0 : lerp(a.q, b.q, f), fpa: lerp(a.fpa, b.fpa, f), burning: over ? false : f < 0.5 ? a.burning : b.burning }
 }
 
 export function hudAt(r: MissionResult, t: number): HudState {
@@ -100,7 +103,7 @@ export function hudAt(r: MissionResult, t: number): HudState {
       lines.push({ label: 'Radiation so far', value: `${fmt((r.cruise.doseMsv * days) / r.cruise.days)} mSv`, tone: (r.cruise.doseMsv * days) / r.cruise.days > 300 ? 'warn' : undefined })
       if (r.cruise.consumablesRunOutDay !== null && days > r.cruise.consumablesRunOutDay) lines.push({ label: 'Life support', value: 'exhausted', tone: 'fail' })
     }
-  } else if (p.phase === 'entry') {
+  } else if (p.phase === 'entry' || p.phase === 'landing') {
     const e = entryAt(r, t)
     if (e) {
       out.entry = e

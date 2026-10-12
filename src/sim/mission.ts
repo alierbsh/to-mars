@@ -180,6 +180,12 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
     for (const e of entry.events) events.push({ ...e, t: tCursor + e.t })
     phases.push({ phase: 'entry', start: tCursor, end: tCursor + entry.duration, label: 'Entry, descent & landing' })
     tCursor += entry.duration
+    // the aftermath: dust settling after a touchdown, debris after an impact (nothing is simulated here)
+    const burned = entry.events.some((e) => e.label.startsWith('Heat shield'))
+    const skipped = entry.events.some((e) => e.label === 'Skipped out')
+    const aftermath = burned || skipped ? 12 : 24
+    phases.push({ phase: 'landing', start: tCursor, end: tCursor + aftermath, label: entry.landed ? 'On the surface' : skipped ? 'Lost to space' : burned ? 'Break-up' : 'Impact' })
+    tCursor += aftermath
   } else {
     events.push({ t: tCursor, phase: 'entry', label: 'Mars flyby', detail: `${sc.name} has no entry system; it passes Mars at ${transfer.vInfArr.toFixed(2)} km/s and stays in solar orbit`, severity: 'warn' })
     phases.push({ phase: 'entry', start: tCursor, end: tCursor + 3600, label: 'Mars flyby' })
