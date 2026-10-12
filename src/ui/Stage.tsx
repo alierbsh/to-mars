@@ -17,8 +17,10 @@ export default function Stage() {
   const setPlaying = useAppStore((s) => s.setPlaying)
   const setSpeed = useAppStore((s) => s.setSpeed)
   const reset = useAppStore((s) => s.reset)
+  const intro = useAppStore((s) => s.intro)
   const raf = useRef(0)
   const last = useRef(0)
+  const lastPhase = useRef<string | null>(null)
 
   // playback loop: each phase advances at its own natural rate × speed
   useEffect(() => {
@@ -29,6 +31,9 @@ export default function Stage() {
       last.current = now
       const cur = useAppStore.getState().t
       const phase = result.phases.find((p) => cur >= p.start && cur < p.end) ?? result.phases[result.phases.length - 1]
+      // entry, descent and landing is the part that matters: slow the clock to 2× when it begins
+      if (phase.phase === 'entry' && lastPhase.current !== 'entry' && lastPhase.current !== null && useAppStore.getState().speed > 2) setSpeed(2)
+      lastPhase.current = phase.phase
       let next = cur + dt * PHASE_RATE[phase.phase] * speed
       // never skip the end of a phase in one frame
       if (next > phase.end && cur < phase.end) next = phase.end + 1e-3
@@ -43,7 +48,7 @@ export default function Stage() {
     last.current = 0
     raf.current = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf.current)
-  }, [result, playing, speed, setT, setPlaying])
+  }, [result, playing, speed, setT, setPlaying, setSpeed])
 
   const hud = useMemo(() => (result ? hudAt(result, t) : null), [result, t])
   const end = result ? result.phases[result.phases.length - 1].end : 1
@@ -52,7 +57,7 @@ export default function Stage() {
   return (
     <main className="stage">
       <Scene />
-      {result && hud && (
+      {result && hud && !intro && (
         <div className="live" aria-live="off">
           <p className="label">{hud.phaseLabel}</p>
           <div className="live__row">
@@ -66,7 +71,7 @@ export default function Stage() {
           </div>
         </div>
       )}
-      {result && (
+      {result && !intro && (
         <div className="bar">
           <button className="bar__btn" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
             {playing ? (

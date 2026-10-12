@@ -1,5 +1,5 @@
 // Screenshot the built app with headless Chromium (software WebGL).
-// Usage: node scripts/shot.mjs [out.png] [width] [height] [waitMs] [query] [clickSelector]
+// Usage: node scripts/shot.mjs [out.png] [width] [height] [waitMs] [query] [clickSelector|clickSelector2...]
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
@@ -42,11 +42,14 @@ page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`))
 page.on('requestfailed', (r) => logs.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`))
 await page.goto(`http://localhost:4173/${query}`)
 // CSS transitions do not advance under headless SwiftShader: disable them when clicking around
-if (click) await page.addStyleTag({ content: '* { transition: none !important; }' })
+if (click) await page.addStyleTag({ content: '* { transition: none !important; animation: none !important; }' })
 await page.waitForTimeout(waitMs)
 if (click) {
-  await page.click(click)
-  await page.waitForTimeout(1500)
+  // several selectors separated by '|' are clicked in turn, 1.5 s apart
+  for (const sel of click.split('|')) {
+    await page.click(sel)
+    await page.waitForTimeout(1500)
+  }
 }
 await page.screenshot({ path: out, timeout: 180_000 })
 console.log(logs.filter((l) => !l.includes('[log]') || process.env.SHOT_LOGS).slice(0, 30).join('\n'))

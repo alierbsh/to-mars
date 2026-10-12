@@ -72,7 +72,7 @@ export function hudAt(r: MissionResult, t: number): HudState {
       out.ascent = a
       lines.push({ label: 'Speed', value: `${fmt(a.velRel)} m/s` })
       lines.push({ label: 'Altitude', value: `${fmt(a.alt / 1000, 1)} km` })
-      lines.push({ label: 'Acceleration', value: `${fmt(a.accel, 2)} g` })
+      lines.push({ label: 'Acceleration', value: `${fmt(t - p.start < 0.5 ? 1 : a.accel, 2)} g` })
       lines.push({ label: 'Mach', value: a.alt < 90_000 ? fmt(a.mach, 1) : '—' })
       lines.push({ label: 'Mass', value: `${fmt(a.mass / 1000)} t` })
       lines.push({ label: 'Dynamic pressure', value: `${fmt(a.q / 1000, 1)} kPa` })

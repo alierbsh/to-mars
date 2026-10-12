@@ -43,11 +43,11 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
   const col = useMemo(() => new THREE.Color(), [])
 
   useFrame(() => {
-    const { result, t } = useAppStore.getState()
+    const { result, t, intro } = useAppStore.getState()
     const g = group.current
     if (!g) return
     const phase = result?.phases[0]
-    const tau = phase && t < phase.end ? t - phase.start : -1
+    const tau = phase && t < phase.end && !intro ? t - phase.start : -1
     const on = tau >= 0 && tau < 60
     g.visible = on
     if (light.current) {

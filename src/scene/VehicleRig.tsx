@@ -54,7 +54,8 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       const p = result.phases.find((x) => x.phase === 'ascent')!
       const ta = t - p.start
       const s = ascentAt(result, t)
-      if (s && s.thrust > 0 && t < p.end) {
+      const preIgnition = useAppStore.getState().intro !== null // the opening: on the pad, engines cold
+      if (s && s.thrust > 0 && t < p.end && !preIgnition) {
         burning.add(s.stage)
         for (const b of vehicle.stages) if (b.role === 'booster' && !result.ascent.stageTimes.some((st) => st.id === b.id && ta >= st.sep)) burning.add(b.id)
       }
