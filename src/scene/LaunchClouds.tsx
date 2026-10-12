@@ -48,23 +48,23 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
     if (!g) return
     const phase = result?.phases[0]
     const tau = phase && t < phase.end ? t - phase.start : -1
-    const on = tau >= 0 && tau < 90
+    const on = tau >= 0 && tau < 60
     g.visible = on
     if (light.current) {
       light.current.visible = tau >= 0 && tau < 20
       light.current.intensity = tau >= 0 ? 40_000 * Math.max(0, 1 - tau / 20) : 0
     }
     if (!on) return
-    const fade = tau < 25 ? 1 : Math.max(0, 1 - (tau - 25) / 65)
+    const fade = tau < 18 ? 1 : Math.max(0, 1 - (tau - 18) / 40)
     g.children.forEach((c, i) => {
       const p = puffs[i]
       const s = c as THREE.Sprite
       const tt = Math.max(0, tau - p.delay)
       const grow = Math.sqrt(tt)
-      const r = (p.lobe ? 14 : 6) + (p.lobe ? 95 : 30) * p.rate * grow
-      const h = 4 + 26 * p.rise * grow * (p.lobe ? 1 : 1.6)
+      const r = (p.lobe ? 12 : 5) + (p.lobe ? 48 : 16) * p.rate * grow
+      const h = 4 + 16 * p.rise * grow * (p.lobe ? 1 : 1.6)
       s.position.set(Math.cos(p.dir) * r, h, Math.sin(p.dir) * r)
-      const size = (18 + 55 * grow) * p.size
+      const size = (14 + 26 * grow) * p.size
       s.scale.set(size, size * 0.85, 1)
       const m = s.material as THREE.SpriteMaterial
       m.opacity = (tt > 0 ? 0.92 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))

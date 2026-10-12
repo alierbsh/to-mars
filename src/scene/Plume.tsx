@@ -32,8 +32,9 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   const light = useRef<THREE.PointLight>(null)
   const mats = useMemo(
     () => ({
-      outer: new THREE.MeshBasicMaterial({ color: c.outer, transparent: true, opacity: 0.35 * c.alpha, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
-      core: new THREE.MeshBasicMaterial({ color: c.core, transparent: true, opacity: 0.8 * c.alpha, blending: THREE.AdditiveBlending, depthWrite: false }),
+      // the outer sheath glows (additive); the core is a solid bright flame so it reads in daylight too
+      outer: new THREE.MeshBasicMaterial({ color: c.outer, transparent: true, opacity: 0.55 * c.alpha, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      core: new THREE.MeshBasicMaterial({ color: c.core, transparent: true, opacity: Math.min(1, 0.95 * c.alpha + 0.2), depthWrite: false }),
     }),
     [c],
   )

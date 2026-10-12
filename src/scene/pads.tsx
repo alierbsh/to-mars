@@ -93,6 +93,31 @@ function Box({ p, s, material = steelGrey, r }: { p: [number, number, number]; s
   )
 }
 
+/** a concrete slab with the flame trench cut through it along z (the exhaust must get out) */
+function Slab({ y, w, d, trench = 20, material = concrete }: { y: number; w: number; d: number; trench?: number; material?: THREE.Material }) {
+  const side = (w - trench) / 2
+  return (
+    <group>
+      <Box p={[-(trench / 2 + side / 2), y, 0]} s={[side, 1.2, d]} material={material} />
+      <Box p={[trench / 2 + side / 2, y, 0]} s={[side, 1.2, d]} material={material} />
+    </group>
+  )
+}
+
+/** a platform with a square exhaust opening in the middle */
+function Frame({ y, w, d, h, hole, material }: { y: number; w: number; d: number; h: number; hole: number; material: THREE.Material }) {
+  const sx = (w - hole) / 2
+  const sz = (d - hole) / 2
+  return (
+    <group>
+      <Box p={[-(hole / 2 + sx / 2), y, 0]} s={[sx, h, d]} material={material} />
+      <Box p={[hole / 2 + sx / 2, y, 0]} s={[sx, h, d]} material={material} />
+      <Box p={[0, y, -(hole / 2 + sz / 2)]} s={[hole, h, sz]} material={material} />
+      <Box p={[0, y, hole / 2 + sz / 2]} s={[hole, h, sz]} material={material} />
+    </group>
+  )
+}
+
 function Cyl({ p, r, h, material = white, rTop, segments = 24 }: { p: [number, number, number]; r: number; h: number; material?: THREE.Material; rTop?: number; segments?: number }) {
   return (
     <mesh position={p} material={material} castShadow receiveShadow>
@@ -229,8 +254,8 @@ function MobileLauncherPad() {
       <group position={[0, deck, 0]} scale={[k, k, k]}>
         <primitive object={scene} />
       </group>
-      {/* pad surface, the flame trench */}
-      <Box p={[0, deck - 0.6, 0]} s={[60, 1.2, 150]} material={concrete} />
+      {/* pad surface either side of the flame trench */}
+      <Slab y={deck - 0.6} w={60} d={150} trench={18} />
       {[0, 1, 2].map((i) => {
         const a = (i / 3) * Math.PI * 2 + 0.5
         return <LightningTower key={i} x={Math.cos(a) * 210} z={Math.sin(a) * 210} h={180} />
@@ -265,9 +290,12 @@ function FssPad() {
           <Box key={y} p={[0, y - deck, -7.5]} s={[9, 1.2, 3]} material={dark} />
         ))}
       </group>
-      <Box p={[0, deck + 2.5, 2]} s={[16, 5, 22]} material={steelGrey} />
-      <Box p={[0, deck + 4, 0]} s={[3, 3, 3]} material={dark} />
-      <Box p={[0, deck + 0.6, 0]} s={[70, 1.2, 70]} material={concrete} />
+      <Box p={[0, deck + 2.5, -9]} s={[16, 5, 4]} material={steelGrey} />
+      <Box p={[0, deck + 2.5, 9]} s={[16, 5, 4]} material={steelGrey} />
+      {[-9, 9].map((z) => (
+        <Box key={z} p={[0, deck + 4.6, z]} s={[16, 0.8, 3]} material={dark} />
+      ))}
+      <Slab y={deck + 0.6} w={70} d={70} trench={18} />
       <WaterTower x={-230} z={70} />
       <TankFarm x={220} z={-330} kind="spheres" />
       <TankFarm x={220} z={330} kind="spheres" />
@@ -281,15 +309,17 @@ function LutPad() {
   const tx = -30
   return (
     <group>
-      {/* platform on its six pedestals */}
-      <Box p={[-8, deck + 3.8, 0]} s={[49, 7.6, 41]} material={steelGrey} />
+      {/* platform on its six pedestals, the exhaust opening under the vehicle */}
+      <group position={[-8, 0, 0]}>
+        <Frame y={deck + 3.8} w={49} d={41} h={7.6} hole={14} material={steelGrey} />
+      </group>
       {[-20, 0, 20].flatMap((x) => [-16, 16].map((z) => <Box key={`${x}${z}`} p={[x - 8, deck / 2, z]} s={[2.5, -deck, 2.5]} material={concrete} />))}
       <Lattice x={tx} z={0} y0={deck + 7.6} w={12} h={110} bay={10} member={0.7} material={steelRed} />
       <Box p={[tx, deck + 120, 0]} s={[24, 3, 4]} material={steelRed} r={[0, 0.3, 0]} />
       {[deck + 20, 24, 36, 48, 60, 72, 84, 96, 104].map((y, i) => (
         <SwingArm key={i} x={tx + 6} z={i % 2 ? 2 : -2} y={y} len={18} material={white} h={2.2} w={2.6} />
       ))}
-      <Box p={[0, deck + 0.6, 0]} s={[80, 1.2, 80]} material={concrete} />
+      <Slab y={deck + 0.6} w={80} d={80} trench={18} />
       <WaterTower x={-230} z={70} />
       <TankFarm x={220} z={-330} kind="spheres" />
       <TankFarm x={220} z={330} kind="spheres" />
@@ -302,14 +332,14 @@ function Lc36Pad() {
   const deck = -PAD_DECK.lc36
   return (
     <group>
-      <Box p={[0, deck + 3, 0]} s={[26, 6, 26]} material={steelGrey} />
+      <Frame y={deck + 3} w={26} d={26} h={6} hole={10} material={steelGrey} />
       <Lattice x={0} z={-12} y0={deck} w={9} h={92} bay={8} member={0.6} material={dark} />
       {[20, 44, 68, 86].map((y) => (
         <Box key={y} p={[0, y, -6]} s={[10, 1.4, 4]} material={dark} />
       ))}
       <LightningTower x={-90} z={60} h={110} />
       <LightningTower x={90} z={-70} h={110} />
-      <Box p={[0, deck + 0.6, 0]} s={[90, 1.2, 90]} material={concrete} />
+      <Slab y={deck + 0.6} w={90} d={90} trench={14} />
       <TankFarm x={180} z={-40} kind="horizontal" />
       <WaterTower x={-200} z={-120} />
     </group>
@@ -322,7 +352,7 @@ function UmbilicalPad() {
   const tx = -26
   return (
     <group>
-      <Box p={[0, deck + 4, 0]} s={[24, 8, 24]} material={steelGrey} />
+      <Frame y={deck + 4} w={24} d={24} h={8} hole={12} material={steelGrey} />
       <Lattice x={tx} z={0} y0={deck} w={11} h={96} bay={9} member={0.6} material={steelLight} />
       {[18, 34, 50, 66, 80].map((y, i) => (
         <SwingArm key={y} x={tx + 5.5} z={i % 2 ? 2 : -2} y={y} len={16} material={white} />
@@ -332,7 +362,7 @@ function UmbilicalPad() {
         const a = (i / 4) * Math.PI * 2 + 0.4
         return <LightningTower key={i} x={Math.cos(a) * 150} z={Math.sin(a) * 150} h={100} />
       })}
-      <Box p={[0, deck + 0.6, 0]} s={[80, 1.2, 80]} material={concrete} />
+      <Slab y={deck + 0.6} w={80} d={80} trench={16} />
       <TankFarm x={200} z={-200} kind="spheres" />
       <WaterTower x={-200} z={120} />
     </group>

@@ -1,15 +1,20 @@
 /**
  * The launch site: Cape Canaveral at three scales (Florida from altitude, the Cape with its
- * lagoons, pads, VAB and crawlerway, and the pad mound with the concrete apron), plus the pad
- * structures for the selected vehicle and a few landmarks (VAB, LC-39B lightning towers, the
- * other pads). The selected pad is the local origin; the ascent scene swings this group about
- * the Earth's centre as the vehicle flies downrange.
+ * lagoons, pads, VAB and crawlerway, and the pad mound with the concrete apron), a real water
+ * surface under the land maps (the ocean, the lagoons and the ponds are holes in the maps, so the
+ * sea gets sun glint and moving waves), coastal scrub around the pad, cumulus over the Cape,
+ * plus the pad structures for the selected vehicle and a few landmarks. The selected pad is
+ * the local origin; the ascent scene swings this group about the Earth's centre as the vehicle
+ * flies downrange.
  */
+import { useFrame } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
-import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap } from './capeSite'
+import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
+import { dustTexture } from './impact'
 import { LaunchClouds } from './LaunchClouds'
+import { hash2 } from './noise'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 
@@ -23,6 +28,84 @@ function Landmark({ at, origin, children }: { at: [number, number]; origin: [num
 const concrete = new THREE.MeshStandardMaterial({ color: '#9b9a92', roughness: 0.95 })
 const vabMat = new THREE.MeshStandardMaterial({ color: '#d8d8d3', roughness: 0.8 })
 const steelGrey = new THREE.MeshStandardMaterial({ color: '#6f7479', roughness: 0.65, metalness: 0.5 })
+
+/** the sea: a spherical cap under the land, normal-mapped waves drifting, specular sun glint */
+function Water({ y }: { y: number }) {
+  const geo = useMemo(() => capGeometry(R_EARTH, 1200 * KM, 64), [])
+  const mat = useMemo(() => {
+    const normalMap = waveNormalTexture()
+    normalMap.repeat.set(9000, 9000) // one tile ≈ 270 m
+    return new THREE.MeshStandardMaterial({ color: '#143c5a', roughness: 0.38, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.45, 0.45), envMapIntensity: 0.9 })
+  }, [])
+  useFrame((_, dt) => {
+    const m = mat.normalMap!
+    m.offset.x = (m.offset.x + dt * 0.012) % 1
+    m.offset.y = (m.offset.y + dt * 0.007) % 1
+  })
+  return <mesh geometry={geo} material={mat} position={[0, y, 0]} receiveShadow />
+}
+
+/** low coastal scrub around the pad: instanced flattened blobs, two greens */
+function Scrub({ pad, groundY, map }: { pad: PadId; groundY: number; map: THREE.CanvasTexture }) {
+  const mesh = useMemo(() => {
+    const g = new THREE.SphereGeometry(1, 7, 5)
+    const mat = new THREE.MeshStandardMaterial({ color: '#4a6a33', roughness: 1 })
+    const n = 1600
+    const m = new THREE.InstancedMesh(g, mat, n)
+    const o = new THREE.Object3D()
+    const col = new THREE.Color()
+    const inner = pad.startsWith('lc39') ? 430 : 330 // keep the apron and the perimeter road clear
+    let k = 0
+    for (let i = 0; i < n * 2 && k < n; i++) {
+      const a = hash2(i, 21) * Math.PI * 2
+      const r = inner + Math.pow(hash2(i, 22), 0.7) * 1700
+      const x = Math.cos(a) * r
+      const z = Math.sin(a) * r
+      // leave the crawlerway (west) and the road ring clear; nothing grows in the sea
+      if (Math.abs(z) < 40 && x < 0) continue
+      if (waterAt(map, x, z)) continue
+      const s = 1.6 + hash2(i, 23) * 3.2
+      o.position.set(x, groundY + s * 0.35, z)
+      o.scale.set(s, s * 0.55, s * (0.8 + hash2(i, 24) * 0.5))
+      o.rotation.y = hash2(i, 25) * Math.PI
+      o.updateMatrix()
+      m.setMatrixAt(k, o.matrix)
+      col.setHSL(0.25 + hash2(i, 26) * 0.05, 0.35, 0.2 + hash2(i, 27) * 0.1)
+      m.setColorAt(k, col)
+      k++
+    }
+    m.count = k
+    m.instanceMatrix.needsUpdate = true
+    if (m.instanceColor) m.instanceColor.needsUpdate = true
+    m.castShadow = true
+    m.frustumCulled = false
+    return m
+  }, [pad, groundY, map])
+  return <primitive object={mesh} />
+}
+
+/** fair-weather cumulus over the Cape: billboards at 1.2–2 km */
+function Cumulus({ groundY }: { groundY: number }) {
+  const tex = useMemo(() => dustTexture(), [])
+  const clouds = useMemo(
+    () =>
+      Array.from({ length: 26 }, (_, i) => {
+        const a = hash2(i, 31) * Math.PI * 2
+        const r = 2500 + hash2(i, 32) * 26_000
+        return { x: Math.cos(a) * r, z: Math.sin(a) * r, y: 1200 + hash2(i, 33) * 900, s: 700 + hash2(i, 34) * 1300, o: 0.55 + hash2(i, 35) * 0.3 }
+      }),
+    [],
+  )
+  return (
+    <group position={[0, groundY, 0]}>
+      {clouds.map((c, i) => (
+        <sprite key={i} position={[c.x, c.y, c.z]} scale={[c.s, c.s * 0.45, 1]}>
+          <spriteMaterial map={tex} color="#ffffff" transparent opacity={c.o} depthWrite={false} />
+        </sprite>
+      ))}
+    </group>
+  )
+}
 
 export function CapeCanaveral({ pad }: { pad: PadId }) {
   const origin = PAD_SITE[pad]
@@ -45,11 +128,12 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
   return (
     <group>
       <group position={[0, groundY, 0]}>
+        <Water y={-2.2} />
         <mesh geometry={florida.geo} position={[0, -6, 0]} receiveShadow>
-          <meshStandardMaterial map={florida.tex} roughness={1} envMapIntensity={0.15} />
+          <meshStandardMaterial map={florida.tex} roughness={1} envMapIntensity={0.15} alphaTest={0.5} />
         </mesh>
         <mesh geometry={cape.geo} position={[0, -1.5, 0]} receiveShadow>
-          <meshStandardMaterial map={cape.tex} roughness={1} envMapIntensity={0.15} />
+          <meshStandardMaterial map={cape.tex} roughness={1} envMapIntensity={0.15} alphaTest={0.5} />
         </mesh>
         <mesh geometry={near.geo} receiveShadow>
           <meshStandardMaterial map={near.tex} roughness={1} envMapIntensity={0.15} />
@@ -95,6 +179,8 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
           )
         })}
       </group>
+      <Scrub pad={pad} groundY={groundY} map={cape.tex} />
+      <Cumulus groundY={groundY} />
       {/* the selected pad's structures: the deck is at y = −PAD_DECK, the vehicle base at 0 */}
       <Suspense fallback={null}>
         <PadStructures pad={pad} />

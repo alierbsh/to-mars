@@ -48,7 +48,7 @@ if (click) {
   await page.click(click)
   await page.waitForTimeout(1500)
 }
-await page.screenshot({ path: out })
+await page.screenshot({ path: out, timeout: 180_000 })
 console.log(logs.filter((l) => !l.includes('[log]') || process.env.SHOT_LOGS).slice(0, 30).join('\n'))
 await browser.close()
 server.close()

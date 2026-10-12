@@ -113,6 +113,7 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       o.rotation.z = baseRz + (off ? off.rz : 0)
     })
     for (const a of anchors) throttles.current[a.stage] = burning.has(a.stage) ? 1 : 0
+
   })
 
   return (
@@ -135,7 +136,7 @@ function PlumeAt({ anchor, throttles, expansion }: { anchor: Anchor; throttles: 
     const e = expansion.current
     if (Math.abs(e - exp) > 0.05) setExp(e)
   })
-  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 14} throttle={thr} expansion={exp} />, anchor.obj)
+  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 18} throttle={thr} expansion={exp} />, anchor.obj)
 }
 
 export function useResultAndT(): { result: MissionResult | null; t: number } {

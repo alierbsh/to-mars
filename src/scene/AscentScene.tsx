@@ -12,6 +12,7 @@ import { useAppStore } from '../state/store'
 import { ascentAt } from '../ui/hud'
 import { CapeCanaveral } from './CapeCanaveral'
 import { R_EARTH } from './capeSite'
+import { dustTexture } from './impact'
 import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 
@@ -27,6 +28,9 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const rig = useRef<THREE.Group>(null)
   const ground = useRef<THREE.Group>(null)
   const sky = useRef<THREE.Mesh>(null)
+  const sun = useRef<THREE.Sprite>(null)
+  const sunTex = useMemo(() => dustTexture(), [])
+  const sunDir = useMemo(() => new THREE.Vector3(180, 260, 120).normalize(), [])
   const { scene } = useThree()
   const camState = useMemo(() => ({ az: 1.0, init: false }), [])
   const bg = useMemo(() => new THREE.Color(), [])
@@ -63,6 +67,11 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     horizon.copy(HORIZON_LOW).lerp(SKY_MID, Math.min(1, alt / 30_000))
     zenith.copy(ZENITH_LOW).lerp(SKY_HIGH, Math.min(1, alt / 25_000))
     setSky(sky.current, camera, haze * haze, horizon, zenith)
+    // the sun: on the light's direction, far out, following the camera; a glare in the haze
+    if (sun.current) {
+      sun.current.position.copy(camera.position).addScaledVector(sunDir, 80_000)
+      ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.55 + 0.4 * haze
+    }
     // camera: slow orbit; frame whatever is still attached (zoom in after staging)
     if (playing) camState.az += dt * 0.06
     let bottom = 0
@@ -85,15 +94,16 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const ta = s?.t ?? 0
     const open = 1 - Math.min(1, ta / 15)
     const pull = open * open
-    const dist = size * (2.1 - 0.9 * pull) + Math.min(size, alt / 600)
+    // room for the plume below the stack: frame the stack plus ~0.6 of its length of exhaust
+    const dist = size * (2.7 - 1.3 * pull) + Math.min(size, alt / 600)
     // climb above the vehicle as it rises, so the Cape falls away in the frame behind it
     const lift = Math.min(alt * 0.25, size * 1.4)
-    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * (0.12 - 0.3 * pull) + lift, centre.z + Math.sin(camState.az) * dist)
+    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * (0.05 - 0.3 * pull) + lift, centre.z + Math.sin(camState.az) * dist)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
     } else camera.position.lerp(target, 0.06)
-    camera.lookAt(centre.x, centre.y - size * 0.25 * pull, centre.z)
+    camera.lookAt(centre.x, centre.y - size * (0.22 + 0.2 * pull), centre.z)
     camera.far = 4_000_000
     camera.updateProjectionMatrix()
   })
@@ -103,6 +113,9 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       <hemisphereLight args={['#9fb9dc', '#4a4636', 0.6]} />
       <directionalLight position={[180, 260, 120]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
       <SkyDome ref={sky} horizon="#c9dcef" zenith="#3f7fcb" />
+      <sprite ref={sun} scale={[14_000, 14_000, 1]} renderOrder={-9}>
+        <spriteMaterial map={sunTex} color="#fff2d0" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />
+      </sprite>
       {/* pivot at mid-height so the pitch rotates the vehicle about its centre */}
       <group ref={rig} position={[0, h * 0.5, 0]}>
         <group position={[0, -h * 0.5, 0]}>

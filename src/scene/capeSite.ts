@@ -8,7 +8,7 @@
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { canvasTexture } from './terrain'
-import { fbm } from './noise'
+import { fbm, hash2 } from './noise'
 
 export const R_EARTH = 6_371_000
 const KM = 1000
@@ -295,44 +295,37 @@ function multiplyGrain(ctx: Ctx, n: number, scale: number, amp: number, seed = 0
   ctx.restore()
 }
 
-/** Florida from altitude: 1024 px over ±1200 km, centred on the pad */
+/** Florida from altitude: 1024 px over ±1200 km, centred on the pad. Water is transparent — the
+ * water surface mesh shows through; the Bahama banks are painted turquoise. The Cape map's own
+ * square is cut out so the two never disagree about the coast. */
 export function floridaMap(center: [number, number]): THREE.CanvasTexture {
   const n = 1024
   const half = 1200 * KM
   const c = document.createElement('canvas')
   c.width = c.height = n
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#12304f'
-  ctx.fillRect(0, 0, n, n)
-  // shallow banks (Bahamas) and the Gulf shelf, a lighter blue
-  ctx.fillStyle = '#1f4a74'
-  poly(ctx, [[-79.3, 27.0], [-77.0, 27.2], [-76.5, 25.5], [-77.5, 23.3], [-79.5, 24.0], [-79.5, 26.0]], n, half, center[0], center[1])
-  ctx.fill()
-  poly(ctx, [[-83.0, 29.3], [-84.0, 30.2], [-86.0, 30.5], [-85.0, 28.8], [-83.5, 27.5], [-83.0, 26.0], [-82.0, 24.8], [-81.5, 25.5]], n, half, center[0], center[1])
-  ctx.fill()
   const land = (pts: Array<[number, number]>, fill: string) => {
     poly(ctx, pts, n, half, center[0], center[1])
     ctx.fillStyle = fill
     ctx.fill()
   }
+  // shallow banks (Bahamas): turquoise water, opaque so it reads from orbit
+  land([[-79.3, 27.0], [-77.0, 27.2], [-76.5, 25.5], [-77.5, 23.3], [-79.5, 24.0], [-79.5, 26.0]], '#2a7a92')
   land(FLORIDA, '#35502a')
   land(CUBA, '#3e552c')
   land(GRAND_BAHAMA, '#4e5c38')
   land(ABACO, '#4e5c38')
   land(ANDROS, '#4e5c38')
-  // Everglades darker, the lake
-  poly(ctx, [[-81.3, 26.4], [-80.5, 26.3], [-80.4, 25.4], [-80.9, 25.3], [-81.2, 25.8]], n, half, center[0], center[1])
-  ctx.fillStyle = '#2c4226'
-  ctx.fill()
-  land(OKEECHOBEE, '#1a3d66')
+  // Everglades darker
+  land([[-81.3, 26.4], [-80.5, 26.3], [-80.4, 25.4], [-80.9, 25.3], [-81.2, 25.8]], '#2c4226')
   multiplyGrain(ctx, n, 0.03, 0.18, 3)
-  // cloud streaks, faint
+  // cut-outs: the lake, and the Cape map's square (±24 km around the pad)
   ctx.save()
-  ctx.globalAlpha = 0.18
-  const g = grain(512, 0.012, 0.5, 9)
-  ctx.globalCompositeOperation = 'screen'
-  ctx.fillStyle = ctx.createPattern(g, 'repeat')!
-  ctx.fillRect(0, 0, n, n)
+  ctx.globalCompositeOperation = 'destination-out'
+  land(OKEECHOBEE, '#000')
+  const s = n / (2 * half)
+  const capeHalf = 24 * KM * s
+  ctx.fillRect(n / 2 - capeHalf, n / 2 - capeHalf, 2 * capeHalf, 2 * capeHalf)
   ctx.restore()
   return canvasTexture(c)
 }
@@ -348,12 +341,14 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   const s = n / (2 * half)
   // land: coastal scrub and marsh, with sandy scrub patches, wetter darker ground and ponds —
   // computed per pixel at 512² (cheap) and upsampled, so the first frame is not held up
+  let ponds: HTMLCanvasElement | null = null
   {
     const m = 512
     const lc = document.createElement('canvas')
     lc.width = lc.height = m
     const lctx = lc.getContext('2d')!
     const img = lctx.createImageData(m, m)
+    const pondMask = lctx.createImageData(m, m)
     for (let j = 0; j < m; j++)
       for (let i = 0; i < m; i++) {
         const X = (i / m) * 2 * half - half + cx
@@ -375,6 +370,8 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
           r = 28
           g = 56
           b = 78
+          pondMask.data[k] = pondMask.data[k + 1] = pondMask.data[k + 2] = 255
+          pondMask.data[k + 3] = 255
         }
         img.data[k] = r
         img.data[k + 1] = g
@@ -384,20 +381,22 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
     lctx.putImageData(img, 0, 0)
     ctx.imageSmoothingEnabled = true
     ctx.drawImage(lc, 0, 0, n, n)
+    lctx.putImageData(pondMask, 0, 0)
+    ponds = lc
   }
-  // the Atlantic: everything east of the shoreline
+  // the Atlantic: everything east of the shoreline (painted for the grain pass, cut out at the end)
   const ocean: Array<[number, number]> = [...SHORE, [-80.0, 28.0], [-80.0, 29.2]]
   poly(ctx, ocean, n, half, cx, cz)
   ctx.fillStyle = '#113756'
   ctx.fill()
-  // surf line / beach
-  poly(ctx, SHORE, n, half, cx, cz, false)
-  ctx.strokeStyle = '#255d82'
-  ctx.lineWidth = 320 * s
-  ctx.stroke()
+  // the beach: a sand band along the shore, a wet darker strip at the water line
   poly(ctx, SHORE, n, half, cx, cz, false)
   ctx.strokeStyle = '#c4b98f'
-  ctx.lineWidth = 160 * s
+  ctx.lineWidth = 200 * s
+  ctx.stroke()
+  poly(ctx, SHORE, n, half, cx, cz, false)
+  ctx.strokeStyle = '#9f9478'
+  ctx.lineWidth = 40 * s
   ctx.stroke()
   // lagoons
   for (const w of [BANANA, INDIAN, MOSQUITO]) {
@@ -405,6 +404,37 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
     ctx.fillStyle = '#214a68'
     ctx.fill()
   }
+  // water mask: ocean beyond the beach, the lagoons, the ponds
+  const mask = document.createElement('canvas')
+  mask.width = mask.height = n
+  const mctx = mask.getContext('2d')!
+  poly(mctx, ocean, n, half, cx, cz)
+  mctx.fillStyle = '#fff'
+  mctx.fill()
+  for (const w of [BANANA, INDIAN, MOSQUITO]) {
+    poly(mctx, w, n, half, cx, cz)
+    mctx.fill()
+  }
+  // keep the beach and a band of shallows above the water mesh: pull the ocean back 320 m
+  poly(mctx, SHORE, n, half, cx, cz, false)
+  mctx.globalCompositeOperation = 'destination-out'
+  mctx.strokeStyle = '#000'
+  mctx.lineWidth = 640 * s
+  mctx.stroke()
+  mctx.globalCompositeOperation = 'source-over'
+  // the shallows themselves: a lighter, greener band painted on the land map
+  poly(ctx, ocean, n, half, cx, cz)
+  ctx.save()
+  ctx.clip()
+  poly(ctx, SHORE, n, half, cx, cz, false)
+  ctx.strokeStyle = '#2f6f8e'
+  ctx.lineWidth = 640 * s
+  ctx.stroke()
+  poly(ctx, SHORE, n, half, cx, cz, false)
+  ctx.strokeStyle = '#3f8aa5'
+  ctx.lineWidth = 300 * s
+  ctx.stroke()
+  ctx.restore()
   // marsh / mangrove darker along the lagoon shores
   for (const w of [BANANA, INDIAN, MOSQUITO]) {
     poly(ctx, w, n, half, cx, cz)
@@ -460,7 +490,78 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   box([vab[0] + 600, vab[1] + 200], 900, 700, '#6f726a') // VAB apron / turn basin area
   box(SITES.lcc, 150, 100, '#b8b8b2')
   box([vab[0] - 1200, vab[1] + 2200], 1600, 1200, '#5f6558') // industrial area
+  // water becomes transparent: the water surface mesh shows through
+  if (ponds) {
+    mctx.imageSmoothingEnabled = false
+    mctx.drawImage(ponds, 0, 0, n, n)
+  }
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.drawImage(mask, 0, 0)
+  ctx.globalCompositeOperation = 'source-over'
   return canvasTexture(c, 16)
+}
+
+/** is (x, z) in local metres around `center` water on the Cape map? (reads the map's alpha) */
+export function waterAt(tex: THREE.CanvasTexture, x: number, z: number): boolean {
+  const c = tex.image as HTMLCanvasElement
+  const n = c.width
+  const half = 24 * KM
+  const i = Math.round(((x + half) / (2 * half)) * (n - 1))
+  const j = Math.round(((z + half) / (2 * half)) * (n - 1))
+  if (i < 0 || j < 0 || i >= n || j >= n) return false
+  const data = (c as HTMLCanvasElement & { __alpha?: Uint8ClampedArray }).__alpha ?? ((c as HTMLCanvasElement & { __alpha?: Uint8ClampedArray }).__alpha = c.getContext('2d')!.getImageData(0, 0, n, n).data)
+  const k = (j * n + i) * 4
+  return data[k + 3] < 128 || (data[k + 2] > data[k] + 25 && data[k + 2] > data[k + 1])
+}
+
+let waveCache: THREE.CanvasTexture | null = null
+/** tiling wave normal map: small chop over a longer swell, encoded as a tangent-space normal */
+export function waveNormalTexture(): THREE.CanvasTexture {
+  if (waveCache) return waveCache
+  const n = 256
+  const c = document.createElement('canvas')
+  c.width = c.height = n
+  const ctx = c.getContext('2d')!
+  const img = ctx.createImageData(n, n)
+  // periodic height field: value noise on a wrapped lattice (tiles exactly), three octaves of
+  // irregular swell and chop
+  const pn = (x: number, y: number, period: number) => {
+    const xi = Math.floor(x)
+    const yi = Math.floor(y)
+    const xf = x - xi
+    const yf = y - yi
+    const u = xf * xf * (3 - 2 * xf)
+    const v = yf * yf * (3 - 2 * yf)
+    const w = (a: number, b: number) => hash2(((a % period) + period) % period, ((b % period) + period) % period)
+    const a = w(xi, yi)
+    const b = w(xi + 1, yi)
+    const c2 = w(xi, yi + 1)
+    const d = w(xi + 1, yi + 1)
+    return a + (b - a) * u + (c2 - a) * v + (a - b - c2 + d) * u * v
+  }
+  const h = (x: number, y: number) => {
+    const fx = x / n
+    const fy = y / n
+    return (pn(fx * 6, fy * 6, 6) - 0.5) * 1.0 + (pn(fx * 14 + 3, fy * 14, 14) - 0.5) * 0.5 + (pn(fx * 31, fy * 31 + 7, 31) - 0.5) * 0.25
+  }
+  const amp = 4.5
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const dx = (h(i + 1, j) - h(i - 1, j)) * amp
+      const dy = (h(i, j + 1) - h(i, j - 1)) * amp
+      const len = Math.hypot(dx, dy, 1)
+      const k = (j * n + i) * 4
+      img.data[k] = 128 + (-dx / len) * 127
+      img.data[k + 1] = 128 + (dy / len) * 127
+      img.data[k + 2] = 128 + (1 / len) * 127
+      img.data[k + 3] = 255
+    }
+  ctx.putImageData(img, 0, 0)
+  const t = new THREE.CanvasTexture(c)
+  t.wrapS = t.wrapT = THREE.RepeatWrapping
+  t.anisotropy = 8
+  waveCache = t
+  return t
 }
 
 /** the pad itself: 1536 px over ±1 km. The vehicle stands at the centre. */
