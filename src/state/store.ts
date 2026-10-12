@@ -5,6 +5,7 @@ import type { MissionConfig, MissionResult, Phase } from '../sim/types'
 import type { PorkchopGrid, WorkerRequest, WorkerResponse } from '../sim/worker'
 
 export type Tab = 'timeline' | 'telemetry' | 'trajectory' | 'model'
+export type Drawer = 'mission' | 'details' | null
 
 export interface AppState {
   config: MissionConfig
@@ -20,6 +21,8 @@ export interface AppState {
   speed: number // multiplier on the phase's natural rate (1 = the per-phase auto rate)
   tab: Tab
   followPhase: boolean
+  /** which side panel is open (the stage is the whole screen) */
+  drawer: Drawer
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -28,6 +31,7 @@ export interface AppState {
   setPlaying: (p: boolean) => void
   setSpeed: (s: number) => void
   setTab: (tab: Tab) => void
+  setDrawer: (d: Drawer) => void
   reset: () => void
 }
 
@@ -81,6 +85,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   speed: 1,
   tab: 'timeline',
   followPhase: true,
+  drawer: null,
 
   setConfig: (patch) => {
     set((s) => ({ config: { ...s.config, ...patch } }))
@@ -104,7 +109,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setT: (t) => set({ t }),
   setPlaying: (playing) => set({ playing }),
   setSpeed: (speed) => set({ speed }),
-  setTab: (tab) => set({ tab }),
+  setTab: (tab) => set({ tab, drawer: 'details' }),
+  setDrawer: (drawer) => set((s) => ({ drawer: s.drawer === drawer ? null : drawer })),
   reset: () => set({ t: 0, playing: true }),
 }))
 

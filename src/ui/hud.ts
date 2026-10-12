@@ -67,10 +67,10 @@ export function hudAt(r: MissionResult, t: number): HudState {
     const a = ascentAt(r, t)
     if (a) {
       out.ascent = a
+      lines.push({ label: 'Speed', value: `${fmt(a.velRel)} m/s` })
       lines.push({ label: 'Altitude', value: `${fmt(a.alt / 1000, 1)} km` })
-      lines.push({ label: 'Speed', value: `${fmt(a.vel)} m/s` })
-      lines.push({ label: 'Mach', value: a.alt < 90_000 ? fmt(a.mach, 1) : '—' })
       lines.push({ label: 'Acceleration', value: `${fmt(a.accel, 2)} g` })
+      lines.push({ label: 'Mach', value: a.alt < 90_000 ? fmt(a.mach, 1) : '—' })
       lines.push({ label: 'Mass', value: `${fmt(a.mass / 1000)} t` })
       lines.push({ label: 'Dynamic pressure', value: `${fmt(a.q / 1000, 1)} kPa` })
     }
@@ -104,11 +104,11 @@ export function hudAt(r: MissionResult, t: number): HudState {
     const e = entryAt(r, t)
     if (e) {
       out.entry = e
-      lines.push({ label: 'Altitude', value: `${fmt(e.alt / 1000, 1)} km` })
       lines.push({ label: 'Speed', value: `${fmt(e.vel)} m/s` })
+      lines.push({ label: 'Altitude', value: `${fmt(e.alt / 1000, 1)} km` })
+      lines.push({ label: e.heatFlux > 2 ? 'Heat flux' : 'Deceleration', value: e.heatFlux > 2 ? `${fmt(e.heatFlux)} W/cm²` : `${fmt(e.gLoad, 1)} g`, tone: e.heatFlux > 2 ? (e.heatFlux > 40 ? 'warn' : undefined) : e.gLoad > r.config.gLimit ? 'fail' : e.gLoad > 0.8 * r.config.gLimit ? 'warn' : undefined })
       lines.push({ label: 'Mach', value: fmt(e.mach, 1) })
-      lines.push({ label: 'Deceleration', value: `${fmt(e.gLoad, 1)} g`, tone: e.gLoad > r.config.gLimit ? 'fail' : e.gLoad > 0.8 * r.config.gLimit ? 'warn' : undefined })
-      lines.push({ label: 'Heat flux', value: `${fmt(e.heatFlux)} W/cm²`, tone: e.heatFlux > 40 ? 'warn' : undefined })
+      lines.push({ label: 'Deceleration', value: `${fmt(e.gLoad, 1)} g` })
       lines.push({ label: e.burning ? 'Landing burn' : 'Engines', value: e.burning ? 'firing' : 'off' })
     }
   }

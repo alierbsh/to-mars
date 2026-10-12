@@ -11,70 +11,39 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'timeline', label: 'Timeline' },
   { id: 'telemetry', label: 'Telemetry' },
   { id: 'trajectory', label: 'Trajectory' },
-  { id: 'model', label: 'Model' },
+  { id: 'model', label: 'Vehicle' },
 ]
 
-export default function Panel() {
+/** Everything behind the verdict: the event timeline, telemetry charts, the transfer and the vehicle model. A drawer on the right. */
+export default function DetailsSheet() {
   const result = useAppStore((s) => s.result)
-  const status = useAppStore((s) => s.status)
-  const error = useAppStore((s) => s.error)
   const tab = useAppStore((s) => s.tab)
   const setTab = useAppStore((s) => s.setTab)
+  const open = useAppStore((s) => s.drawer === 'details')
+  const setDrawer = useAppStore((s) => s.setDrawer)
 
   return (
-    <aside className="panel">
-      <Verdict result={result} status={status} error={error} />
-      <nav className="tabs" aria-label="Details">
-        {TABS.map((t) => (
-          <button key={t.id} className={`tab ${tab === t.id ? 'tab--on' : ''}`} onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
-      </nav>
-      {result && tab === 'timeline' && <Timeline result={result} />}
-      {result && tab === 'telemetry' && <Telemetry result={result} />}
-      {result && tab === 'trajectory' && <Trajectory result={result} />}
-      {result && tab === 'model' && <Model result={result} />}
-      {!result && <p className="empty">Choose a rocket to run the mission.</p>}
-    </aside>
-  )
-}
-
-function Verdict({ result, status, error }: { result: MissionResult | null; status: string; error: string | null }) {
-  if (status === 'error') return <div className="verdict verdict--fail"><h1 className="verdict__headline">The simulation hit an error</h1><p className="verdict__summary">{error}</p></div>
-  if (!result) return <div className="verdict"><h1 className="verdict__headline">{status === 'running' ? 'Running the mission…' : 'No run yet'}</h1></div>
-  const v = result.verdict
-  const tone = v.outcome === 'landed' && v.crewAlive ? 'ok' : v.outcome === 'landed' ? 'warn' : 'fail'
-  return (
-    <div className={`verdict verdict--${tone} ${status === 'running' ? 'verdict--stale' : ''}`}>
-      <div className="verdict__reach" aria-label="Milestones reached">
-        {(['leo', 'tmi', 'mars', 'surface'] as const).map((k) => (
-          <span key={k} className={`reach ${v.reached[k] ? 'reach--on' : ''}`}>
-            {k === 'leo' ? 'Orbit' : k === 'tmi' ? 'Left Earth' : k === 'mars' ? 'Reached Mars' : 'Landed'}
-          </span>
-        ))}
-        <span className={`reach ${v.crewAlive ? 'reach--on' : 'reach--off'}`}>{result.config.crew > 0 && VEHICLES.find((x) => x.id === result.vehicleId)!.spacecraft.crewCapacity > 0 ? (v.crewAlive ? 'Crew alive' : 'Crew lost') : 'Uncrewed'}</span>
+    <aside className={`drawer drawer--right ${open ? 'drawer--open' : ''}`} inert={!open}>
+      <div className="drawer__head">
+        <nav className="tabs" aria-label="Details">
+          {TABS.map((t) => (
+            <button key={t.id} className={`tab ${tab === t.id ? 'tab--on' : ''}`} onClick={() => setTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <button className="drawer__close" onClick={() => setDrawer('details')} aria-label="Close">
+          ×
+        </button>
       </div>
-      <h1 className="verdict__headline">{v.headline}</h1>
-      <p className="verdict__summary">{v.summary}</p>
-      {v.firstFailure && (
-        <p className="verdict__first">
-          First failure, {fmtT(v.firstFailure.t)}: <strong>{v.firstFailure.label}</strong> — {v.firstFailure.detail}
-        </p>
-      )}
-      <dl className="stats">
-        {v.stats.map((s) => (
-          <div key={s.label} className={`stat stat--${s.severity ?? 'info'}`}>
-            <dt>{s.label}</dt>
-            <dd>
-              {s.value}
-              {s.note && <span className="stat__note">{s.note}</span>}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p className="verdict__meta">Computed in {result.computeMs.toFixed(0)} ms · {result.events.length} events</p>
-    </div>
+      <div className="drawer__body">
+        {result && tab === 'timeline' && <Timeline result={result} />}
+        {result && tab === 'telemetry' && <Telemetry result={result} />}
+        {result && tab === 'trajectory' && <Trajectory result={result} />}
+        {result && tab === 'model' && <Model result={result} />}
+        {!result && <p className="hint">Choose a rocket to run the mission.</p>}
+      </div>
+    </aside>
   )
 }
 
@@ -158,7 +127,7 @@ function Trajectory({ result }: { result: MissionResult }) {
   useEffect(() => {
     if (porkchopFor !== config.departure) requestPorkchop()
   }, [config.departure, porkchopFor, requestPorkchop])
-  if (!tr) return <p className="empty">No transfer computed — the launch failed.</p>
+  if (!tr) return <p className="hint">No transfer computed — the launch failed.</p>
   const S = 300
   const scale = (S / 2 - 14) / (1.7 * AU_KM)
   const px = (v: [number, number, number]) => S / 2 + v[0] * scale

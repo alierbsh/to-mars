@@ -4,9 +4,10 @@ import { PHASE_RATE, useAppStore } from '../state/store'
 import { fmtT } from './format'
 import { hudAt } from './hud'
 
-const SPEEDS = [0.25, 0.5, 1, 2, 4, 10]
+const SPEEDS = [0.5, 1, 2, 4, 10]
 const SHORT: Record<string, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Done' }
 
+/** The stage is the whole screen: the 3D scene, the live numbers (webcast style) and the mission bar. */
 export default function Stage() {
   const result = useAppStore((s) => s.result)
   const t = useAppStore((s) => s.t)
@@ -46,33 +47,38 @@ export default function Stage() {
 
   const hud = useMemo(() => (result ? hudAt(result, t) : null), [result, t])
   const end = result ? result.phases[result.phases.length - 1].end : 1
+  const big = hud ? hud.lines.slice(0, 3) : []
 
   return (
     <main className="stage">
       <Scene />
       {result && hud && (
-        <div className="hud">
-          <div className="hud__phase">{hud.phaseLabel}</div>
-          <div className="hud__time">{fmtT(t)}</div>
-          <dl className="hud__lines">
-            {hud.lines.map((l) => (
-              <div key={l.label} className={`hud__line ${l.tone ? `hud__line--${l.tone}` : ''}`}>
-                <dt>{l.label}</dt>
-                <dd>{l.value}</dd>
+        <div className="live" aria-live="off">
+          <p className="label">{hud.phaseLabel}</p>
+          <div className="live__row">
+            <div className="live__clock">{fmtT(t)}</div>
+            {big.map((l) => (
+              <div key={l.label} className={`live__num ${l.tone ? `live__num--${l.tone}` : ''}`}>
+                <span className="live__value">{l.value}</span>
+                <span className="live__label">{l.label}</span>
               </div>
             ))}
-          </dl>
+          </div>
         </div>
       )}
       {result && (
-        <div className="playbar">
-          <button className="playbar__btn" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
-            {playing ? '❚❚' : '▶'}
+        <div className="bar">
+          <button className="bar__btn" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? (
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" fill="currentColor" /><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor" /></svg>
+            ) : (
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+            )}
           </button>
-          <button className="playbar__btn" onClick={reset} aria-label="Restart">
-            ↺
+          <button className="bar__btn bar__btn--ghost" onClick={reset} aria-label="Restart">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3a5 5 0 1 1-4.5 2.8" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M3 2v4h4" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
           </button>
-          <div className="phasestrip" role="group" aria-label="Mission phases">
+          <div className="phases" role="group" aria-label="Mission phases">
             {result.phases.map((p) => {
               const active = t >= p.start && t < p.end
               const done = t >= p.end
@@ -88,20 +94,22 @@ export default function Stage() {
                   }}
                   title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
                 >
-                  <span className="phase__fill" style={{ width: `${frac * 100}%` }} />
+                  <span className="phase__track">
+                    <span className="phase__fill" style={{ width: `${frac * 100}%` }} />
+                  </span>
                   <span className="phase__label">{SHORT[p.phase] ?? p.label}</span>
                 </button>
               )
             })}
           </div>
-          <div className="speeds">
+          <div className="speeds" role="group" aria-label="Playback speed">
             {SPEEDS.map((s) => (
               <button key={s} className={`speed ${speed === s ? 'speed--on' : ''}`} onClick={() => setSpeed(s)}>
                 {s}×
               </button>
             ))}
           </div>
-          <span className="playbar__end">{fmtT(end)}</span>
+          <span className="bar__end">{fmtT(end)}</span>
         </div>
       )}
     </main>

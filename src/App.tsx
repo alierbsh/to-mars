@@ -1,29 +1,34 @@
 import { useEffect } from 'react'
 import { useAppStore } from './state/store'
-import Panel from './ui/Panel'
-import Sidebar from './ui/Sidebar'
+import DetailsSheet from './ui/DetailsSheet'
+import MissionDrawer from './ui/MissionDrawer'
 import Stage from './ui/Stage'
+import TopBar from './ui/TopBar'
+import VerdictCard from './ui/VerdictCard'
 
 export default function App() {
   const run = useAppStore((s) => s.run)
-  const status = useAppStore((s) => s.status)
+  const drawer = useAppStore((s) => s.drawer)
+  const setDrawer = useAppStore((s) => s.setDrawer)
   useEffect(() => {
     run()
   }, [run])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && drawer) setDrawer(drawer)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawer, setDrawer])
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="header__title">
-          <span className="mars" aria-hidden="true" />
-          Occupy Mars
-        </div>
-        <p className="header__tagline">Pick one of today's rockets, give it a crew, and let the physics decide whether it gets to Mars — and what breaks first.</p>
-        <div className={`header__status header__status--${status}`}>{status === 'running' ? 'computing' : status === 'error' ? 'error' : 'live'}</div>
-      </header>
-      <Sidebar />
+    <div className={`app ${drawer ? `app--${drawer}` : ''}`}>
       <Stage />
-      <Panel />
+      <TopBar />
+      <VerdictCard />
+      <MissionDrawer />
+      <DetailsSheet />
+      {drawer && <button className="scrim" aria-label="Close panel" onClick={() => setDrawer(drawer)} />}
     </div>
   )
 }

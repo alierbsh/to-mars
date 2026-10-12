@@ -1,5 +1,5 @@
 // Screenshot the built app with headless Chromium (software WebGL).
-// Usage: node scripts/shot.mjs [out.png] [width] [height] [waitMs] [query]
+// Usage: node scripts/shot.mjs [out.png] [width] [height] [waitMs] [query] [clickSelector]
 import { chromium } from 'playwright'
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
@@ -10,8 +10,9 @@ const width = Number(process.argv[3] ?? 1440)
 const height = Number(process.argv[4] ?? 900)
 const waitMs = Number(process.argv[5] ?? 4000)
 const query = process.argv[6] ?? ''
+const click = process.argv[7]
 const root = new URL('../dist', import.meta.url).pathname
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.woff2': 'font/woff2' }
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' }
 
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent((req.url ?? '/').split('?')[0])
@@ -40,7 +41,13 @@ page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`))
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`))
 page.on('requestfailed', (r) => logs.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`))
 await page.goto(`http://localhost:4173/${query}`)
+// CSS transitions do not advance under headless SwiftShader: disable them when clicking around
+if (click) await page.addStyleTag({ content: '* { transition: none !important; }' })
 await page.waitForTimeout(waitMs)
+if (click) {
+  await page.click(click)
+  await page.waitForTimeout(1500)
+}
 await page.screenshot({ path: out })
 console.log(logs.filter((l) => !l.includes('[log]') || process.env.SHOT_LOGS).slice(0, 30).join('\n'))
 await browser.close()
