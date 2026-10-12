@@ -3,13 +3,23 @@
  * pressure-dependent Isp, Cd(Mach) drag on the stack base area, sequential + parallel staging,
  * gravity-turn guidance with a closed-loop insertion law for the exo-atmospheric part, RK4 at 0.1 s.
  */
-import { earthAtmosphere, rocketCd } from './atmosphere'
-import { EARTH_OMEGA, G0, MU_EARTH, R_EARTH_MEAN } from './constants'
+import { earthAtmosphere, marsAtmosphere, rocketCd, type AtmoState } from './atmosphere'
+import { EARTH_OMEGA, G0, MARS_OMEGA, MU_EARTH, MU_MARS, R_EARTH_MEAN, R_MARS_MEAN } from './constants'
 import { elementsFromState } from './orbit'
 import type { AscentResult, AscentSample, EngineGroup, SimEvent, Stage, Vehicle } from './types'
 
-const MU = MU_EARTH * 1e9 // m³/s²
-const RE = R_EARTH_MEAN * 1000 // m
+/** the body being climbed away from */
+export interface AscentPlanet {
+  name: string
+  mu: number // km³/s²
+  radius: number // km
+  omega: number // rad/s
+  atmosphere: (h: number) => AtmoState
+  /** seconds of vertical flight before the pitch kick */
+  tVertical: number
+}
+export const EARTH_ASCENT: AscentPlanet = { name: 'Earth', mu: MU_EARTH, radius: R_EARTH_MEAN, omega: EARTH_OMEGA, atmosphere: (h) => earthAtmosphere(h), tVertical: 40 }
+export const MARS_ASCENT: AscentPlanet = { name: 'Mars', mu: MU_MARS, radius: R_MARS_MEAN, omega: MARS_OMEGA, atmosphere: (h) => marsAtmosphere(h), tVertical: 12 }
 const P0 = 101_325
 
 interface EngineDerived {
@@ -53,6 +63,9 @@ export interface AscentOptions {
   telemetryEvery?: number
   tVertical?: number
   kickDuration?: number
+  planet?: AscentPlanet
+  /** launch latitude override (the vehicle's site is used when absent) */
+  latDeg?: number
 }
 
 function stageThrust(st: LiveStage, p: number, throttle: number): { F: number; mdot: number } {
@@ -69,7 +82,10 @@ function stageThrust(st: LiveStage, p: number, throttle: number): { F: number; m
 export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
   const dt = 0.1
   const telEvery = opts.telemetryEvery ?? 1
-  const tVert = opts.tVertical ?? 40
+  const P = opts.planet ?? EARTH_ASCENT
+  const MU = P.mu * 1e9 // m³/s²
+  const RE = P.radius * 1000 // m
+  const tVert = opts.tVertical ?? P.tVertical
   const kickDur = opts.kickDuration ?? 12
   const vKick = 100 // m/s air-relative speed at which the pitch kick starts
   const kick = (opts.kickAngleDeg * Math.PI) / 180
@@ -128,8 +144,8 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
   // --- state ---
   // Planar model: the launch plane carries the site's eastward rotation credit ω·R·cos(lat),
   // and the atmosphere co-rotates at the same effective rate so the air is at rest at liftoff.
-  const lat = (vehicle.launchSite.lat * Math.PI) / 180
-  const OMEGA = EARTH_OMEGA * Math.cos(lat)
+  const lat = ((opts.latDeg ?? vehicle.launchSite.lat) * Math.PI) / 180
+  const OMEGA = P.omega * Math.cos(lat)
   let x = RE
   let y = 0
   let vx = 0
@@ -185,7 +201,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     const vrely = vy - OMEGA * x
     const vrel = Math.hypot(vrelx, vrely)
     const v = Math.hypot(vx, vy)
-    const atmo = earthAtmosphere(h)
+    const atmo = P.atmosphere(h)
     const mach = vrel / atmo.a
     const q = 0.5 * atmo.rho * vrel * vrel
     const vr = vx * rhatx + vy * rhaty
@@ -248,8 +264,8 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
       ux = (aR * rhatx + aTan * ehatx) / n
       uy = (aR * rhaty + aTan * ehaty) / n
       // low-T/W final stage: coast to apoapsis if already above target apoapsis
-      const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], MU_EARTH)
-      const raAlt = (el.ra - R_EARTH_MEAN) * 1000
+      const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], P.mu)
+      const raAlt = (el.ra - P.radius) * 1000
       if (!coastDone && aT / G0 < 0.35 && raAlt > hTarget - 10_000 && vr > 5 && el.e < 1) coastingToApo = true
       if (coastingToApo) {
         if (vr > 0) {
@@ -271,7 +287,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     const accel = (px: number, py: number, pvx: number, pvy: number, mass: number) => {
       const rr = Math.hypot(px, py)
       const hh = rr - RE
-      const at = earthAtmosphere(hh)
+      const at = P.atmosphere(hh)
       const rvx = pvx + OMEGA * py
       const rvy = pvy - OMEGA * px
       const rv = Math.hypot(rvx, rvy)
@@ -358,9 +374,9 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
         m = totalMass()
       } else {
         // final stage exhausted without orbit
-        const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], MU_EARTH)
-        const rpAlt = el.rp - R_EARTH_MEAN
-        const raAlt = el.ra === Infinity ? Infinity : el.ra - R_EARTH_MEAN
+        const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], P.mu)
+        const rpAlt = el.rp - P.radius
+        const raAlt = el.ra === Infinity ? Infinity : el.ra - P.radius
         reason = `Propellant exhausted: periapsis ${fmt(rpAlt)} km, apoapsis ${raAlt === Infinity ? '∞' : fmt(raAlt)} km`
         ev('Propellant depleted before orbit', reason, 'fail')
         break
@@ -368,13 +384,13 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     }
     // orbit check on the final stage: direct insertion, or coast to apoapsis + circularisation burn
     if (coreIdx === coreOrder.length - 1 && mode === 'closedLoop' && throttle > 0) {
-      const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], MU_EARTH)
-      const rpAlt = (el.rp - R_EARTH_MEAN) * 1000
-      const raAlt = el.e < 1 ? (el.ra - R_EARTH_MEAN) * 1000 : Infinity
+      const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], P.mu)
+      const rpAlt = (el.rp - P.radius) * 1000
+      const raAlt = el.e < 1 ? (el.ra - P.radius) * 1000 : Infinity
       if (el.e < 1 && rpAlt >= hTarget - 3000) {
         cs.burning = false
         ok = true
-        orbit = { rp: el.rp - R_EARTH_MEAN, ra: el.ra - R_EARTH_MEAN, alt: h / 1000, vel: v }
+        orbit = { rp: el.rp - P.radius, ra: el.ra - P.radius, alt: h / 1000, vel: v }
         ev('SECO — orbit', `${fmt(orbit.rp)} × ${fmt(orbit.ra)} km, ${fmt(v)} m/s, T+${fmt(t)} s; ${fmt(cs.prop / 1000, 1)} t propellant left`, 'ok')
         break
       }
@@ -397,7 +413,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
           t += tCoast
           m = totalMass()
           ok = true
-          orbit = { rp: el.ra - R_EARTH_MEAN, ra: el.ra - R_EARTH_MEAN, alt: el.ra - R_EARTH_MEAN, vel: vCirc }
+          orbit = { rp: el.ra - P.radius, ra: el.ra - P.radius, alt: el.ra - P.radius, vel: vCirc }
           ev('Circularisation burn', `Δv ${fmt(dv)} m/s at apoapsis, ${fmt(orbit.alt)} km circular; ${fmt(cs.prop / 1000, 1)} t propellant left`, 'ok')
           // move the state to the circular orbit for consistency
           const ang = Math.atan2(y, x) + Math.PI
