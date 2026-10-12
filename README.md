@@ -32,5 +32,9 @@ src/
   state/   zustand store
   ui/      sidebar, HUD, verdict panel — coming
 docs/
-  research/  the research behind the numbers
+  research/  the research behind the numbers — start with docs/research/README.md
 ```
+
+## Research
+
+The simulation's numbers come from a sourced research pass (October 2026): the state of every heavy launcher, crewed-Mars delta-v and mass budgets, atmosphere/EDL models, expert failure-mode analyses, and the visual geometry of each vehicle. Report (Turkish) and raw notes (English) live in [`docs/research/`](./docs/research/README.md).
