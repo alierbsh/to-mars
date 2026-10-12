@@ -269,6 +269,9 @@ function Model({ result }: { result: MissionResult }) {
             {s.url.startsWith('http') ? <a href={s.url} target="_blank" rel="noreferrer">{s.label}</a> : s.label}
           </li>
         ))}
+        <li>
+          Places: <a href="https://github.com/nasa/NASA-3D-Resources" target="_blank" rel="noreferrer">NASA-3D-Resources</a> (public domain) — the Mobile Launcher model, the JPL DEMs of Gusev and Victoria craters, the global Mars mosaic. Cape Canaveral geography drawn from public maps; pad structures procedural.
+        </li>
       </ul>
     </div>
   )

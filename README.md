@@ -4,7 +4,7 @@
 
 Pick a real launch vehicle, give it a crew and a departure window, and let a physics simulation run the whole chain — launch, orbital refuelling, trans-Mars injection, the cruise, and entry, descent and landing at Mars — then tell you whether the crew arrives alive, and if not, what broke first.
 
-Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question.
+Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question. The screen is the stage: a full-screen 3D mission with webcast-style live numbers, one verdict card, and two drawers — *Mission* (rocket, window, crew, assumptions; everything else under *Advanced*) and *Data* (timeline, telemetry, trajectory, vehicle).
 
 ## What it simulates
 
@@ -24,6 +24,12 @@ Starship V3 (Super Heavy + Ship), SLS Block 1 + Orion, Falcon Heavy + Crew Drago
 
 The 3D models are procedural (cylinders, ogives, fins, decals) built to the dimensions in the research notes: ring counts, engine arrangements, fin positions, liveries.
 
+## The places
+
+Every mission launches from Cape Canaveral (the site's premise; notional for Long March 10): LC-39A with the Starship tower and orbital launch mount, LC-39B with NASA's Mobile Launcher (the real model from [NASA-3D-Resources](https://github.com/nasa/NASA-3D-Resources), public domain), the FSS and transporter-erector for Falcon Heavy, the Apollo-era red LUT for Saturn V, LC-36 for New Glenn, a generic umbilical tower at SLC-37. The Cape itself is drawn at three scales — the pad mound, the lagoons/VAB/crawlerway/SLF within 24 km, and the Florida peninsula from altitude — on a spherical patch, so the coast curves away as the vehicle climbs.
+
+The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker.
+
 ## What decides the Starship verdict
 
 Four numbers nobody has measured yet: propellant delivered per tanker, daily boil-off, the launch cadence, and the heat flux the tiles can take at Mars. Three presets bracket them — *SpaceX claims*, *Independent estimates*, *Demonstrated so far* — and the window matters as much: the 2031 and 2033 opportunities arrive at 4.4–5.5 km/s v∞ (6.6–7.4 km/s entry), the 2026, 2028 and 2035 ones at 2.7–3.3 km/s.
@@ -41,7 +47,7 @@ npm test           # anchor + mission tests (vitest)
 npm run build      # typecheck + production build into dist/
 ```
 
-Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125"` screenshots the built app at a mission time; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer.
+Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125" ["button.pill:has-text('Mission')"]` screenshots the built app at a mission time (optionally after a click); `?preset=<id>&window=<id>` preselect assumptions; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer; `?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>` a terrain viewer.
 
 ## Layout
 
@@ -49,8 +55,8 @@ Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [window
 src/
   sim/      physics core (atmosphere, ephemeris, orbit/Lambert, ascent, leo, transfer, cruise, entry, mission, worker)
   data/     vehicle catalogue with sources and confidence tags
-  scene/    three.js stage: procedural vehicle models, phase scenes, plumes, rig
-  ui/       sidebar, verdict panel, timeline/telemetry/trajectory/model tabs, HUD
+  scene/    three.js stage: procedural vehicle models, phase scenes, plumes, rig; Cape Canaveral and the Mars site (terrain.ts, capeSite.ts, pads.tsx, marsSite.ts + worker)
+  ui/       top bar + rocket picker, verdict card, live numbers + mission bar, Mission and Data drawers
   state/    zustand store + playback
 docs/research/  the research behind the numbers
 ```
