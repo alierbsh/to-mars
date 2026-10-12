@@ -27,6 +27,8 @@ export interface AppState {
   /** which side panel is open (the stage is the whole screen) */
   drawer: Drawer
   intro: Intro
+  /** seconds left in the opening countdown (5 → 0), for the pad effects */
+  countdown: number
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -88,6 +90,7 @@ const hasParams = new URLSearchParams(location.search).toString().length > 0
 export const useAppStore = create<AppState>((set, get) => ({
   config: initialConfig(),
   intro: hasParams ? null : 'start',
+  countdown: 5,
   result: null,
   status: 'idle',
   error: null,
@@ -129,7 +132,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
     const crew = vehicle ? Math.min(cur.crew, Math.max(vehicle.spacecraft.crewCapacity, 0)) || cur.crew : cur.crew
-    set({ speed, intro: 'countdown', t: 0, playing: false, drawer: null })
+    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null })
     if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
   },
   ignite: () => set({ intro: null, t: 0, playing: true }),

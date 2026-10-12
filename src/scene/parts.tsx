@@ -19,6 +19,9 @@ export const MAT = {
   foamDark: new THREE.MeshStandardMaterial({ color: '#b86a24', metalness: 0.0, roughness: 0.85 }),
   bell: new THREE.MeshStandardMaterial({ color: '#4a4c50', metalness: 0.7, roughness: 0.45, side: THREE.DoubleSide }),
   bellHot: new THREE.MeshStandardMaterial({ color: '#6b5a4a', metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide }),
+  /** a bell at full power: the regen-cooled wall glowing orange, brightest at the throat */
+  bellGlow: new THREE.MeshStandardMaterial({ color: '#5a4034', emissive: '#ff6a1a', emissiveIntensity: 1.6, metalness: 0.5, roughness: 0.5, side: THREE.DoubleSide }),
+  glass: new THREE.MeshStandardMaterial({ color: '#0d1a2b', metalness: 0.4, roughness: 0.15 }),
   titanium: new THREE.MeshStandardMaterial({ color: '#5a5450', metalness: 0.8, roughness: 0.45 }),
   carbon: new THREE.MeshStandardMaterial({ color: '#1d1f23', metalness: 0.3, roughness: 0.5 }),
   blue: new THREE.MeshStandardMaterial({ color: '#1546c2', metalness: 0.1, roughness: 0.6 }),
@@ -119,15 +122,15 @@ export function Bell({ rt, re, h, y = 0, x = 0, z = 0, material = MAT.bell, segm
 }
 
 /** Flat fin/flap from a 2-D outline (x = span outward, y = up), extruded by thickness; placed at radius r on the body at angle a (rad). */
-export function Fin({ outline, thickness = 0.25, r, a, y, material = MAT.stainless, tilt = 0 }: { outline: Array<[number, number]>; thickness?: number; r: number; a: number; y: number; material?: Mat; tilt?: number }) {
+export function Fin({ outline, thickness = 0.25, r, a, y, material = MAT.stainless, tilt = 0, proud = 0 }: { outline: Array<[number, number]>; thickness?: number; r: number; a: number; y: number; material?: Mat; tilt?: number; proud?: number }) {
   const geom = useMemo(() => {
     const shape = new THREE.Shape()
     outline.forEach(([px, py], i) => (i === 0 ? shape.moveTo(px, py) : shape.lineTo(px, py)))
     shape.closePath()
     const g = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false })
-    g.translate(0, 0, -thickness / 2)
+    g.translate(0, 0, -thickness / 2 + proud)
     return g
-  }, [outline, thickness])
+  }, [outline, thickness, proud])
   return (
     <group rotation={[0, a, 0]} position={[0, y, 0]}>
       <group position={[r, 0, 0]} rotation={[0, 0, tilt]}>
@@ -213,7 +216,7 @@ export function Capsule({ rBase, rTop, h, y = 0, material = MAT.white, heatShiel
   )
 }
 
-/** Procedural hexagonal tile texture for Starship's heat shield. */
+/** Procedural hexagonal tile texture for Starship's heat shield: dark grey tiles, a lighter grout line, per-tile variation, the odd fresh replacement tile. */
 let hexTex: THREE.CanvasTexture | null = null
 export function getHexTiles(): THREE.CanvasTexture {
   if (hexTex) return hexTex
@@ -221,33 +224,127 @@ export function getHexTiles(): THREE.CanvasTexture {
   c.width = 512
   c.height = 512
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#0b0c0e'
+  ctx.fillStyle = '#2a2b2e'
   ctx.fillRect(0, 0, 512, 512)
   const s = 14 // hex radius px
   const w = Math.sqrt(3) * s
   const hh = 1.5 * s
+  let seed = 11
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
   for (let row = -1; row < 512 / hh + 1; row++) {
     for (let col = -1; col < 512 / w + 1; col++) {
       const cx = col * w + (row % 2 ? w / 2 : 0)
       const cy = row * hh
-      const shade = 34 + Math.floor(Math.random() * 14)
+      const fresh = rnd() > 0.985
+      const shade = fresh ? 62 : 22 + Math.floor(rnd() * 12)
       ctx.fillStyle = `rgb(${shade},${shade + 1},${shade + 3})`
       ctx.beginPath()
       for (let k = 0; k < 6; k++) {
         const ang = (Math.PI / 3) * k + Math.PI / 6
-        const px = cx + (s - 1.1) * Math.cos(ang)
-        const py = cy + (s - 1.1) * Math.sin(ang)
+        const px = cx + (s - 0.9) * Math.cos(ang)
+        const py = cy + (s - 0.9) * Math.sin(ang)
         if (k === 0) ctx.moveTo(px, py)
         else ctx.lineTo(px, py)
       }
       ctx.closePath()
       ctx.fill()
+      // a faint highlight on the upper edge of each tile
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+      ctx.lineWidth = 1
+      ctx.stroke()
     }
   }
   hexTex = new THREE.CanvasTexture(c)
   hexTex.wrapS = hexTex.wrapT = THREE.RepeatWrapping
   hexTex.colorSpace = THREE.SRGBColorSpace
+  hexTex.anisotropy = 8
   return hexTex
+}
+
+/**
+ * Starship's stainless skin: rolled rings with slightly different sheens, dark weld seams between
+ * them, one vertical weld per ring at a different clock angle, fine vertical brushing. One texture
+ * holds `rings` rings top to bottom; set repeat.y = height / (rings × ringHeight).
+ */
+let ringTex: { map: THREE.CanvasTexture; rough: THREE.CanvasTexture } | null = null
+export const RING_TEX_RINGS = 40
+export function getRingSkin(): { map: THREE.CanvasTexture; rough: THREE.CanvasTexture } {
+  if (ringTex) return ringTex
+  const w = 512
+  const h = 2048
+  const ringPx = h / RING_TEX_RINGS
+  const mk = () => {
+    const c = document.createElement('canvas')
+    c.width = w
+    c.height = h
+    return c
+  }
+  const cm = mk()
+  const cr = mk()
+  const ctx = cm.getContext('2d')!
+  const rtx = cr.getContext('2d')!
+  let seed = 7
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+  for (let i = 0; i < RING_TEX_RINGS; i++) {
+    const y0 = i * ringPx
+    // ring tint: most bright, some darker or warmer (different sheet batches)
+    const b = 0.86 + rnd() * 0.14
+    const warm = rnd() < 0.25 ? 6 : 0
+    const cool = rnd() < 0.2 ? 6 : 0
+    const r = Math.round(200 * b + warm)
+    const g = Math.round(203 * b)
+    const bl = Math.round(208 * b + cool)
+    ctx.fillStyle = `rgb(${r},${g},${bl})`
+    ctx.fillRect(0, y0, w, ringPx)
+    const rough = 0.3 + (1 - b) * 1.6 + rnd() * 0.08
+    const rv = Math.round(rough * 255)
+    rtx.fillStyle = `rgb(${rv},${rv},${rv})`
+    rtx.fillRect(0, y0, w, ringPx)
+    // the circumferential weld seam
+    ctx.fillStyle = 'rgba(60,62,66,0.9)'
+    ctx.fillRect(0, y0, w, 2)
+    rtx.fillStyle = '#b4b4b4'
+    rtx.fillRect(0, y0, w, 2)
+    // one vertical weld per ring
+    const vx = Math.floor(rnd() * w)
+    ctx.fillStyle = 'rgba(90,92,96,0.8)'
+    ctx.fillRect(vx, y0, 2, ringPx)
+    rtx.fillStyle = '#a0a0a0'
+    rtx.fillRect(vx, y0, 2, ringPx)
+  }
+  // fine brushing: vertical streaks
+  const img = ctx.getImageData(0, 0, w, h)
+  for (let x = 0; x < w; x++) {
+    const k = 1 + (rnd() - 0.5) * 0.08
+    for (let y = 0; y < h; y++) {
+      const p = (y * w + x) * 4
+      img.data[p] = Math.min(255, img.data[p] * k)
+      img.data[p + 1] = Math.min(255, img.data[p + 1] * k)
+      img.data[p + 2] = Math.min(255, img.data[p + 2] * k)
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+  const map = new THREE.CanvasTexture(cm)
+  map.colorSpace = THREE.SRGBColorSpace
+  map.wrapS = map.wrapT = THREE.RepeatWrapping
+  map.anisotropy = 8
+  const roughT = new THREE.CanvasTexture(cr)
+  roughT.wrapS = roughT.wrapT = THREE.RepeatWrapping
+  ringTex = { map, rough: roughT }
+  return ringTex
+}
+
+/** a stainless material wearing the ring skin over `height` metres of `ringHeight` rings */
+export function ringSkinMaterial(height: number, ringHeight: number, opts: { color?: string; metalness?: number } = {}): THREE.MeshStandardMaterial {
+  const { map, rough } = getRingSkin()
+  const m = map.clone()
+  const r = rough.clone()
+  const rep = height / (RING_TEX_RINGS * ringHeight)
+  m.repeat.set(1, rep)
+  r.repeat.set(1, rep)
+  m.needsUpdate = true
+  r.needsUpdate = true
+  return new THREE.MeshStandardMaterial({ map: m, roughnessMap: r, color: opts.color ?? '#ffffff', metalness: opts.metalness ?? 0.9, roughness: 1 })
 }
 
 /** Curved decal: text drawn on a canvas, wrapped onto a cylinder segment at radius r, angle a, height y. */

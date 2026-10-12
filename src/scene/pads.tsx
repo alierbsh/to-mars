@@ -225,8 +225,15 @@ function StarshipPad() {
       <Cyl p={[tx, deck + 160, 0]} r={0.4} h={24} material={white} segments={8} />
       {/* chopstick carriage and the two catch arms, open around the stack at the booster/ship interface */}
       <Box p={[tx + 7.5, 66, 0]} s={[3, 10, 14]} material={steel} />
-      <Box p={[tx + 9 + 17, 66, -9.5]} s={[36, 3.2, 2.4]} material={steel} r={[0, 0.12, 0]} />
-      <Box p={[tx + 9 + 17, 66, 9.5]} s={[36, 3.2, 2.4]} material={steel} r={[0, -0.12, 0]} />
+      {/* the catch arms, swung wide open for launch (they close only to catch a returning booster) */}
+      <group position={[tx + 7.5, 66, 0]}>
+        <group rotation={[0, 0.62, 0]}>
+          <Box p={[18, 0, -3]} s={[36, 3.2, 2.4]} material={steel} />
+        </group>
+        <group rotation={[0, -0.62, 0]}>
+          <Box p={[18, 0, 3]} s={[36, 3.2, 2.4]} material={steel} />
+        </group>
+      </group>
       {/* ship quick-disconnect arm: swings clear in the first seconds */}
       <group ref={qd} position={[tx + 7, 0, 0]}>
         <SwingArm x={0} z={-2} y={79} len={20} material={steel} h={3} w={4} />

@@ -14,7 +14,8 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] Launch: ignition steam/exhaust clouds, close opening camera, QD arm / strongback moving at liftoff.
 - [x] A real sea (water surface, waves, glint), scrub, cumulus, sun; Saturn V flame through the launch mount; the Earth in orbit (NASA map, clouds, limb glow, stars, Moon).
 - [x] Mach diamonds in the plume; drag-to-orbit camera; EDL auto 2×; Mars detail (legs, shadows, rocks, dust devils, Spirit's lander); Cape detail (VAB flag + meatball, hangar, signs, birds, surf).
-- [ ] Launch, next: water deluge spray, the catch arms swinging clear, a parked crawler-transporter (NASA model, needs Draco compression).
+- [x] Water deluge at T−5, propellant venting through the countdown, frost on the tanks shedding at liftoff, bells glowing while firing, the catch arms open wide for launch.
+- [ ] A parked crawler-transporter (the NASA model is 1.6 MB even Draco-compressed, 280 k triangles — too heavy for a speck 5 km away; needs decimation first).
 - [x] Starship Mars ship: landing legs.
 
 ## Model

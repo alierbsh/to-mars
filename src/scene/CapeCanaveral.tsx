@@ -14,7 +14,8 @@ import type { PadId } from '../sim/types'
 import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
 import { Birds, Hangar, PadSign, Vab } from './CapeDetail'
 import { dustTexture } from './impact'
-import { LaunchClouds } from './LaunchClouds'
+import { LaunchClouds, LaunchDetail } from './LaunchClouds'
+import { VEHICLES } from '../data/vehicles'
 import { hash2 } from './noise'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
@@ -274,6 +275,7 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
         <PadStructures pad={pad} />
       </Suspense>
       <LaunchClouds deck={deck} />
+      <LaunchDetail deck={deck} height={VEHICLES.find((v) => v.launchSite.pad === pad)?.height ?? 100} />
     </group>
   )
 }

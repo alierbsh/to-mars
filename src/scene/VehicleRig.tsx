@@ -10,6 +10,7 @@ import { VEHICLES } from '../data/vehicles'
 import type { MissionResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { ascentAt, entryAt } from '../ui/hud'
+import { MAT } from './parts'
 import { Plume, plumeKindFor, type PlumeKind } from './Plume'
 import { SPACECRAFT_GROUP, VehicleModel } from './vehicles'
 
@@ -27,6 +28,7 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   const [anchors, setAnchors] = useState<Anchor[]>([])
   const throttles = useRef<Record<string, number>>({})
   const expansion = useRef(1)
+  const bells = useRef<Array<{ mesh: THREE.Mesh; stage: string; cold: THREE.Material }> | null>(null)
   const vehicle = VEHICLES.find((v) => v.id === id)!
 
   useEffect(() => {
@@ -102,10 +104,27 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       expansion.current = 1.2
     }
 
+    // frost: full on the pad, shed over the first 20 s of flight (the ascent phase starts at ignition)
+    let frost = 0
+    if (mode === 'pad') frost = 1
+    else if (mode === 'ascent' && result) {
+      const ta = t - result.phases[0].start
+      frost = useAppStore.getState().intro ? 1 : Math.max(0, 1 - ta / 20)
+    }
+
     // apply
     g.traverse((o) => {
       if (!(o instanceof THREE.Group) || !o.name || o.name.startsWith('plume:')) return
       const key = o.name
+      if (key === 'frost') {
+        o.visible = frost > 0.01
+        o.traverse((c) => {
+          const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined
+          if (m && m.transparent) m.opacity = 0.75 * frost
+        })
+        return
+      }
+      if (key === 'leg' || key === 'legExt') return
       const base = (o.userData.baseY ??= o.position.y) as number
       const baseRz = (o.userData.baseRz ??= o.rotation.z) as number
       o.visible = !hidden.has(key)
@@ -114,7 +133,19 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       o.rotation.z = baseRz + (off ? off.rz : 0)
     })
     for (const a of anchors) throttles.current[a.stage] = burning.has(a.stage) ? 1 : 0
-
+    // engine bells glow while their stage fires
+    if (!bells.current) {
+      const list: Array<{ mesh: THREE.Mesh; stage: string; cold: THREE.Material }> = []
+      g.traverse((o) => {
+        const m = o as THREE.Mesh
+        if (!m.isMesh || (m.material !== MAT.bell && m.material !== MAT.bellHot)) return
+        let p: THREE.Object3D | null = o
+        while (p && !(p instanceof THREE.Group && p.name && !p.name.startsWith('plume:'))) p = p.parent
+        if (p) list.push({ mesh: m, stage: p.name, cold: m.material as THREE.Material })
+      })
+      bells.current = list
+    }
+    for (const b of bells.current) b.mesh.material = burning.has(b.stage) ? MAT.bellGlow : b.cold
   })
 
   return (

@@ -90,7 +90,10 @@ function Countdown() {
       const id = window.setTimeout(ignite, 900)
       return () => window.clearTimeout(id)
     }
-    const id = window.setTimeout(() => setN(n - 1), 1000)
+    const id = window.setTimeout(() => {
+      setN(n - 1)
+      useAppStore.setState({ countdown: n - 1 })
+    }, 1000)
     return () => window.clearTimeout(id)
   }, [n, status, ignite])
   return (
