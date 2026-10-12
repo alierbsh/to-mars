@@ -121,11 +121,13 @@ Mars yolculuğunun fiziği pencerelerle başlar. Earth–Mars synodic periyodu 7
 | 2031 (Tip I) | 9.00 | I | 2031-01-28 → 2031-08-06 | 190 | 5.541 | — |
 | 2033 | 7.781 | II | 2033-04-28 → 2034-01-27 | 274 | 4.377 | 3.53 |
 | 2033 (Tip I) | 8.412 | I | 2033-04-06 → 2033-10-01 | 178 | 3.956 | — |
-| 2035 | 10.19 | I | 2035-04-21 → 2035-11-03 | 196 | 2.692 | 3.64 |
+| 2035 | 10.19 | I | 2035-06-22 → 2036-01-06 (düzeltildi*) | 198 | 2.692 | 3.64 |
 | 2037 | 14.84 | II | 2037-06-18 → 2038-07-19 | 396 | 3.356 | 3.84 |
 | 2039 | 12.17 | II | 2039-07-15 → 2040-07-09 | 360 | 2.701 | 3.72 |
 | 2041 | 9.818 | II | 2041-10-19 → 2042-08-31 | 316 | 2.49 | — |
 | 2043 | 8.969 | II | 2043-11-15 → 2044-09-16 | 306 | 2.793 | — |
+
+\* Araştırma notundaki 2035 tarihi (2035-04-21) simülasyonun kendi Lambert taramasıyla tutarsız çıktı: el kitabının C3 = 10.19 / v_inf = 2.69 değerleri 2035-06-22 kalkış, 198 günlük transferde (C3 10.21, v_inf 2.69) yeniden üretiliyor; notun kendi "2035: May–Jul" pencere aralığıyla da bu uyumlu. Diğer dört pencere (2026/2028/2031/2033) simülasyonda %1 içinde doğrulandı.
 
 Hızlı transferin bedeli diktir. Hohmann ideali 258.9 gün ve C3 ≈ 8.7 km²/s² iken ([Wikipedia: Delta-v budget](https://en.wikipedia.org/wiki/Delta-v_budget), T), 180 güne inmek toplam Δv'yi 3.34'ten 5.08 km/s'ye, 130 güne inmek 7.93 km/s'ye çıkarır ([Wikipedia: Free-return trajectory](https://en.wikipedia.org/wiki/Free-return_trajectory)); SpaceX'in 2016'da ilan ettiği 80–150 günlük transitler Dünya tarafında C3 ≈ 25–60 km²/s² ve Mars tarafında 5–7 km/s v_inf demektir — propulsive MOI yerine aerodinamik yakalamaya güvenmelerinin nedeni budur (T). Braeunig'in 2020 penceresi tabloları (200 km park orbit'i) 180–230 günlük uçuşlar için TMI 3,808–4,386 m/s ve 1,000 × 33,000 km orbit'e MOI 799–1,371 m/s verir; TMI ve MOI genelde ters orantılıdır ve injection hızındaki %1 hata v_inf'te ~%15 hataya yol açar ([Braeunig](http://www.braeunig.us/space/interpl.htm)). Zubrin & Weaver'ın kimyasal/aerobraking bütçesi ise TMI 4.15 km/s kargo (C3 ≈ 16) / 4.6 km/s insanlı (C3 ≈ 25, %5 gravity loss dahil), aerocapture sonrası periapsis yükseltme 0.1 km/s, iniş 0.5 km/s, TEI 1.7 km/s, MAV tırmanışı 5.0–5.5 km/s, Mars entry ≈ 7 km/s (5 km/s hiperbolik yaklaşım için), Dünya entry 12.44 km/s'dir ([Zubrin & Weaver 1993](https://marspapers.org/paper/Zubrin_1993_2.pdf)).
 
