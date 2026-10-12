@@ -70,7 +70,7 @@ function Pick() {
               </button>
             ))}
           </div>
-          <p className="hint">Each phase runs at its own natural pace, times this. Entry, descent and landing always slows to 2× — that part deserves it.</p>
+          <p className="hint">For the orbit and the cruise. Liftoff always plays at 1× — it deserves it — and entry, descent and landing never faster than 2×.</p>
         </div>
         <button className="intro__cta" onClick={() => launch(vehicleId, speed)}>
           Launch {v.short}

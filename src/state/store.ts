@@ -136,6 +136,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   reset: () => set({ t: 0, playing: true }),
 }))
 
+/**
+ * The clock's multiplier for a moment of the mission, given the viewer's chosen speed. Liftoff
+ * always plays at 1× (the first 50 s: ignition, tower clear, max-Q), ramping to the chosen speed
+ * by T+90 s; the in-between phases run at the chosen speed; entry, descent and landing never
+ * faster than 2×; the aftermath at 1×.
+ */
+export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number): number {
+  if (phase === 'ascent') {
+    if (tInPhase < 50) return Math.min(chosen, 1)
+    const f = Math.min(1, (tInPhase - 50) / 40)
+    return Math.min(chosen, 1) + (chosen - Math.min(chosen, 1)) * f
+  }
+  if (phase === 'entry') return Math.min(chosen, 2)
+  if (phase === 'landing' || phase === 'done') return Math.min(chosen, 1)
+  return chosen
+}
+
 /** Natural playback rate (simulated seconds per real second) for each phase. */
 export const PHASE_RATE: Record<Phase, number> = {
   ascent: 4,

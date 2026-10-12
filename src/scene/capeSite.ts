@@ -309,6 +309,9 @@ export function floridaMap(center: [number, number]): THREE.CanvasTexture {
     ctx.fillStyle = fill
     ctx.fill()
   }
+  // paint everything on an opaque base, then keep only the land through a mask
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, n, n)
   // shallow banks (Bahamas): turquoise water, opaque so it reads from orbit
   land([[-79.3, 27.0], [-77.0, 27.2], [-76.5, 25.5], [-77.5, 23.3], [-79.5, 24.0], [-79.5, 26.0]], '#2a7a92')
   land(FLORIDA, '#35502a')
@@ -319,14 +322,27 @@ export function floridaMap(center: [number, number]): THREE.CanvasTexture {
   // Everglades darker
   land([[-81.3, 26.4], [-80.5, 26.3], [-80.4, 25.4], [-80.9, 25.3], [-81.2, 25.8]], '#2c4226')
   multiplyGrain(ctx, n, 0.03, 0.18, 3)
-  // cut-outs: the lake, and the Cape map's square (±24 km around the pad)
-  ctx.save()
-  ctx.globalCompositeOperation = 'destination-out'
-  land(OKEECHOBEE, '#000')
+  // the mask: land and banks opaque, everything else (sea, the lake, the Cape map's square) cut away
+  const mask = document.createElement('canvas')
+  mask.width = mask.height = n
+  const mctx = mask.getContext('2d')!
+  for (const pts of [[[-79.3, 27.0], [-77.0, 27.2], [-76.5, 25.5], [-77.5, 23.3], [-79.5, 24.0], [-79.5, 26.0]] as Array<[number, number]>, FLORIDA, CUBA, GRAND_BAHAMA, ABACO, ANDROS]) {
+    poly(mctx, pts, n, half, center[0], center[1])
+    mctx.fillStyle = '#fff'
+    mctx.fill()
+  }
+  mctx.globalCompositeOperation = 'destination-out'
+  // the same water the Cape map carries, so the two agree at the seam: the lagoons and the sea east of the shoreline
+  for (const w of [OKEECHOBEE, BANANA, INDIAN, MOSQUITO, [...SHORE, [-80.0, 28.0], [-80.0, 29.2]] as Array<[number, number]>]) {
+    poly(mctx, w, n, half, center[0], center[1])
+    mctx.fill()
+  }
   const s = n / (2 * half)
   const capeHalf = 24 * KM * s
-  ctx.fillRect(n / 2 - capeHalf, n / 2 - capeHalf, 2 * capeHalf, 2 * capeHalf)
-  ctx.restore()
+  mctx.fillRect(n / 2 - capeHalf, n / 2 - capeHalf, 2 * capeHalf, 2 * capeHalf)
+  ctx.globalCompositeOperation = 'destination-in'
+  ctx.drawImage(mask, 0, 0)
+  ctx.globalCompositeOperation = 'source-over'
   return canvasTexture(c)
 }
 

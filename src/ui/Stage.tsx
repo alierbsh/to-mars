@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import Scene from '../scene/Scene'
-import { PHASE_RATE, useAppStore } from '../state/store'
+import { PHASE_RATE, effectiveSpeed, useAppStore } from '../state/store'
 import { fmtT } from './format'
 import { hudAt } from './hud'
 
@@ -20,7 +20,6 @@ export default function Stage() {
   const intro = useAppStore((s) => s.intro)
   const raf = useRef(0)
   const last = useRef(0)
-  const lastPhase = useRef<string | null>(null)
 
   // playback loop: each phase advances at its own natural rate × speed
   useEffect(() => {
@@ -31,10 +30,7 @@ export default function Stage() {
       last.current = now
       const cur = useAppStore.getState().t
       const phase = result.phases.find((p) => cur >= p.start && cur < p.end) ?? result.phases[result.phases.length - 1]
-      // entry, descent and landing is the part that matters: slow the clock to 2× when it begins
-      if (phase.phase === 'entry' && lastPhase.current !== 'entry' && lastPhase.current !== null && useAppStore.getState().speed > 2) setSpeed(2)
-      lastPhase.current = phase.phase
-      let next = cur + dt * PHASE_RATE[phase.phase] * speed
+      let next = cur + dt * PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed)
       // never skip the end of a phase in one frame
       if (next > phase.end && cur < phase.end) next = phase.end + 1e-3
       if (next >= end) {
@@ -48,7 +44,7 @@ export default function Stage() {
     last.current = 0
     raf.current = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf.current)
-  }, [result, playing, speed, setT, setPlaying, setSpeed])
+  }, [result, playing, speed, setT, setPlaying])
 
   const hud = useMemo(() => (result ? hudAt(result, t) : null), [result, t])
   const end = result ? result.phases[result.phases.length - 1].end : 1

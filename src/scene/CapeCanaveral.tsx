@@ -7,7 +7,7 @@
  * the local origin; the ascent scene swings this group about the Earth's centre as the vehicle
  * flies downrange.
  */
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
@@ -30,20 +30,98 @@ const concrete = new THREE.MeshStandardMaterial({ color: '#9b9a92', roughness: 0
 const vabMat = new THREE.MeshStandardMaterial({ color: '#d8d8d3', roughness: 0.8 })
 const steelGrey = new THREE.MeshStandardMaterial({ color: '#6f7479', roughness: 0.65, metalness: 0.5 })
 
-/** the sea: a spherical cap under the land, normal-mapped waves drifting, specular sun glint */
-function Water({ y }: { y: number }) {
-  const geo = useMemo(() => capGeometry(R_EARTH, 1200 * KM, 64), [])
+/**
+ * The sea: spherical caps under the land maps with drifting normal-mapped waves and a specular
+ * sun glint. Two caps: a fine one around the Cape (1 km cells, so its chords sit within
+ * centimetres of the sphere like the land tiles above it) and a wide one whose tessellation
+ * matches the Florida cap exactly — the two sets of chords coincide, so the water stays a metre
+ * below the land everywhere and shows only through the holes in the maps.
+ */
+function Water({ y, half, segments, tile }: { y: number; half: number; segments: number; tile: number }) {
+  const geo = useMemo(() => capGeometry(R_EARTH, half, segments), [half, segments])
   const mat = useMemo(() => {
-    const normalMap = waveNormalTexture()
-    normalMap.repeat.set(9000, 9000) // one tile ≈ 270 m
-    return new THREE.MeshStandardMaterial({ color: '#143c5a', roughness: 0.38, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.45, 0.45), envMapIntensity: 0.9 })
-  }, [])
+    const normalMap = waveNormalTexture().clone()
+    normalMap.repeat.set((2 * half) / tile, (2 * half) / tile)
+    normalMap.needsUpdate = true
+    // the colour of the NASA day map's sea, so the wide cap blends into it at its edge
+    return new THREE.MeshStandardMaterial({ color: '#0d2a52', roughness: 0.5, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
+  }, [half, tile])
   useFrame((_, dt) => {
     const m = mat.normalMap!
     m.offset.x = (m.offset.x + dt * 0.012) % 1
     m.offset.y = (m.offset.y + dt * 0.007) % 1
   })
   return <mesh geometry={geo} material={mat} position={[0, y, 0]} receiveShadow />
+}
+
+const BASE_URL = import.meta.env.BASE_URL
+
+/**
+ * The wide Earth under everything, for the view from altitude: a 4000 km cap wearing the NASA
+ * day map (the Gulf, Cuba, the Bahamas, the Atlantic), a cloud deck 9 km up from the same
+ * cloud map, and the atmosphere as a thin shell at 80 km whose limb glows blue when seen
+ * edge-on from above.
+ */
+function WideEarth({ groundY }: { groundY: number }) {
+  const [day, clouds] = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/earth-day.jpg`, `${BASE_URL}assets/earth/earth-clouds.png`])
+  day.colorSpace = THREE.SRGBColorSpace
+  const HALF = 4000 * KM
+  const uv = useMemo(() => {
+    // equirectangular lookup around LC-39A (28.608°N, 80.604°W)
+    const lat0 = (28.608 * Math.PI) / 180
+    const lon0 = (-80.604 * Math.PI) / 180
+    return (x: number, z: number): [number, number] => {
+      const lat = lat0 - z / R_EARTH
+      const lon = lon0 + x / (R_EARTH * Math.cos(lat0))
+      return [lon / (2 * Math.PI) + 0.5, lat / Math.PI + 0.5]
+    }
+  }, [])
+  const ground = useMemo(() => capGeometry(R_EARTH, HALF, 160, undefined, uv), [uv])
+  const deck = useMemo(() => capGeometry(R_EARTH + 9000, HALF, 160, undefined, uv), [uv])
+  const shell = useMemo(() => capGeometry(R_EARTH + 80_000, HALF, 96), [])
+  const limb = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: { color: { value: new THREE.Color('#79b4ff') } },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        vertexShader: `
+          #include <common>
+          #include <logdepthbuf_pars_vertex>
+          varying vec3 vNormal; varying vec3 vView;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            vView = normalize(-mv.xyz);
+            gl_Position = projectionMatrix * mv;
+            #include <logdepthbuf_vertex>
+          }`,
+        fragmentShader: `
+          #include <common>
+          #include <logdepthbuf_pars_fragment>
+          uniform vec3 color; varying vec3 vNormal; varying vec3 vView;
+          void main() {
+            #include <logdepthbuf_fragment>
+            float rim = 1.0 - abs(dot(normalize(vNormal), normalize(vView)));
+            float glow = pow(rim, 3.0) * 1.1 + pow(rim, 14.0) * 0.9;
+            gl_FragColor = vec4(color * glow, glow);
+          }`,
+      }),
+    [],
+  )
+  return (
+    <group position={[0, groundY, 0]}>
+      <mesh geometry={ground} position={[0, -9, 0]}>
+        <meshStandardMaterial map={day} roughness={0.9} envMapIntensity={0.1} />
+      </mesh>
+      <mesh geometry={deck} position={[0, -9, 0]}>
+        <meshStandardMaterial map={clouds} transparent depthWrite={false} roughness={1} envMapIntensity={0.1} />
+      </mesh>
+      <mesh geometry={shell} material={limb} position={[0, -9, 0]} renderOrder={-5} />
+    </group>
+  )
 }
 
 /** low coastal scrub around the pad: instanced flattened blobs, two greens */
@@ -128,8 +206,13 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
 
   return (
     <group>
+      <Suspense fallback={null}>
+        <WideEarth groundY={groundY} />
+      </Suspense>
       <group position={[0, groundY, 0]}>
-        <Water y={-2.2} />
+        {/* the fine water cap under the Cape map, the wide one under Florida (its chords match the land cap's) */}
+        <Water y={-2.5} half={30 * KM} segments={60} tile={270} />
+        <Water y={-7} half={1200 * KM} segments={96} tile={900} />
         <mesh geometry={florida.geo} position={[0, -6, 0]} receiveShadow>
           <meshStandardMaterial map={florida.tex} roughness={1} envMapIntensity={0.15} alphaTest={0.5} />
         </mesh>
