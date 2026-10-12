@@ -20,9 +20,6 @@ export default function App() {
         </div>
         <p className="header__tagline">Pick one of today's rockets, give it a crew, and let the physics decide whether it gets to Mars — and what breaks first.</p>
         <div className={`header__status header__status--${status}`}>{status === 'running' ? 'computing' : status === 'error' ? 'error' : 'live'}</div>
-        <a className="header__link" href="https://github.com/alierbsh/to-mars" target="_blank" rel="noreferrer">
-          Source & research
-        </a>
       </header>
       <Sidebar />
       <Stage />

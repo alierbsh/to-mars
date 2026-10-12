@@ -68,6 +68,17 @@ export function LineChart({ series, xLabel, yLabel, yRightLabel, height = 160, x
   const sx = (x: number) => padL + ((x - xs[0]) / (xs[1] - xs[0])) * (W - padL - padR)
   const sy = (y: number) => padT + (1 - (y - ys[0]) / (ys[1] - ys[0])) * (H - padT - padB)
   const syR = (y: number) => padT + (1 - (y - ysR[0]) / (ysR[1] - ysR[0])) * (H - padT - padB)
+  const paths = useMemo(
+    () =>
+      series.map((s) =>
+        s.points
+          .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
+          .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${sx(x).toFixed(1)},${(s.right ? syR(y) : sy(y)).toFixed(1)}`)
+          .join(' '),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [series, xs, ys, ysR, padL, padR, H],
+  )
   const xt = niceTicks(xs[0], xs[1], 5)
   const yt = niceTicks(ys[0], ys[1], 4)
   const ytR = niceTicks(ysR[0], ysR[1], 4)
@@ -108,13 +119,9 @@ export function LineChart({ series, xLabel, yLabel, yRightLabel, height = 160, x
           {xLabel}
         </text>
       )}
-      {series.map((s) => {
-        const d = s.points
-          .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
-          .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${sx(x).toFixed(1)},${(s.right ? syR(y) : sy(y)).toFixed(1)}`)
-          .join(' ')
-        return <path key={s.name} d={d} fill="none" stroke={s.color} strokeWidth={1.6} strokeDasharray={s.dashed ? '4 3' : undefined} />
-      })}
+      {paths.map((d, i) => (
+        <path key={series[i].name} d={d} fill="none" stroke={series[i].color} strokeWidth={1.6} strokeDasharray={series[i].dashed ? '4 3' : undefined} />
+      ))}
       {marker !== undefined && Number.isFinite(marker) && marker >= xs[0] && marker <= xs[1] && (
         <line x1={sx(marker)} x2={sx(marker)} y1={padT} y2={H - padB} className="chart__marker" />
       )}

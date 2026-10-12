@@ -22,7 +22,11 @@ export default function Sidebar() {
   const vehicle = VEHICLES.find((v) => v.id === config.vehicleId)!
   const isShip = vehicle.refuelable
   const crewed = vehicle.spacecraft.crewCapacity > 0
-  const windowId = WINDOWS.find((w) => w.departure === config.departure)?.id
+  const dayMs = 86_400_000
+  const depMs = new Date(config.departure + 'T00:00:00Z').getTime()
+  const nearest = WINDOWS.reduce((best, w) => (Math.abs(new Date(w.departure + 'T00:00:00Z').getTime() - depMs) < Math.abs(new Date(best.departure + 'T00:00:00Z').getTime() - depMs) ? w : best), WINDOWS[0])
+  const shiftDays = Math.round((depMs - new Date(nearest.departure + 'T00:00:00Z').getTime()) / dayMs)
+  const windowId = Math.abs(shiftDays) <= 60 ? nearest.id : undefined
 
   return (
     <aside className="sidebar">
@@ -52,14 +56,13 @@ export default function Sidebar() {
             </button>
           ))}
         </div>
-        <p className="group__note">{WINDOWS.find((w) => w.id === windowId)?.note ?? `Custom departure ${config.departure}`}</p>
+        <p className="group__note">{windowId ? nearest.note : `Custom departure ${config.departure}`}</p>
         <Slider label="Transit time" value={config.transitDays} min={120} max={400} step={2} unit="days" onChange={(v) => setConfig({ transitDays: v })} note="Shorter transits cost departure Δv and arrive faster — hotter entry, more g." />
-        <Slider label="Departure shift" value={0} min={-60} max={60} step={2} unit="days" onChange={(v) => {
-          const base = WINDOWS.find((w) => w.id === windowId)?.departure ?? config.departure
-          const d = new Date(base + 'T00:00:00Z')
+        <Slider label="Departure shift" value={shiftDays} min={-60} max={60} step={2} unit="days" onChange={(v) => {
+          const d = new Date(nearest.departure + 'T00:00:00Z')
           d.setUTCDate(d.getUTCDate() + v)
           setConfig({ departure: d.toISOString().slice(0, 10) })
-        }} format={() => config.departure} />
+        }} format={(v) => `${v >= 0 ? '+' : ''}${v} d · ${config.departure}`} />
       </section>
 
       <section className="group">

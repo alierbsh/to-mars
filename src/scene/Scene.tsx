@@ -9,10 +9,11 @@ import OrbitScene from './OrbitScene'
 
 export default function Scene() {
   const vehicleId = useAppStore((s) => s.config.vehicleId)
-  const result = useAppStore((s) => s.result)
-  const t = useAppStore((s) => s.t)
-  const phase = result ? phaseAt(result, t).phase : 'ascent'
-  const view = phase === 'ascent' ? 'ascent' : phase === 'leo' || phase === 'tmi' ? 'orbit' : phase === 'cruise' ? 'cruise' : 'entry'
+  // subscribe to the derived view only, so the canvas tree does not re-render every frame
+  const view = useAppStore((s) => {
+    const phase = s.result ? phaseAt(s.result, s.t).phase : 'ascent'
+    return phase === 'ascent' ? 'ascent' : phase === 'leo' || phase === 'tmi' ? 'orbit' : phase === 'cruise' ? 'cruise' : 'entry'
+  })
 
   return (
     <Canvas shadows camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={[1, 1.5]}>

@@ -79,13 +79,17 @@ function Verdict({ result, status, error }: { result: MissionResult | null; stat
 }
 
 function Timeline({ result }: { result: MissionResult }) {
-  const t = useAppStore((s) => s.t)
+  const pastCount = useAppStore((s) => {
+    let n = 0
+    for (const e of result.events) if (e.t <= s.t) n++
+    return n
+  })
   const setT = useAppStore((s) => s.setT)
   const setPlaying = useAppStore((s) => s.setPlaying)
   return (
     <ol className="timeline">
       {result.events.map((e: SimEvent, i: number) => (
-        <li key={i} className={`event event--${e.severity} ${e.t <= t ? 'event--past' : ''}`}>
+        <li key={i} className={`event event--${e.severity} ${i < pastCount ? 'event--past' : ''}`}>
           <button className="event__btn" onClick={() => { setT(e.t); setPlaying(false) }} title="Jump here">
             <span className="event__time">{fmtT(e.t)}</span>
             <span className="event__body">
@@ -100,7 +104,7 @@ function Timeline({ result }: { result: MissionResult }) {
 }
 
 function Telemetry({ result }: { result: MissionResult }) {
-  const t = useAppStore((s) => s.t)
+  const t = useAppStore((s) => Math.round(s.t))
   const a = result.ascent
   const e = result.entry
   const ascentStart = result.phases.find((p) => p.phase === 'ascent')?.start ?? 0
@@ -296,7 +300,6 @@ function Model({ result }: { result: MissionResult }) {
             {s.url.startsWith('http') ? <a href={s.url} target="_blank" rel="noreferrer">{s.label}</a> : s.label}
           </li>
         ))}
-        <li><a href="https://github.com/alierbsh/to-mars/tree/main/docs/research" target="_blank" rel="noreferrer">The full research report and notes (docs/research)</a></li>
       </ul>
     </div>
   )
