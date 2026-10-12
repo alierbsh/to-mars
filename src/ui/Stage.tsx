@@ -5,6 +5,7 @@ import { fmtT } from './format'
 import { hudAt } from './hud'
 
 const SPEEDS = [0.25, 0.5, 1, 2, 4, 10]
+const SHORT: Record<string, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Done' }
 
 export default function Stage() {
   const result = useAppStore((s) => s.result)
@@ -88,7 +89,7 @@ export default function Stage() {
                   title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
                 >
                   <span className="phase__fill" style={{ width: `${frac * 100}%` }} />
-                  <span className="phase__label">{p.label}</span>
+                  <span className="phase__label">{SHORT[p.phase] ?? p.label}</span>
                 </button>
               )
             })}
