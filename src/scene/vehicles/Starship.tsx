@@ -139,6 +139,28 @@ export function Ship({ y = BOOSTER_H }: { y?: number }) {
         <Fin key={`fwd${i}`} outline={fwdFlap} thickness={0.35} r={R - 1.2} a={a} y={SHIP_CYL + 1.2} material={MAT.stainless} tilt={-0.2} />
       ))}
       <Decal text="SPACEX" r={R} a={Math.PI} y={SHIP_CYL - 8} w={5} h={1} color="#2a2d31" font="bold 150px Helvetica, Arial, sans-serif" />
+      {/* landing legs (Mars ship): six, stowed flat along the skirt; the entry scene swings each `leg` out
+          and slides its `legExt` extension down so the feet reach below the engine bells */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6
+        return (
+          <group key={`leg${i}`} position={[Math.cos(a) * (R - 0.1), 6.0, Math.sin(a) * (R - 0.1)]} rotation={[0, -a + Math.PI / 2, 0]}>
+            <group name="leg">
+              <mesh position={[0, -3, 0.28]} material={MAT.stainlessDark} castShadow>
+                <boxGeometry args={[0.6, 6, 0.45]} />
+              </mesh>
+              <group name="legExt" position={[0, -4.2, 0.28]}>
+                <mesh material={MAT.dark} castShadow>
+                  <boxGeometry args={[0.42, 3.6, 0.32]} />
+                </mesh>
+                <mesh position={[0, -1.9, 0]} material={MAT.dark} castShadow>
+                  <cylinderGeometry args={[0.75, 1.0, 0.3, 12]} />
+                </mesh>
+              </group>
+            </group>
+          </group>
+        )
+      })}
     </group>
   )
 }

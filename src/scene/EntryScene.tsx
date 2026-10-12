@@ -57,7 +57,11 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const glow = useRef<THREE.Sprite>(null)
   const wake = useRef<THREE.Sprite>(null)
   const sky = useRef<THREE.Mesh>(null)
+  const sun = useRef<THREE.Sprite>(null)
+  const sunDir = useMemo(() => new THREE.Vector3(300, 400, 200).normalize(), [])
   const plasmaTex = useMemo(() => plasmaTexture(), [])
+  const sunTex = useMemo(() => dustTexture(), [])
+  const legs = useRef<THREE.Object3D[] | null>(null)
   const dustTex = useMemo(() => dustTexture(), [])
   const ground = useRef<THREE.Group>(null)
   const flash = useRef<THREE.Mesh>(null)
@@ -92,7 +96,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     const landed = !!result?.entry?.landed
     const impact = outcome === 'crashed'
     const breakup = outcome === 'burned-up'
-    const groundY = -Math.max(alt, 0) - L / 2 // the vehicle's centre is the origin; its base is L/2 below
+    // the vehicle's centre is the origin; its base is L/2 below. A ship stands on its legs.
+    const legH = isShip ? 2.7 : 0
+    const groundY = -Math.max(alt, 0) - L / 2 - legH
     const burning = !!e?.burning
 
     // attitude: ships fly belly-first and flip over ~2.5 s of sim time from ignition; capsules trim
@@ -107,6 +113,21 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
         rig.current.quaternion.copy(capsuleTilt).slerp(upright, ended ? 1 : 0.2)
       }
       rig.current.visible = !(ended && (impact || breakup))
+      // landing legs deploy through the flip: swing out 24°, then the extensions slide down
+      if (isShip) {
+        if (!legs.current) {
+          const list: THREE.Object3D[] = []
+          rig.current.traverse((o) => {
+            if (o.name === 'leg' || o.name === 'legExt') list.push(o)
+          })
+          legs.current = list
+        }
+        const deploy = smooth((st.flip - 0.3) / 0.65)
+        for (const o of legs.current) {
+          if (o.name === 'leg') o.rotation.x = -0.42 * deploy
+          else o.position.y = -4.2 - 3.4 * deploy
+        }
+      }
     }
     if (ground.current) {
       // The touchdown point lies ahead by the range still to fly. The surface group is centred on
@@ -227,6 +248,11 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     }
     // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
     setSky(sky.current, camera, f * f)
+    // the sun's glare: a cool bluish halo in the dust (Mars sunsets are blue around the sun)
+    if (sun.current) {
+      sun.current.position.copy(camera.position).addScaledVector(sunDir, 60_000)
+      ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.25 + 0.5 * f * f
+    }
     // camera: slow orbit about the vehicle's centre; a shake at impact
     if (playing && autoOrbit()) st.az += dt * 0.08
     const az = st.az + view.az
@@ -303,8 +329,12 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
           <MarsSurface />
         </Suspense>
       </group>
-      <directionalLight position={[300, 400, 200]} intensity={1.7} color="#ffe2c4" />
+      {/* the sun: low in the west; its shadow map follows the ship (always at the origin) */}
+      <directionalLight position={[300, 400, 200]} intensity={1.7} color="#ffe2c4" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
       <hemisphereLight args={['#c9a27a', '#3b2418', 0.45]} />
+      <sprite ref={sun} scale={[9000, 9000, 1]} renderOrder={-9}>
+        <spriteMaterial map={sunTex} color="#dfe8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />
+      </sprite>
     </group>
   )
 }

@@ -15,6 +15,7 @@
 import { useLoader } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
+import { DustDevils, Rocks, SandTails, SpiritLander, regolithNormal } from './MarsDetail'
 import { GLOBE_HALF, MID_HALF, MID_SEG, NEAR_HALF, NEAR_SEG, R_MARS, REGION_HALF, REGION_SEG, SITE_LAT, SITE_LON, SITE_X, SITE_Z, buildSite, rockField } from './marsSite'
 import type { MapsWorkerRequest, MapsWorkerResponse } from './marsMaps.worker'
 import { canvasTexture, capGeometry, loadHeightmap, type Heightmap } from './terrain'
@@ -173,33 +174,24 @@ export function MarsSurface() {
     }
   }, [gusev, victoria, globeImg, globe])
 
-  const rockMesh = useMemo(() => {
-    if (!site) return null
-    const rocks = rockField(site)
-    const g = new THREE.DodecahedronGeometry(1, 0)
-    const mat = new THREE.MeshStandardMaterial({ color: '#5a3828', roughness: 0.95, envMapIntensity: 0.2 })
-    const m = new THREE.InstancedMesh(g, mat, rocks.length)
-    const o = new THREE.Object3D()
-    const col = new THREE.Color()
-    rocks.forEach((rk, i) => {
-      o.position.set(rk.p[0], rk.p[1], rk.p[2])
-      o.rotation.set(rk.r, rk.r * 1.7, rk.r * 0.3)
-      o.scale.set(rk.s * (0.8 + 0.5 * rk.c), rk.s * 0.7, rk.s)
-      o.updateMatrix()
-      m.setMatrixAt(i, o.matrix)
-      col.setHSL(0.05, 0.35, 0.16 + 0.14 * rk.c)
-      m.setColorAt(i, col)
-    })
-    m.instanceMatrix.needsUpdate = true
-    if (m.instanceColor) m.instanceColor.needsUpdate = true
-    m.frustumCulled = false
-    return m
-  }, [site])
+  const rocks = useMemo(() => (site ? rockField(site) : null), [site])
 
   // materials are created once and re-targeted when a map arrives (a map change needs a recompile)
   const mats = useMemo(() => {
-    const mk = (transparent: boolean) => new THREE.MeshStandardMaterial({ color: '#8a5234', roughness: 1, envMapIntensity: 0.2, transparent })
-    return { globe: new THREE.MeshStandardMaterial({ map: globeImg, roughness: 1, envMapIntensity: 0.2 }), region: mk(false), mid: mk(true), near: mk(true) }
+    const mk = (transparent: boolean, normal?: THREE.Texture, repeat = 1, strength = 0) => {
+      const m = new THREE.MeshStandardMaterial({ color: '#8a5234', roughness: 1, envMapIntensity: 0.2, transparent })
+      if (normal) {
+        const n = normal.clone()
+        n.repeat.set(repeat, repeat)
+        n.needsUpdate = true
+        m.normalMap = n
+        m.normalScale = new THREE.Vector2(strength, strength)
+      }
+      return m
+    }
+    const nrm = regolithNormal()
+    // one tile = 40 m: the near patch (2.4 km) repeats 60×, the mid tile (16 km) 400× (grain only, faint)
+    return { globe: new THREE.MeshStandardMaterial({ map: globeImg, roughness: 1, envMapIntensity: 0.2 }), region: mk(false), mid: mk(true, nrm, 400, 0.3), near: mk(true, nrm, 60, 0.6) }
   }, [globeImg])
   useEffect(() => {
     for (const k of ['globe', 'region', 'mid', 'near'] as const) {
@@ -219,11 +211,18 @@ export function MarsSurface() {
       {geo && (
         <>
           <mesh geometry={geo.regionGeo} renderOrder={-3} material={mats.region} />
-          <mesh geometry={geo.midGeo} renderOrder={-2} material={mats.mid} />
-          <mesh geometry={geo.nearGeo} renderOrder={-1} material={mats.near} />
+          <mesh geometry={geo.midGeo} renderOrder={-2} material={mats.mid} receiveShadow />
+          <mesh geometry={geo.nearGeo} renderOrder={-1} material={mats.near} receiveShadow />
         </>
       )}
-      {rockMesh && <primitive object={rockMesh} />}
+      {site && rocks && (
+        <>
+          <Rocks rocks={rocks} />
+          <SandTails rocks={rocks} site={site} />
+          <DustDevils site={site} />
+          <SpiritLander site={site} />
+        </>
+      )}
     </group>
   )
 }

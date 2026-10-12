@@ -255,22 +255,77 @@ export function buildSite(gusev: Heightmap, victoria: Heightmap): MarsSite {
   return { regionHeight, midHeight, nearHeight, regionPixel, midPixel, nearPixel }
 }
 
-/** rocks around the touchdown point: dense near the crater (ejecta), sparser on the plain */
-export function rockField(site: MarsSite): Array<{ p: [number, number, number]; s: number; r: number; c: number }> {
-  const rocks: Array<{ p: [number, number, number]; s: number; r: number; c: number }> = []
-  for (let i = 0; i < 900; i++) {
-    const a = hash2(i, 1) * Math.PI * 2
-    const rr = 28 + Math.pow(hash2(i, 2), 0.6) * 1100
+export interface Rock {
+  p: [number, number, number]
+  /** size (m, long axis) */
+  s: number
+  /** yaw */
+  r: number
+  /** 0..1 colour/shape variation */
+  c: number
+  /** geometry variant */
+  v: number
+}
+
+/**
+ * Rocks around the touchdown point. Size–frequency after Golombek: cumulative count per m²
+ * ∝ exp(−k·D), so most are small; ejecta near the crater is denser and coarser; a few 2–5 m
+ * boulders sit on the plain; the touchdown area itself is kept clear.
+ */
+export function rockField(site: MarsSite): Rock[] {
+  const rocks: Rock[] = []
+  const push = (i: number, seed: number, rr: number, a: number, sMin: number, sMax: number, p: number) => {
     const x = Math.cos(a) * rr
     const z = Math.sin(a) * rr
     const dC = Math.hypot(x - VICTORIA_X, z - VICTORIA_Z)
-    if (dC < VICTORIA_HALF * 0.86) continue // not inside the crater
-    const ejecta = dC < 700 ? 1.6 : 1
-    const s = (0.25 + Math.pow(hash2(i, 3), 2.5) * 2.4) * ejecta
-    rocks.push({ p: [x, site.nearHeight(x, z) + s * 0.25, z], s, r: hash2(i, 4) * Math.PI * 2, c: hash2(i, 5) })
+    if (dC < VICTORIA_HALF * 0.88) return // not inside the crater
+    const s = sMin + Math.pow(hash2(i, seed + 3), p) * (sMax - sMin)
+    rocks.push({ p: [x, site.nearHeight(x, z) + s * 0.22, z], s, r: hash2(i, seed + 4) * Math.PI * 2, c: hash2(i, seed + 5), v: Math.floor(hash2(i, seed + 6) * 4) })
   }
+  // the plain: 1400 rocks, mostly 0.2–0.8 m, out to 1.15 km
+  for (let i = 0; i < 1400; i++) push(i, 10, 30 + Math.pow(hash2(i, 12), 0.55) * 1120, hash2(i, 11) * Math.PI * 2, 0.18, 1.6, 3.2)
+  // ejecta blanket: 500 rocks within 1.5 crater radii of Victoria's rim, coarser
+  for (let i = 0; i < 500; i++) {
+    const a = hash2(i, 21) * Math.PI * 2
+    const d = VICTORIA_HALF * (0.9 + Math.pow(hash2(i, 22), 1.4) * 0.9)
+    const x = VICTORIA_X + Math.cos(a) * d
+    const z = VICTORIA_Z + Math.sin(a) * d
+    const s = 0.3 + Math.pow(hash2(i, 23), 2.2) * 2.6
+    if (Math.hypot(x, z) < 60) continue
+    rocks.push({ p: [x, site.nearHeight(x, z) + s * 0.22, z], s, r: hash2(i, 24) * Math.PI * 2, c: hash2(i, 25), v: Math.floor(hash2(i, 26) * 4) })
+  }
+  // boulders: 18 of 2–5 m scattered on the plain
+  for (let i = 0; i < 18; i++) push(i, 30, 120 + hash2(i, 32) * 1000, hash2(i, 31) * Math.PI * 2, 2, 5, 1.2)
   return rocks
 }
+
+export interface DustDevil {
+  /** path centre (m) */
+  x: number
+  z: number
+  /** radius of the wandering loop (m) and its period (s) */
+  loop: number
+  period: number
+  /** height (m) and base radius (m) */
+  h: number
+  r: number
+  phase: number
+}
+
+/** three dust devils wandering over the plain a few km out (Spirit photographed dozens in Gusev) */
+export function dustDevils(): DustDevil[] {
+  return [
+    { x: 2600, z: -1400, loop: 900, period: 420, h: 650, r: 18, phase: 0 },
+    { x: -1800, z: 2300, loop: 700, period: 360, h: 420, r: 12, phase: 2.1 },
+    { x: 3400, z: 2600, loop: 1200, period: 540, h: 900, r: 26, phase: 4.0 },
+  ]
+}
+
+/**
+ * Columbia Memorial Station — Spirit's lander, 4 Jan 2004 — 100 m east-north-east of the
+ * touchdown point (the ship lands beside the real site), facing the Columbia Hills.
+ */
+export const SPIRIT_LANDER = { x: 96, z: -42, heading: 0.6 }
 
 /** rasterise a map: n×n RGBA over ±half (row 0 = north), finer tiles fading out over their outer band */
 export function renderMap(n: number, half: number, px: PixelFn, fade: boolean): Uint8ClampedArray {
