@@ -77,12 +77,12 @@ export function hudAt(r: MissionResult, t: number): HudState {
   } else if (p.phase === 'leo' && r.leo) {
     const days = (t - p.start) / DAY_S
     const docked = r.leo.events.filter((e) => e.label.startsWith('Tanker') && e.t <= t).length
-    lines.push({ label: 'Day in orbit', value: fmt(days) })
-    if (r.config.tankers > 0 && r.leo.tankersLaunched > 0) lines.push({ label: 'Tankers docked', value: `${docked} of ${r.leo.tankersLaunched}` })
     const propEv = [...r.leo.events].reverse().find((e) => e.t <= t && /→ (\d+) t aboard/.test(e.detail))
     const m = propEv?.detail.match(/→ (\d+) t aboard/)
     lines.push({ label: 'Propellant aboard', value: m ? `${m[1]} t` : `${fmt(r.ascent.residualProp / 1000)} t` })
+    if (r.config.tankers > 0 && r.leo.tankersLaunched > 0) lines.push({ label: 'Tankers docked', value: `${docked} of ${r.leo.tankersLaunched}` })
     lines.push({ label: 'Orbit', value: r.ascent.orbit ? `${fmt(r.ascent.orbit.rp)} × ${fmt(r.ascent.orbit.ra)} km` : '—' })
+    lines.push({ label: 'Day in orbit', value: fmt(days) })
   } else if (p.phase === 'tmi' && r.transfer) {
     lines.push({ label: 'Burn', value: 'trans-Mars injection' })
     lines.push({ label: 'Δv', value: `${r.transfer.dvTmi.toFixed(2)} km/s` })

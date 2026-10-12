@@ -337,28 +337,31 @@ export function floridaMap(center: [number, number]): THREE.CanvasTexture {
   return canvasTexture(c)
 }
 
-/** the Cape: 2048 px over ±24 km, centred on the pad */
+/** the Cape: 1536 px over ±24 km, centred on the pad */
 export function capeMap(center: [number, number]): THREE.CanvasTexture {
-  const n = 2048
+  const n = 1536
   const half = 24 * KM
   const [cx, cz] = center
   const c = document.createElement('canvas')
   c.width = c.height = n
   const ctx = c.getContext('2d')!
   const s = n / (2 * half)
-  // land: coastal scrub and marsh, with sandy scrub patches, wetter darker ground and ponds
-  ctx.fillStyle = '#4a5f33'
-  ctx.fillRect(0, 0, n, n)
+  // land: coastal scrub and marsh, with sandy scrub patches, wetter darker ground and ponds —
+  // computed per pixel at 512² (cheap) and upsampled, so the first frame is not held up
   {
-    const img = ctx.getImageData(0, 0, n, n)
-    for (let j = 0; j < n; j++)
-      for (let i = 0; i < n; i++) {
-        const X = (i / n) * 2 * half - half + cx
-        const Z = (j / n) * 2 * half - half + cz
+    const m = 512
+    const lc = document.createElement('canvas')
+    lc.width = lc.height = m
+    const lctx = lc.getContext('2d')!
+    const img = lctx.createImageData(m, m)
+    for (let j = 0; j < m; j++)
+      for (let i = 0; i < m; i++) {
+        const X = (i / m) * 2 * half - half + cx
+        const Z = (j / m) * 2 * half - half + cz
         const wet = fbm(X * 0.00025 + 3, Z * 0.00025, 4)
         const sand = fbm(X * 0.0006 + 40, Z * 0.0006 + 9, 3)
         const pond = fbm(X * 0.0012 + 77, Z * 0.0012 + 5, 3)
-        const k = (j * n + i) * 4
+        const k = (j * m + i) * 4
         let r = 56 + 40 * (sand - 0.5)
         let g = 74 + 32 * (sand - 0.5)
         let b = 38 + 16 * (sand - 0.5)
@@ -376,8 +379,11 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
         img.data[k] = r
         img.data[k + 1] = g
         img.data[k + 2] = b
+        img.data[k + 3] = 255
       }
-    ctx.putImageData(img, 0, 0)
+    lctx.putImageData(img, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.drawImage(lc, 0, 0, n, n)
   }
   // the Atlantic: everything east of the shoreline
   const ocean: Array<[number, number]> = [...SHORE, [-80.0, 28.0], [-80.0, 29.2]]
@@ -457,9 +463,9 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   return canvasTexture(c, 16)
 }
 
-/** the pad itself: 2048 px over ±1 km. The vehicle stands at the centre. */
+/** the pad itself: 1536 px over ±1 km. The vehicle stands at the centre. */
 export function padMap(pad: PadId): THREE.CanvasTexture {
-  const n = 2048
+  const n = 1536
   const half = 1000
   const c = document.createElement('canvas')
   c.width = c.height = n
