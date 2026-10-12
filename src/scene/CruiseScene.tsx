@@ -4,6 +4,7 @@
  */
 import { Html, Line } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
+import { view } from './viewControl'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { julianDate, planetPosition } from '../sim/ephemeris'
@@ -47,12 +48,15 @@ export default function CruiseScene() {
     earth.current?.position.copy(toV(s.earth))
     mars.current?.position.copy(toV(s.mars))
     ship.current?.position.copy(toV(s.ship))
-    // camera high above the ecliptic, framing the inner solar system
-    const target = new THREE.Vector3(0, 760, 140)
+    // camera high above the ecliptic, framing the inner solar system; the viewer can tilt and swing it
+    const R = 775 * view.zoom
+    const tilt = Math.max(0.25, Math.min(1.5, 1.39 - view.el))
+    const target = new THREE.Vector3(Math.sin(view.az) * R * Math.cos(tilt), R * Math.sin(tilt), Math.cos(view.az) * R * Math.cos(tilt) + 140 * Math.cos(tilt))
     if (!init.current) {
       camera.position.copy(target)
       init.current = true
-    } else camera.position.lerp(target, 0.05)
+    } else camera.position.lerp(target, view.dragging ? 0.35 : 0.05)
+    camera.up.set(0, 1, 0)
     camera.lookAt(0, 0, -20)
     camera.near = 0.5
     camera.far = 5000

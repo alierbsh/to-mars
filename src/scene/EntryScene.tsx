@@ -16,6 +16,7 @@ import { MarsSurface } from './MarsSurface'
 import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
+import { autoOrbit, view } from './viewControl'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
@@ -227,14 +228,16 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
     setSky(sky.current, camera, f * f)
     // camera: slow orbit about the vehicle's centre; a shake at impact
-    if (playing) st.az += dt * 0.08
+    if (playing && autoOrbit()) st.az += dt * 0.08
+    const az = st.az + view.az
     const after = impact && tau >= 0
-    const dist = after ? Math.max(L * 4.5, 70) : Math.max(L * 3.2, 26)
-    const target = new THREE.Vector3(Math.cos(st.az) * dist, after ? Math.max(14, L * 0.6) : L * 0.25, Math.sin(st.az) * dist)
+    const dist = (after ? Math.max(L * 4.5, 70) : Math.max(L * 3.2, 26)) * view.zoom
+    const flat = Math.cos(view.el)
+    const target = new THREE.Vector3(Math.cos(az) * dist * flat, (after ? Math.max(14, L * 0.6) : L * 0.25) + Math.sin(view.el) * dist, Math.sin(az) * dist * flat)
     if (!st.init) {
       camera.position.copy(target)
       st.init = true
-    } else camera.position.lerp(target, after ? 0.2 : 0.08)
+    } else camera.position.lerp(target, view.dragging ? 0.35 : after ? 0.2 : 0.08)
     if (impact && tau >= 0 && tau < 1.6) {
       const a = Math.max(2, L * 0.08) * (1 - tau / 1.6) ** 2
       camera.position.x += (Math.random() - 0.5) * a

@@ -7,6 +7,7 @@ import CruiseScene from './CruiseScene'
 import EntryScene from './EntryScene'
 import OrbitScene from './OrbitScene'
 import { prewarmMars } from './MarsSurface'
+import { ViewControls } from './viewControl'
 
 export default function Scene() {
   const vehicleId = useAppStore((s) => s.config.vehicleId)
@@ -32,6 +33,7 @@ export default function Scene() {
           <Lightformer intensity={1.0} rotation-y={-Math.PI / 2} position={[50, 10, 0]} scale={[60, 40, 1]} color="#8398ba" />
         </Environment>
       </Suspense>
+      <ViewControls />
       <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />
       {view === 'ascent' && <AscentScene vehicleId={vehicleId} />}
       {view === 'orbit' && <OrbitScene vehicleId={vehicleId} />}

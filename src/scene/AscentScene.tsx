@@ -15,6 +15,7 @@ import { R_EARTH } from './capeSite'
 import { dustTexture } from './impact'
 import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
+import { autoOrbit, view } from './viewControl'
 
 const SKY_LOW = new THREE.Color('#79a9e0')
 const SKY_MID = new THREE.Color('#1b3a66')
@@ -75,7 +76,8 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.55 + 0.4 * haze
     }
     // camera: slow orbit; frame whatever is still attached (zoom in after staging)
-    if (playing) camState.az += dt * 0.06
+    if (playing && autoOrbit()) camState.az += dt * 0.06
+    const az = camState.az + view.az
     let bottom = 0
     if (result) {
       const p = result.phases.find((x) => x.phase === 'ascent')!
@@ -97,14 +99,16 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const open = 1 - Math.min(1, ta / 15)
     const pull = open * open
     // room for the plume below the stack: frame the stack plus ~0.6 of its length of exhaust
-    const dist = size * (2.7 - 1.3 * pull) + Math.min(size, alt / 600)
+    const dist = (size * (2.7 - 1.3 * pull) + Math.min(size, alt / 600)) * view.zoom
     // climb above the vehicle as it rises, so the Cape falls away in the frame behind it
     const lift = Math.min(alt * 0.25, size * 1.4)
-    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * (0.05 - 0.3 * pull) + lift, centre.z + Math.sin(camState.az) * dist)
+    const elev = Math.sin(view.el) * dist
+    const flat = Math.cos(view.el)
+    const target = new THREE.Vector3(centre.x + Math.cos(az) * dist * flat, centre.y + size * (0.05 - 0.3 * pull) + lift + elev, centre.z + Math.sin(az) * dist * flat)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
-    } else camera.position.lerp(target, 0.06)
+    } else camera.position.lerp(target, view.dragging ? 0.35 : 0.06)
     camera.lookAt(centre.x, centre.y - size * (0.22 + 0.2 * pull), centre.z)
     camera.up.set(0, 1, 0)
     camera.near = 0.5

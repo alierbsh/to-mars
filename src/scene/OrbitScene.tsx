@@ -10,6 +10,7 @@ import { useAppStore } from '../state/store'
 import { EARTH_R, Earth, SUN_DIR } from './Earth'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
+import { view } from './viewControl'
 
 const ALT = 200
 /** the parking orbit is inclined 28.5° (the Cape's latitude): the ship passes over varied latitudes */
@@ -59,15 +60,17 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
       } else tanker.current.visible = false
     }
     // chase camera: behind, above and to the side, looking forward along the orbit so the horizon shows
-    const dist = L * SCALE * 3.0
+    const dist = L * SCALE * 3.0 * view.zoom
     const vel = velDir.clone()
     const upv = pos.clone().normalize()
     const side = upv.clone().cross(vel).normalize()
-    const camTarget = pos.clone().add(vel.clone().multiplyScalar(-dist * 0.9)).add(upv.clone().multiplyScalar(dist * 0.5)).add(side.multiplyScalar(dist * 0.7))
+    // the chase offset, swung about the local vertical by the viewer's drag
+    const horiz = vel.clone().multiplyScalar(-0.9).add(side.clone().multiplyScalar(0.7)).normalize().applyAxisAngle(upv, -view.az)
+    const camTarget = pos.clone().add(horiz.multiplyScalar(dist * 1.14 * Math.cos(view.el))).add(upv.clone().multiplyScalar(dist * (0.5 + 1.1 * Math.sin(view.el))))
     if (!state.init) {
       camera.position.copy(camTarget)
       state.init = true
-    } else camera.position.lerp(camTarget, 0.1)
+    } else camera.position.lerp(camTarget, view.dragging ? 0.35 : 0.1)
     camera.up.copy(upv)
     camera.lookAt(pos.clone().add(vel.clone().multiplyScalar(dist * 0.3)))
     camera.near = 0.01
