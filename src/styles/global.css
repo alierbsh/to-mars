@@ -80,10 +80,12 @@ ul, ol { padding: 0; list-style: none; }
   pointer-events: none;
 }
 .top > * { pointer-events: auto; }
+.brand { display: flex; flex-direction: column; gap: 3px; }
 .wordmark {
   font-size: 13px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
   display: flex; align-items: center; gap: 10px; white-space: nowrap;
 }
+.byline { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t3); padding-left: 20px; white-space: nowrap; }
 .wordmark__dot { width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e8926f, #c8552f 55%, #6a2514); box-shadow: 0 0 12px rgba(200, 85, 47, 0.5); }
 .picker { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
 .picker__item { padding: 6px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t2); white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s; }
@@ -111,7 +113,7 @@ ul, ol { padding: 0; list-style: none; }
   transition: opacity 0.25s;
 }
 .verdict--stale { opacity: 0.55; }
-.app--details .verdict, .app--mission .live, .app--mission .wordmark, .app--details .top__right { opacity: 0; pointer-events: none; }
+.app--details .verdict, .app--mission .live, .app--mission .brand, .app--details .top__right { opacity: 0; pointer-events: none; }
 .verdict__headline { font-size: 21px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 6px; }
 .verdict__summary { color: var(--t2); font-size: 13px; }
 .milestones { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 14px 0 4px; }

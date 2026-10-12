@@ -12,9 +12,12 @@ export default function TopBar() {
 
   return (
     <header className="top">
-      <div className="wordmark">
-        <span className="wordmark__dot" aria-hidden="true" />
-        Occupy Mars
+      <div className="brand">
+        <div className="wordmark">
+          <span className="wordmark__dot" aria-hidden="true" />
+          Occupy Mars
+        </div>
+        <p className="byline">Built by arbash</p>
       </div>
       <nav className="picker" aria-label="Rocket">
         {VEHICLES.map((v) => (
