@@ -17,7 +17,9 @@ export default function TopBar() {
           <span className="wordmark__dot" aria-hidden="true" />
           Occupy Mars
         </div>
-        <p className="byline">Built by arbash</p>
+        <a className="byline" href="https://alierbash.com" target="_blank" rel="noreferrer">
+          Built by arbash
+        </a>
       </div>
       <nav className="picker" aria-label="Rocket">
         {VEHICLES.map((v) => (
