@@ -25,6 +25,8 @@ export const DEFAULT_CONFIG: MissionConfig = {
   autoBank: true,
   expendable: false,
   parkingOrbitKm: 200,
+  dustStorm: 'random',
+  surfaceWind: 8,
 }
 
 export interface Preset {

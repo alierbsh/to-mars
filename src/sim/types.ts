@@ -2,6 +2,7 @@
  * Shared simulation types: vehicles, mission configuration, results.
  * Masses in kg, thrust in N, Isp in s, lengths in m unless stated.
  */
+import type { MarsWeather } from './weather'
 
 export interface EngineGroup {
   label: string
@@ -157,6 +158,11 @@ export interface MissionConfig {
   /** expendable launch (no booster reserves) */
   expendable: boolean
   parkingOrbitKm: number
+  // Mars weather at arrival
+  /** 'random' draws from the storm climatology, seeded by the arrival date */
+  dustStorm: 'random' | 'none' | 'regional' | 'global'
+  /** mean surface wind at the site, m/s (raised by storms) */
+  surfaceWind: number
 }
 
 // ---------------- Results ----------------
@@ -271,6 +277,8 @@ export interface EntryResult {
   heatLoad: number
   landed: boolean
   crashed: boolean
+  /** touched down on a rock or slope the legs could not take (blind landing in dust) */
+  tipped?: boolean
   touchdownVel: number
   landingDv: number
   landingPropUsed: number
@@ -297,6 +305,7 @@ export interface MissionResult {
   transfer: TransferResult | null
   cruise: CruiseResult | null
   entry: EntryResult | null
+  weather: MarsWeather | null
   verdict: Verdict
   events: SimEvent[]
   /** phase boundaries in mission time (s) */

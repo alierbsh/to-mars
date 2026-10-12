@@ -260,7 +260,8 @@ function Model({ result }: { result: MissionResult }) {
         <li>Transfer: Lambert's problem on JPL's approximate planetary elements (valid 1800–2050); Δv from the parking orbit uses the Oberth effect plus a 2 % finite-burn allowance and 50 m/s for mid-course corrections. Checked against the NASA Glenn 2026/2028/2031/2033 opportunities to within 1 %.</li>
         <li>Cruise: consumables at NASA's daily crew balance (0.89 kg O₂, 2.39 kg food, 3.5 kg water) reduced by ECLSS recovery; radiation at the MSL RAD cruise rate of 1.8 mSv/day.</li>
         <li>Entry: Mars Climate Database density profile; lift with a simple bank rule; Sutton–Graves stagnation heating {MARS_CONSTANTS_NOTE}; the landing burn is a suicide-burn law with drag credit; vehicles without landing engines hit at terminal velocity.</li>
-        <li>Not modelled: launch abort outcomes, Mars rotation and winds, dust storms as random events, ECLSS hardware failures, landing-site hazards, the return trip.</li>
+        <li>Weather: the season at arrival from the areocentric solar longitude (Allison & McEwen 2000); dust storms drawn from the storm record, seeded by the arrival date (global storms in about one Mars year in three, all in southern spring–summer). A storm lifts the entry density at altitude (+25 % regional, +60 % global, after MGS/MRO aerobraking) and blinds optical hazard avoidance, so a landing rolls against a hazard chance (2 % clear, 10 % regional, 25 % global). Wind cannot tip a 200 t ship in Mars air.</li>
+        <li>Not modelled: launch abort outcomes, Mars rotation, ECLSS hardware failures, the return trip.</li>
       </ul>
       <h3 className="h3">Sources</h3>
       <ul className="notes">

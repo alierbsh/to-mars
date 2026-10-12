@@ -20,6 +20,10 @@ import { autoOrbit, view } from './viewControl'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
+const SKY_STORM = new THREE.Color('#7a4a24')
+const SKY_HORIZON = new THREE.Color('#dba366')
+const SKY_ZENITH = new THREE.Color('#5c4029')
+const SKY_STORM_ZENITH = new THREE.Color('#4a2c16')
 const R_MARS = 3_389_500
 const DUST = '#b8865a'
 const DUST_DARK = '#5a3a26'
@@ -72,6 +76,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const { scene } = useThree()
   const st = useMemo(() => ({ az: 0.4, flip: 0, init: false }), [])
   const bg = useMemo(() => new THREE.Color(), [])
+  const skyLow = useMemo(() => new THREE.Color(), [])
+  const skyHorizon = useMemo(() => new THREE.Color(), [])
+  const skyZenith = useMemo(() => new THREE.Color(), [])
   const bellyFirst = useMemo(() => {
     // model +Y (nose) → world +X (downrange), model +Z (tiles) → world -Y (into the flow)
     const m = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0))
@@ -236,22 +243,25 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
         debris.current.instanceMatrix.needsUpdate = true
       }
     }
-    // sky: black above the atmosphere, butterscotch dust haze near the ground; the haze thins with altitude
-    const f = Math.min(1, Math.max(0, 1 - alt / 70_000))
-    bg.copy(SKY_HIGH).lerp(SKY_LOW, f * f)
+    // sky: black above the atmosphere, butterscotch dust haze near the ground; the haze thins with
+    // altitude and thickens with the dust: a storm turns the sky brown and closes the horizon in
+    const storm = result?.weather?.storm === 'global' ? 1 : result?.weather?.storm === 'regional' ? 0.45 : 0
+    const f = Math.min(1, Math.max(0, 1 - alt / (70_000 + 40_000 * storm)))
+    skyLow.copy(SKY_LOW).lerp(SKY_STORM, storm)
+    bg.copy(SKY_HIGH).lerp(skyLow, Math.min(1, f * f * (1 + 0.6 * storm)))
     scene.background = bg
     if (scene.fog) {
       const fog = scene.fog as THREE.Fog
       fog.color.copy(bg)
-      fog.far = 60_000 + alt * 40
-      fog.near = fog.far * 0.35
+      fog.far = (60_000 + alt * 40) * (1 - 0.85 * storm * f)
+      fog.near = fog.far * (0.35 - 0.25 * storm * f)
     }
     // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
-    setSky(sky.current, camera, f * f)
-    // the sun's glare: a cool bluish halo in the dust (Mars sunsets are blue around the sun)
+    setSky(sky.current, camera, Math.min(1, f * f * (1 + 0.8 * storm)), skyHorizon.copy(SKY_HORIZON).lerp(SKY_STORM, storm), skyZenith.copy(SKY_ZENITH).lerp(SKY_STORM_ZENITH, storm))
+    // the sun's glare: a cool bluish halo in the dust (Mars sunsets are blue around the sun); dimmed by a storm
     if (sun.current) {
       sun.current.position.copy(camera.position).addScaledVector(sunDir, 60_000)
-      ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.25 + 0.5 * f * f
+      ;(sun.current.material as THREE.SpriteMaterial).opacity = (0.25 + 0.5 * f * f) * (1 - 0.7 * storm * f)
     }
     // camera: slow orbit about the vehicle's centre; a shake at impact
     if (playing && autoOrbit()) st.az += dt * 0.08

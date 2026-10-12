@@ -7,6 +7,7 @@ import { consumablesRate, runCruise } from './cruise'
 import { runEntry } from './entry'
 import { runLeo } from './leo'
 import { computeTransfer } from './transfer'
+import { marsWeather, type MarsWeather } from './weather'
 import type { CruiseResult, EntryResult, LeoResult, MissionConfig, MissionResult, Phase, SimEvent, TransferResult, Vehicle, Verdict } from './types'
 
 const CREW_MASS_EACH = 100 // kg: person + suit + personal effects
@@ -56,6 +57,7 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
   let transfer: TransferResult | null = null
   let cruise: CruiseResult | null = null
   let entry: EntryResult | null = null
+  let weather: MarsWeather | null = null
   let verdict: Verdict
 
   if (!ascent.ok) {
@@ -142,7 +144,7 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
       ? `The propellant campaign did not finish in time; the ship stays in Earth orbit.`
       : `${dvAvailable.toFixed(2)} km/s available vs ${need.toFixed(2)} km/s needed (C3 ${transfer.c3.toFixed(1)} km²/s² from ${cfg.parkingOrbitKm} km). ${vehicle.refuelable ? `${fmt(leo.propAtDeparture / 1000)} t propellant aboard, ${fmt(massAtDeparture / 1000)} t total.` : 'Upper stage and spacecraft propellant combined.'}`
     events.push({ t: tCursor, phase: 'tmi', label, detail, severity: 'fail' })
-    verdict = makeVerdict(vehicle, cfg, crew, { ascent, leo, transfer, cruise, entry, events, stats })
+    verdict = makeVerdict(vehicle, cfg, crew, { ascent, leo, transfer, cruise, entry, weather, events, stats })
     return finish()
   }
 
@@ -153,6 +155,12 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
   tCursor += transfer.transitDays * DAY_S
 
   // --- 5. entry, descent, landing ---
+  weather = marsWeather(transfer.arrivalJD, cfg.dustStorm, cfg.surfaceWind)
+  {
+    const w = weather
+    const stormText = w.storm === 'global' ? `a planet-encircling dust storm is under way (τ ≈ ${w.tau}): entry density up ~${fmt((w.densityFactor - 1) * 100)} % at altitude, nothing to see below the dust, surface winds ~${fmt(w.wind)} m/s` : w.storm === 'regional' ? `a regional dust storm (τ ≈ ${w.tau}): entry density up ~${fmt((w.densityFactor - 1) * 100)} % at altitude, poor visibility, winds ~${fmt(w.wind)} m/s` : `clear skies (τ ≈ ${w.tau}), winds ~${fmt(w.wind)} m/s`
+    events.push({ t: tCursor, phase: 'entry', label: 'Weather at Mars', detail: `Ls ${fmt(w.ls)}°, ${w.season}; ${stormText}`, severity: w.storm === 'global' ? 'warn' : 'info' })
+  }
   if (sc.entry) {
     if (vehicle.refuelable) {
       const consumablesUsed = crew > 0 ? consumablesRate(cfg) * crew * transfer.transitDays : 0
@@ -176,6 +184,8 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
       bankDeg: cfg.bankDeg,
       autoBank: cfg.autoBank,
       crewed: crew > 0 && (cruise?.lifeSupportOk ?? true),
+      stormDensity: weather.densityFactor,
+      hazard: [weather.hazardChance, weather.roll],
     })
     for (const e of entry.events) events.push({ ...e, t: tCursor + e.t })
     phases.push({ phase: 'entry', start: tCursor, end: tCursor + entry.duration, label: 'Entry, descent & landing' })
@@ -192,17 +202,18 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
     tCursor += 3600
   }
 
-  verdict = makeVerdict(vehicle, cfg, crew, { ascent, leo, transfer, cruise, entry, events, stats })
+  verdict = makeVerdict(vehicle, cfg, crew, { ascent, leo, transfer, cruise, entry, weather, events, stats })
   return finish()
 
   function finish(): MissionResult {
     events.sort((a, b) => a.t - b.t)
-    return { config: cfg, vehicleId: vehicle.id, ascent, leo, transfer, cruise, entry, verdict, events, phases, computeMs: performance.now() - t0 }
+    return { config: cfg, vehicleId: vehicle.id, ascent, leo, transfer, cruise, entry, weather, verdict, events, phases, computeMs: performance.now() - t0 }
   }
 }
 
 interface VerdictInput {
   ascent: MissionResult['ascent']
+  weather?: MarsWeather | null
   leo: LeoResult | null
   transfer: TransferResult | null
   cruise: CruiseResult | null
@@ -212,7 +223,7 @@ interface VerdictInput {
 }
 
 function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: VerdictInput): Verdict {
-  const { ascent, leo, transfer, cruise, entry } = r
+  const { ascent, leo, transfer, cruise, entry, weather } = r
   const fails = r.events.filter((e) => e.severity === 'fail').sort((a, b) => a.t - b.t)
   const firstFailure = fails[0] ?? null
   const fmt = (v: number, d = 0) => v.toFixed(d)
@@ -272,6 +283,7 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
   }
 
   if (transfer) stats.push({ label: 'Entry', value: `${transfer.entryVel.toFixed(2)} km/s`, note: `β ${fmt(entry.beta)} kg/m², γ ${cfg.entryFpaDeg}°, ${fmt(entry.entryMass / 1000)} t`, severity: 'info' })
+  if (weather) stats.push({ label: 'Weather at Mars', value: weather.storm === 'global' ? 'Global dust storm' : weather.storm === 'regional' ? 'Regional dust storm' : 'Clear', note: `Ls ${fmt(weather.ls)}°, ${weather.season.split(' — ')[0]}; winds ${fmt(weather.wind)} m/s`, severity: weather.storm === 'global' ? 'warn' : 'info' })
   stats.push({ label: 'Peak heating', value: `${fmt(entry.peakHeatFlux)} W/cm²`, note: `limit ${fmt(vehicle.spacecraft.entry!.tpsLimit)} (${vehicle.spacecraft.entry!.tpsName}); load ${fmt(entry.heatLoad)} J/cm²`, severity: entry.peakHeatFlux > vehicle.spacecraft.entry!.tpsLimit ? 'fail' : entry.peakHeatFlux > 0.8 * vehicle.spacecraft.entry!.tpsLimit ? 'warn' : 'ok' })
   stats.push({ label: 'Peak deceleration', value: `${entry.peakG.toFixed(1)} g`, note: `crew limit ${cfg.gLimit} g`, severity: crew > 0 && entry.peakG > cfg.gLimit ? 'fail' : crew > 0 && entry.peakG > 0.8 * cfg.gLimit ? 'warn' : 'ok' })
 
@@ -284,6 +296,10 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
     crewAlive = false
     headline = `${vehicle.short} burns up in the Martian atmosphere`
     summary = tpsFail.detail
+  } else if (entry.tipped) {
+    outcome = 'crashed'
+    headline = `${vehicle.short} lands on Mars — and tips over`
+    summary = `${entry.events.find((e) => e.label === 'Tipped over')?.detail ?? ''}. The crew likely survives the fall; the ship, the habitat and any return do not.`
   } else if (entry.crashed && !entry.landed) {
     outcome = entry.events.some((e) => e.label === 'Skipped out') ? 'flyby' : 'crashed'
     if (outcome === 'crashed') crewAlive = false

@@ -54,6 +54,10 @@ export interface EntryOptions {
   crewed: boolean
   telemetryEvery?: number
   planet?: PlanetEntryModel
+  /** dust-storm density lift at entry altitudes (1 = clear), tapering to the surface */
+  stormDensity?: number
+  /** blind-landing hazard: [chance, seeded roll]; a landing fails when roll < chance */
+  hazard?: [number, number]
 }
 
 /**
@@ -102,6 +106,7 @@ export function runEntry(o: EntryOptions): EntryResult {
   let landed = false
   let crashed = false
   let skipped = false
+  let tipped = false
   let touchdownVel = 0
   let landingDv = 0
   let mach2Done = false
@@ -120,7 +125,8 @@ export function runEntry(o: EntryOptions): EntryResult {
     const r = Math.hypot(x, y)
     const h = r - RM
     const V = Math.hypot(vx, vy)
-    const atmo = P.atmosphere(h, o.densityScale)
+    const storm = o.stormDensity && o.stormDensity > 1 ? 1 + (o.stormDensity - 1) * Math.min(1, Math.max(0, h / 30_000)) : 1
+    const atmo = P.atmosphere(h, o.densityScale * storm)
     const mach = V / atmo.a
     const rhatx = x / r
     const rhaty = y / r
@@ -212,6 +218,12 @@ export function runEntry(o: EntryOptions): EntryResult {
           touchdownVel = 2
           t += h / vd
           ev('Touchdown', `vertical descent from ${fmt(h)} m; ${fmt(m / 1000, 1)} t landed, ${fmt(prop / 1000, 1)} t propellant left`, 'ok')
+          if (o.hazard && o.hazard[1] < o.hazard[0]) {
+            tipped = true
+            landed = false
+            crashed = true
+            ev('Tipped over', `a leg came down on a rock the landing could not see — the ship is on its side (hazard chance ${fmt(o.hazard[0] * 100)} %)`, 'fail')
+          }
         } else {
           crashed = true
           touchdownVel = Math.sqrt(2 * G_MARS * h)
@@ -294,6 +306,7 @@ export function runEntry(o: EntryOptions): EntryResult {
   let reason: string | undefined
   if (tpsFailed) reason = 'Heat shield exceeded its limit'
   else if (skipped) reason = 'Skipped out of the atmosphere'
+  else if (tipped) reason = 'Tipped over on landing'
   else if (crashed) reason = 'Crashed'
   else if (!landed) reason = 'Did not reach the surface in time'
   return {
@@ -306,6 +319,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     heatLoad,
     landed,
     crashed: crashed || skipped,
+    tipped,
     touchdownVel,
     landingDv,
     landingPropUsed: o.landingProp - prop,

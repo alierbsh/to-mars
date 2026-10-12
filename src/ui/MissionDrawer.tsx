@@ -141,6 +141,23 @@ export default function MissionDrawer() {
               <Slider label="Heating margin" value={config.heatingMargin} min={1} max={3} step={0.1} onChange={(v) => setConfig({ heatingMargin: v })} note="Stagnation-point formula underpredicts peak heating on large blunt bodies by 2–4× (MSL)." format={(v) => `${v.toFixed(1)}×`} />
               <Slider label="Crew g-limit" value={config.gLimit} min={3} max={8} step={0.5} unit="g" onChange={(v) => setConfig({ gLimit: v })} note="4 g sustained is the NASA tolerance for a deconditioned crew; aerocapture studies use 5 g." />
               <Toggle label="Bank modulation" checked={config.autoBank} onChange={(v) => setConfig({ autoBank: v })} />
+              <p className="label label--sub">Mars weather</p>
+              <div className="chips">
+                {(
+                  [
+                    ['random', 'Roll the dice'],
+                    ['none', 'Clear'],
+                    ['regional', 'Regional storm'],
+                    ['global', 'Global storm'],
+                  ] as const
+                ).map(([id, name]) => (
+                  <button key={id} className={`chip ${config.dustStorm === id ? 'chip--on' : ''}`} onClick={() => setConfig({ dustStorm: id })}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <p className="hint">Drawn from the storm record and the season at arrival (global storms: one Mars year in three, southern spring and summer). A storm lifts the entry density and blinds the landing's hazard avoidance.</p>
+              <Slider label="Surface wind" value={config.surfaceWind} min={0} max={30} step={1} unit="m/s" onChange={(v) => setConfig({ surfaceWind: v })} note="In 0.6 % of Earth's air pressure even a 30 m/s gale cannot tip a landed ship; it matters for what the landing can see." />
             </div>
           )}
         </section>
