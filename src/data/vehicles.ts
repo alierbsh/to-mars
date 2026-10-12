@@ -81,7 +81,7 @@ export const VEHICLES: Vehicle[] = [
       },
       shielding: 0,
     },
-    launchSite: { name: 'Starbase, Texas', lat: 26.0 },
+    launchSite: { name: 'Kennedy LC-39A (Starship pad)', lat: 28.6, pad: 'lc39a-starship' },
     maxAccelG: 4,
     refuelable: true,
     refuelCapacity: 1_600_000,
@@ -162,7 +162,7 @@ export const VEHICLES: Vehicle[] = [
       shielding: 32,
       entryMass: 10_400, // crew module only; ESM jettisoned before entry
     },
-    launchSite: { name: 'Kennedy LC-39B', lat: 28.6 },
+    launchSite: { name: 'Kennedy LC-39B', lat: 28.6, pad: 'lc39b-ml' },
     maxAccelG: 4,
     refuelable: false,
     record: '2 flights, 2 successes (Artemis I 2022, Artemis II Apr 2026). ~1 launch per 10 months, ≥$2.5 B each.',
@@ -251,7 +251,7 @@ export const VEHICLES: Vehicle[] = [
       shielding: 0,
       entryMass: 9_100, // capsule without trunk, incl. SuperDraco propellant
     },
-    launchSite: { name: 'Kennedy LC-39A', lat: 28.6 },
+    launchSite: { name: 'Kennedy LC-39A', lat: 28.6, pad: 'lc39a-fss' },
     maxAccelG: 4,
     refuelable: false,
     record: '13 launches, 13 successes (2018–2026). Red Dragon to Mars was cancelled in 2017.',
@@ -313,7 +313,7 @@ export const VEHICLES: Vehicle[] = [
       landing: null,
       shielding: 0,
     },
-    launchSite: { name: 'Cape Canaveral LC-36', lat: 28.5 },
+    launchSite: { name: 'Cape Canaveral LC-36', lat: 28.5, pad: 'lc36' },
     maxAccelG: 6,
     refuelable: false,
     record: '3 flights: 2 successes, 1 failure. Booster landed 2/3. Pad LC-36 destroyed 28 May 2026; return to flight NET Dec 2026.',
@@ -402,7 +402,7 @@ export const VEHICLES: Vehicle[] = [
       shielding: 0,
       entryMass: 7_000, // return module estimate (D)
     },
-    launchSite: { name: 'Wenchang', lat: 19.6 },
+    launchSite: { name: 'Cape Canaveral SLC-37 (notional; built for Wenchang)', lat: 28.5, pad: 'slc37' },
     maxAccelG: 4,
     refuelable: false,
     record: '0 orbital flights of the three-core version. 10A suborbital abort test Feb 2026 (success).',
@@ -480,7 +480,7 @@ export const VEHICLES: Vehicle[] = [
       shielding: 0,
       entryMass: 5_800, // command module only
     },
-    launchSite: { name: 'Kennedy LC-39A (1969)', lat: 28.6 },
+    launchSite: { name: 'Kennedy LC-39A (1969)', lat: 28.6, pad: 'lc39a-lut' },
     maxAccelG: 4,
     refuelable: false,
     record: '13 launches 1967–73, 13 successes (Apollo 6 partial). Retired 1973.',

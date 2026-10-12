@@ -1,6 +1,8 @@
 /**
- * Launch & ascent: the vehicle stays at the origin, pitched by the simulated pitch; the ground
- * falls away at true scale and the sky darkens with altitude. A chase camera orbits slowly.
+ * Launch & ascent from Cape Canaveral: the vehicle stays at the origin, pitched by the simulated
+ * pitch; the Cape falls away and slides back downrange (swung about the Earth's centre, so the
+ * horizon curves and the coast drops away at true scale) and the sky goes from Florida blue to
+ * black. A chase camera orbits slowly and reframes whatever is still attached after staging.
  */
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
@@ -8,20 +10,28 @@ import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { ascentAt } from '../ui/hud'
+import { CapeCanaveral } from './CapeCanaveral'
+import { R_EARTH } from './capeSite'
+import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 
-const SKY_LOW = new THREE.Color('#2a4a73')
-const SKY_MID = new THREE.Color('#0f1d33')
+const SKY_LOW = new THREE.Color('#79a9e0')
+const SKY_MID = new THREE.Color('#1b3a66')
 const SKY_HIGH = new THREE.Color('#02040a')
+const HORIZON_LOW = new THREE.Color('#c9dcef')
+const ZENITH_LOW = new THREE.Color('#3f7fcb')
 
 export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
   const h = vehicle.height
   const rig = useRef<THREE.Group>(null)
   const ground = useRef<THREE.Group>(null)
+  const sky = useRef<THREE.Mesh>(null)
   const { scene } = useThree()
-  const camState = useMemo(() => ({ az: 0.6, init: false }), [])
+  const camState = useMemo(() => ({ az: 1.0, init: false }), [])
   const bg = useMemo(() => new THREE.Color(), [])
+  const horizon = useMemo(() => new THREE.Color(), [])
+  const zenith = useMemo(() => new THREE.Color(), [])
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
 
   useFrame(({ camera }, dt) => {
@@ -33,14 +43,26 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       // tilt toward +X (downrange); keep the pivot near the vehicle's centre of mass
       rig.current.rotation.z = -pitch
     }
-    if (ground.current) ground.current.position.y = -alt
-    // sky: pre-dawn blue at the pad → black above ~60 km
-    const f = Math.min(1, alt / 60_000)
-    bg.copy(f < 0.35 ? SKY_LOW.clone().lerp(SKY_MID, f / 0.35) : SKY_MID.clone().lerp(SKY_HIGH, (f - 0.35) / 0.65))
+    if (ground.current) {
+      // the pad is behind by the downrange distance: swing it back about the Earth's centre
+      const d = ((s?.downrange ?? 0) * 1000) / R_EARTH
+      ground.current.position.set(-R_EARTH * Math.sin(d), -alt - R_EARTH * (1 - Math.cos(d)), 0)
+      ground.current.rotation.z = d
+    }
+    // sky: Florida blue at the pad → deep blue by 20 km → black above ~70 km
+    const f = Math.min(1, alt / 70_000)
+    bg.copy(f < 0.3 ? SKY_LOW.clone().lerp(SKY_MID, f / 0.3) : SKY_MID.clone().lerp(SKY_HIGH, (f - 0.3) / 0.7))
     scene.background = bg
     if (scene.fog) {
-      ;(scene.fog as THREE.Fog).color.copy(bg)
+      const fog = scene.fog as THREE.Fog
+      fog.color.copy(bg)
+      fog.far = 90_000 + alt * 30
+      fog.near = fog.far * 0.5
     }
+    const haze = Math.max(0, 1 - alt / 45_000)
+    horizon.copy(HORIZON_LOW).lerp(SKY_MID, Math.min(1, alt / 30_000))
+    zenith.copy(ZENITH_LOW).lerp(SKY_HIGH, Math.min(1, alt / 25_000))
+    setSky(sky.current, camera, haze * haze, horizon, zenith)
     // camera: slow orbit; frame whatever is still attached (zoom in after staging)
     if (playing) camState.az += dt * 0.06
     let bottom = 0
@@ -60,18 +82,23 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const centreModel = (bottom + h) / 2
     const centre = rig.current ? rig.current.localToWorld(new THREE.Vector3(0, centreModel - h * 0.5, 0)) : new THREE.Vector3(0, centreModel, 0)
     const dist = size * 2.1 + Math.min(size, alt / 600)
-    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * 0.12, centre.z + Math.sin(camState.az) * dist)
+    // climb above the vehicle as it rises, so the Cape falls away in the frame behind it
+    const lift = Math.min(alt * 0.25, size * 1.4)
+    const target = new THREE.Vector3(centre.x + Math.cos(camState.az) * dist, centre.y + size * 0.12 + lift, centre.z + Math.sin(camState.az) * dist)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
     } else camera.position.lerp(target, 0.06)
     camera.lookAt(centre)
+    camera.far = 4_000_000
+    camera.updateProjectionMatrix()
   })
 
   return (
     <group>
-      <hemisphereLight args={['#8fa4c2', '#3a332c', 1.0]} />
-      <directionalLight position={[180, 260, 120]} intensity={3.0} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={160} shadow-camera-bottom={-40} shadow-camera-far={900} />
+      <hemisphereLight args={['#9fb9dc', '#4a4636', 0.6]} />
+      <directionalLight position={[180, 260, 120]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
+      <SkyDome ref={sky} horizon="#c9dcef" zenith="#3f7fcb" />
       {/* pivot at mid-height so the pitch rotates the vehicle about its centre */}
       <group ref={rig} position={[0, h * 0.5, 0]}>
         <group position={[0, -h * 0.5, 0]}>
@@ -79,26 +106,7 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
         </group>
       </group>
       <group ref={ground}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-          <circleGeometry args={[300_000, 96]} />
-          <meshStandardMaterial color="#2f3330" roughness={1} />
-        </mesh>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-          <circleGeometry args={[60, 64]} />
-          <meshStandardMaterial color="#4a4d50" roughness={1} />
-        </mesh>
-        {/* launch mount legs */}
-        {Array.from({ length: 6 }, (_, i) => (
-          <mesh key={i} position={[Math.cos((i / 6) * Math.PI * 2) * (vehicle.stages[0].diameter / 2 + 3), -5, Math.sin((i / 6) * Math.PI * 2) * (vehicle.stages[0].diameter / 2 + 3)]}>
-            <boxGeometry args={[1.6, 10, 1.6]} />
-            <meshStandardMaterial color="#2b2e33" roughness={0.8} metalness={0.5} />
-          </mesh>
-        ))}
-        {/* tower */}
-        <mesh position={[-(vehicle.stages[0].diameter / 2 + 14), h * 0.58, 0]}>
-          <boxGeometry args={[7, h * 1.16, 7]} />
-          <meshStandardMaterial color="#3a3d42" roughness={0.8} metalness={0.5} />
-        </mesh>
+        <CapeCanaveral pad={vehicle.launchSite.pad} />
       </group>
     </group>
   )

@@ -416,7 +416,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     // telemetry
     if (t - lastTel >= telEvery - 1e-9) {
       lastTel = t
-      const ang = Math.atan2(y, x) - theta0
+      const ang = Math.atan2(y, x) - theta0 - OMEGA * t // ground-relative: the pad rotates with the Earth
       const pitchDeg = (Math.acos(Math.max(-1, Math.min(1, ux * rhatx + uy * rhaty))) * 180) / Math.PI
       telemetry.push({
         t,

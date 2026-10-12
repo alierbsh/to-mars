@@ -17,6 +17,9 @@ export interface EngineGroup {
 
 export type StageRole = 'booster' | 'core' | 'upper'
 
+/** launch pad environments at Cape Canaveral / Kennedy Space Center */
+export type PadId = 'lc39a-starship' | 'lc39b-ml' | 'lc39a-fss' | 'lc36' | 'slc37' | 'lc39a-lut'
+
 export interface Stage {
   id: string
   name: string
@@ -102,7 +105,8 @@ export interface Vehicle {
   /** altitude (m) where the fairing is dropped; null if no fairing */
   fairingJettisonAlt: number | null
   spacecraft: Spacecraft
-  launchSite: { name: string; lat: number }
+  /** All launches are staged from the Cape (the owner's premise); `pad` picks the 3D pad environment. */
+  launchSite: { name: string; lat: number; pad: PadId }
   /** acceleration cap during ascent, g */
   maxAccelG: number
   /** can be refuelled in LEO (Starship) */

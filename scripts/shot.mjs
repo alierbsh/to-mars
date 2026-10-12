@@ -38,6 +38,7 @@ const page = await browser.newPage({ viewport: { width, height } })
 const logs = []
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`))
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`))
+page.on('requestfailed', (r) => logs.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`))
 await page.goto(`http://localhost:4173/${query}`)
 await page.waitForTimeout(waitMs)
 await page.screenshot({ path: out })

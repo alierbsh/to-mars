@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')!).render(
     {model ? (
       <ModelViewer id={model} view={params.get('view') ?? 'side'} az={num('az', 35)} />
     ) : terrain ? (
-      <TerrainViewer kind={terrain} alt={num('alt', 300)} az={num('az', 0)} pitch={num('pitch', 10)} x={num('x', 0)} z={num('z', 0)} />
+      <TerrainViewer kind={terrain} alt={num('alt', 300)} az={num('az', 0)} pitch={num('pitch', 10)} x={num('x', 0)} z={num('z', 0)} pad={params.get('pad') ?? 'lc39a-starship'} />
     ) : (
       <App />
     )}

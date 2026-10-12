@@ -1,14 +1,16 @@
 /**
- * Debug viewer for the ground: ?terrain=mars|cape&alt=<m>&az=<deg>&pitch=<deg>&x=<m>&z=<m>
+ * Debug viewer for the ground: ?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>&x=<m>&z=<m>
  * Camera at (x, alt, z) over the touchdown / pad point, looking along the azimuth, pitched down.
  */
 import { Canvas } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Suspense } from 'react'
 import * as THREE from 'three'
+import { CapeCanaveral } from './CapeCanaveral'
 import { MarsSurface } from './MarsSurface'
+import type { PadId } from '../sim/types'
 
-export default function TerrainViewer({ kind, alt, az, pitch, x, z }: { kind: string; alt: number; az: number; pitch: number; x: number; z: number }) {
+export default function TerrainViewer({ kind, alt, az, pitch, x, z, pad }: { kind: string; alt: number; az: number; pitch: number; x: number; z: number; pad: string }) {
   const a = (az * Math.PI) / 180
   const p = (pitch * Math.PI) / 180
   const dir = new THREE.Vector3(Math.cos(a) * Math.cos(p), -Math.sin(p), Math.sin(a) * Math.cos(p))
@@ -38,7 +40,7 @@ export default function TerrainViewer({ kind, alt, az, pitch, x, z }: { kind: st
             <Lightformer intensity={1.4} rotation-y={Math.PI / 2} position={[-50, 10, 0]} scale={[60, 40, 1]} color="#d9b48a" />
             <Lightformer intensity={1.0} rotation-y={-Math.PI / 2} position={[50, 10, 0]} scale={[60, 40, 1]} color="#8398ba" />
           </Environment>
-          {mars && <MarsSurface />}
+          {mars ? <MarsSurface /> : <CapeCanaveral pad={pad as PadId} />}
         </Suspense>
       </Canvas>
     </div>

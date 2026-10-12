@@ -11,33 +11,13 @@ import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { entryAt } from '../ui/hud'
 import { MarsSurface } from './MarsSurface'
+import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
 const R_MARS = 3_389_500
-
-/** Mars sky dome: horizon butterscotch → zenith dark tan/black, blended in by `haze` (0 in space, 1 at the surface) */
-function skyMaterial(): THREE.ShaderMaterial {
-  return new THREE.ShaderMaterial({
-    uniforms: { haze: { value: 0 } },
-    side: THREE.BackSide,
-    depthWrite: false,
-    transparent: true,
-    fog: false,
-    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform float haze; varying vec3 vDir;
-      void main(){
-        float up = clamp(vDir.y, -0.2, 1.0);
-        vec3 horizon = vec3(0.86, 0.64, 0.40);
-        vec3 zenith = vec3(0.36, 0.25, 0.16);
-        vec3 c = mix(horizon, zenith, smoothstep(0.0, 0.55, up));
-        float a = haze * (up > -0.02 ? 1.0 : 0.0);
-        gl_FragColor = vec4(c, a);
-      }`,
-  })
-}
 
 let plasmaCache: THREE.CanvasTexture | null = null
 /** soft radial gradient, white-hot core to transparent */
@@ -65,7 +45,6 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const glow = useRef<THREE.Sprite>(null)
   const wake = useRef<THREE.Sprite>(null)
   const sky = useRef<THREE.Mesh>(null)
-  const skyMat = useMemo(() => skyMaterial(), [])
   const plasmaTex = useMemo(() => plasmaTexture(), [])
   const ground = useRef<THREE.Group>(null)
   const flash = useRef<THREE.Mesh>(null)
@@ -144,12 +123,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       fog.far = 60_000 + alt * 40
       fog.near = fog.far * 0.35
     }
-    if (sky.current) {
-      // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
-      sky.current.position.copy(camera.position)
-      const m = sky.current.material as THREE.ShaderMaterial
-      m.uniforms.haze.value = f * f
-    }
+    // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
+    setSky(sky.current, camera, f * f)
     // camera
     if (playing) st.az += dt * 0.08
     const dist = Math.max(L * 3.2, 26)
@@ -171,9 +146,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
           <VehicleRig id={vehicleId} mode="entry" />
         </group>
       </group>
-      <mesh ref={sky} material={skyMat} renderOrder={-10} frustumCulled={false}>
-        <sphereGeometry args={[200_000, 32, 16]} />
-      </mesh>
+      <SkyDome ref={sky} horizon="#dba366" zenith="#5c4029" />
       <sprite ref={glow} visible={false}>
         <spriteMaterial map={plasmaTex} color="#ffb278" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
       </sprite>
