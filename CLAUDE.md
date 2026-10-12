@@ -1,4 +1,4 @@
-# To Mars — working notes for Claude
+# Occupy Mars — working notes for Claude
 
 - Vite 8 + React 19 + TS; three.js via @react-three/fiber + drei; zustand; vitest. `npm run build` runs `tsc -b` first — keep it type-clean.
 - Physics lives in `src/sim/` and is pure TypeScript (no DOM) so it runs in the worker (`src/sim/worker.ts`) and in Node scripts/tests. Every number in `src/data/vehicles.ts` and `src/sim/*` should trace to `docs/research/` with a confidence tag (Y/O/D/T). Unpublished numbers become config sliders, not constants.

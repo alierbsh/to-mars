@@ -16,7 +16,7 @@ export default function App() {
       <header className="header">
         <div className="header__title">
           <span className="mars" aria-hidden="true" />
-          To Mars
+          Occupy Mars
         </div>
         <p className="header__tagline">Pick one of today's rockets, give it a crew, and let the physics decide whether it gets to Mars — and what breaks first.</p>
         <div className={`header__status header__status--${status}`}>{status === 'running' ? 'computing' : status === 'error' ? 'error' : 'live'}</div>

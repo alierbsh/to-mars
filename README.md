@@ -1,4 +1,4 @@
-# To Mars
+# Occupy Mars
 
 **Can today's most advanced rockets carry a crew to Mars?**
 
