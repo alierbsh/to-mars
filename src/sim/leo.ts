@@ -1,0 +1,85 @@
+/**
+ * Low-Earth-orbit operations: the tanker campaign and cryogenic boil-off for a refuellable
+ * ship, or simply the residual upper-stage propellant for everything else.
+ */
+import { DAY_S } from './constants'
+import type { AscentResult, LeoResult, MissionConfig, SimEvent, Vehicle } from './types'
+
+export const WINDOW_LENGTH_DAYS = 150 // practical departure period around the minimum-C3 date (warn)
+export const WINDOW_MISS_DAYS = 300 // campaign longer than this cannot make the opportunity (fail)
+
+/**
+ * @param propTarget propellant the mission needs aboard at departure (TMI + landing reserve + margin);
+ *                   tankers stop once it is reached. Capped at the tank capacity.
+ */
+export function runLeo(vehicle: Vehicle, cfg: MissionConfig, ascent: AscentResult, t0: number, propTarget: number): LeoResult {
+  const events: SimEvent[] = []
+  const fmt = (v: number, d = 0) => v.toFixed(d)
+  const ev = (tDays: number, label: string, detail: string, severity: SimEvent['severity'] = 'info') =>
+    events.push({ t: t0 + tDays * DAY_S, phase: 'leo', label, detail, severity })
+
+  if (!vehicle.refuelable) {
+    ev(0, 'Parking orbit', `${fmt(ascent.massInOrbit / 1000, 1)} t in orbit; ${fmt(ascent.residualProp / 1000, 1)} t propellant left in the ${vehicle.stages[vehicle.stages.length - 1].name}`, 'info')
+    return {
+      events,
+      propAtDeparture: ascent.residualProp,
+      campaignDays: 0.5,
+      boiloffLost: 0,
+      tankersLaunched: 0,
+      usableProp: ascent.residualProp,
+      dvAvailable: 0,
+      massAtDeparture: ascent.massInOrbit,
+    }
+  }
+
+  const capacity = vehicle.refuelCapacity ?? vehicle.stages[vehicle.stages.length - 1].propMass
+  const target = Math.min(capacity, propTarget)
+  const r = cfg.boiloffPerDay
+  let prop = ascent.residualProp
+  let delivered = 0
+  let day = 0
+  const checkout = 3
+  ev(0, 'Ship in parking orbit', `arrived with ${fmt(prop / 1000, 1)} t residual propellant; the mission needs ${fmt(target / 1000)} t aboard at departure (${fmt(Math.max(0, target - prop) / 1000)} t more)`, 'info')
+  let launched = 0
+  for (let i = 1; i <= cfg.tankers; i++) {
+    // enough already (allowing for boil-off during checkout)?
+    if (prop * Math.pow(1 - r, checkout) >= target) break
+    const nextDay = i * cfg.tankerCadenceDays
+    prop *= Math.pow(1 - r, nextDay - day)
+    day = nextDay
+    const room = capacity - prop
+    const add = Math.min(cfg.propPerTanker, room)
+    prop += add
+    delivered += add
+    launched = i
+    ev(day, `Tanker ${i} docks`, `+${fmt(add / 1000)} t → ${fmt(prop / 1000)} t aboard (${fmt((100 * prop) / target)} % of what the mission needs)`, 'info')
+  }
+  // checkout before departure
+  prop *= Math.pow(1 - r, checkout)
+  day += checkout
+  const lost = ascent.residualProp + delivered - prop
+  const fill = prop / target
+  ev(day, 'Propellant campaign complete', `${fmt(prop / 1000)} t aboard (${fmt(fill * 100)} % of the ${fmt(target / 1000)} t needed) after ${launched} tankers over ${fmt(day)} days; boil-off lost ${fmt(lost / 1000, 1)} t`, fill < 0.98 ? 'warn' : 'info')
+  if (fill < 0.98) {
+    ev(day, 'Short of propellant', `${launched} tankers delivering ${fmt(cfg.propPerTanker / 1000)} t each could not reach the ${fmt(target / 1000)} t the mission needs`, 'warn')
+  }
+  if (day > WINDOW_MISS_DAYS) {
+    ev(day, 'Launch window missed', `${fmt(day)}-day campaign is longer than the ${WINDOW_MISS_DAYS}-day limit around the opportunity — the next window is 26 months away`, 'fail')
+  } else if (day > WINDOW_LENGTH_DAYS) {
+    ev(day, 'Campaign longer than the window', `${fmt(day)} days vs ~${WINDOW_LENGTH_DAYS}-day departure period; departure C3 will be worse than the minimum`, 'warn')
+  }
+  if (lost > 0.1 * delivered && delivered > 0) {
+    ev(day, 'Boil-off', `${fmt((100 * lost) / Math.max(delivered, 1))} % of the delivered propellant boiled away at ${(r * 100).toFixed(2)} %/day`, 'warn')
+  }
+  const reserve = vehicle.spacecraft.landing?.reserve ?? 0
+  return {
+    events,
+    propAtDeparture: prop,
+    campaignDays: day,
+    boiloffLost: lost,
+    tankersLaunched: launched,
+    usableProp: Math.max(0, prop - reserve),
+    dvAvailable: 0,
+    massAtDeparture: 0,
+  }
+}

@@ -66,15 +66,17 @@ export const VEHICLES: Vehicle[] = [
         cd: 1.3, // 1.1–1.5 (T)
         ld: 0.35, // belly-flop trim estimate (unsourced)
         noseRadius: 4.5, // body radius, belly-first stagnation line
-        tpsLimit: 45, // reusable silica tiles ~1,400 °C ≈ 40 W/cm² radiative equilibrium (T)
-        tpsName: 'Hexagonal silica tiles, reusable (~1,400 °C) + ablative backup',
+        // Calibrated: the model's Sutton–Graves peak for the Earth LEO re-entries Starship has survived
+        // (7.4–7.7 km/s, 170–200 t) is 43–49 W/cm²; 1,400 °C radiative equilibrium ≈ 40 W/cm² (T).
+        tpsLimit: 50,
+        tpsName: 'Hexagonal silica tiles, reusable (~1,400 °C; Earth LEO re-entry demonstrated)',
         heatLoadLimit: 0,
       },
       landing: {
         thrust: 3 * 275 * tf,
         isp: 350,
         minThrottle: 0.4,
-        reserve: 40_000, // ~700 m/s landing burn on ~200 t (T)
+        reserve: 60_000, // ~0.9 km/s supersonic-retropropulsion landing burn on ~220 t at β ≈ 430 (model result)
         label: '3 × Raptor 3 (sea level), flip + landing burn',
       },
       shielding: 0,
@@ -158,6 +160,7 @@ export const VEHICLES: Vehicle[] = [
       },
       landing: null,
       shielding: 32,
+      entryMass: 10_400, // crew module only; ESM jettisoned before entry
     },
     launchSite: { name: 'Kennedy LC-39B', lat: 28.6 },
     maxAccelG: 4,
@@ -246,6 +249,7 @@ export const VEHICLES: Vehicle[] = [
         label: '8 × SuperDraco',
       },
       shielding: 0,
+      entryMass: 9_100, // capsule without trunk, incl. SuperDraco propellant
     },
     launchSite: { name: 'Kennedy LC-39A', lat: 28.6 },
     maxAccelG: 4,
@@ -396,6 +400,7 @@ export const VEHICLES: Vehicle[] = [
       },
       landing: null,
       shielding: 0,
+      entryMass: 7_000, // return module estimate (D)
     },
     launchSite: { name: 'Wenchang', lat: 19.6 },
     maxAccelG: 4,
@@ -473,6 +478,7 @@ export const VEHICLES: Vehicle[] = [
       },
       landing: null,
       shielding: 0,
+      entryMass: 5_800, // command module only
     },
     launchSite: { name: 'Kennedy LC-39A (1969)', lat: 28.6 },
     maxAccelG: 4,

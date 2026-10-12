@@ -81,6 +81,8 @@ export interface Spacecraft {
   landing: LandingModel | null
   /** storm shelter / shielding g/cm² water-equivalent (0 = none) */
   shielding: number
+  /** mass of the part that actually enters the Mars atmosphere (capsule without service module), kg; 0 = whole vehicle */
+  entryMass?: number
 }
 
 export type VehicleStatus = 'flown' | 'development' | 'historical' | 'hypothetical'
@@ -146,8 +148,8 @@ export interface MissionConfig {
   heatingMargin: number // multiplier on Sutton–Graves (≥1)
   gLimit: number
   bankDeg: number
-  // landing
-  landingTW: number // Mars thrust-to-weight at ignition (throttle cap)
+  /** lift-up until pull-out, then lift-down to prevent skip-out (simple bank modulation) */
+  autoBank: boolean
   /** expendable launch (no booster reserves) */
   expendable: boolean
   parkingOrbitKm: number
