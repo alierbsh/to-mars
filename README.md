@@ -28,6 +28,8 @@ The 3D models are procedural (cylinders, ogives, fins, decals) built to the dime
 
 Every mission launches from Cape Canaveral (the site's premise; notional for Long March 10): LC-39A with the Starship tower and orbital launch mount, LC-39B with NASA's Mobile Launcher (the real model from [NASA-3D-Resources](https://github.com/nasa/NASA-3D-Resources), public domain), the FSS and transporter-erector for Falcon Heavy, the Apollo-era red LUT for Saturn V, LC-36 for New Glenn, a generic umbilical tower at SLC-37. The Cape itself is drawn at three scales — the pad mound, the lagoons/VAB/crawlerway/SLF within 24 km, and the Florida peninsula from altitude — on a spherical patch, so the coast curves away as the vehicle climbs.
 
+In orbit the Earth is NASA's relief map reworked into a day map (deep sea, muted land, the ice sheets), with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py`).
+
 The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker.
 
 ## What decides the Starship verdict

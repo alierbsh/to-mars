@@ -12,7 +12,8 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] Starship landing: smoother flip and touchdown, engines cut at touchdown, landing dust.
 - [x] Orion (and the other capsules) crashing on Mars: a proper impact — debris, dust, scorch, flash, camera shake.
 - [x] Launch: ignition steam/exhaust clouds, close opening camera, QD arm / strongback moving at liftoff.
-- [ ] Launch, next: Mach diamonds in the plume, water deluge spray, the catch arms swinging clear, the ocean with a wave texture, a hazier horizon.
+- [x] A real sea (water surface, waves, glint), scrub, cumulus, sun; Saturn V flame through the launch mount; the Earth in orbit (NASA map, clouds, limb glow, stars, Moon).
+- [ ] Launch, next: Mach diamonds in the plume, water deluge spray, the catch arms swinging clear.
 - [ ] Starship Mars ship: landing legs.
 
 ## Model
