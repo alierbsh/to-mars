@@ -49,6 +49,7 @@ export default function SlsModel() {
     <group>
       {/* core stage */}
       <group name="core">
+        <object3D name="plume:core" position={[0, CORE_BASE + 0.4, 0]} userData={{ radius: 3.4, engines: 'RS-25' }} />
         <Tube r={CORE_R} h={CORE_H} y={CORE_BASE} material={MAT.foam} segments={96} />
         {/* engine section boattail (darker foam) */}
         <Tube r={CORE_R + 0.01} h={6} y={CORE_BASE} material={foamPanel} segments={96} />
@@ -77,6 +78,8 @@ export default function SlsModel() {
       </group>
 
       <group name="srb">
+        <object3D name="plume:srb" position={[SRB_X, 0.4, 0]} userData={{ radius: 1.9, engines: 'Solid motor' }} />
+        <object3D name="plume:srb" position={[-SRB_X, 0.4, 0]} userData={{ radius: 1.9, engines: 'Solid motor' }} />
         <Srb x={SRB_X} />
         <Srb x={-SRB_X} />
         {/* attach struts */}
@@ -89,24 +92,34 @@ export default function SlsModel() {
         )}
       </group>
 
-      {/* LVSA frustum 8.4 → 5.1 m */}
-      <Tube r={CORE_R} rTop={2.55} h={7.6} y={coreTop} material={MAT.white} segments={96} />
-      {/* ICPS */}
+      {/* LVSA frustum 8.4 → 5.1 m (stays with the core) */}
+      <group name="core-lvsa">
+        <Tube r={CORE_R} rTop={2.55} h={7.6} y={coreTop} material={MAT.white} segments={96} />
+      </group>
+      {/* ICPS + Orion stage adapter */}
       <group name="icps">
+        <object3D name="plume:icps" position={[0, coreTop + 7.6, 0]} userData={{ radius: 1.2, engines: 'RL10B-2' }} />
         <Tube r={2.55} h={10.4} y={coreTop + 7.6} material={MAT.white} segments={64} />
         <Tube r={2.56} h={3.2} y={coreTop + 9.5} material={MAT.foam} segments={64} />
         <FlagUSA r={2.55} a={0} y={coreTop + 15} w={1.4} />
+        <Tube r={2.55} rTop={2.52} h={1.4} y={coreTop + 18} material={MAT.offwhite} />
       </group>
-      {/* Orion stage adapter */}
-      <Tube r={2.55} rTop={2.52} h={1.4} y={coreTop + 18} material={MAT.offwhite} />
-      {/* Orion: spacecraft adapter fairing around the ESM, then the crew module under the ogive boost-protective cover */}
-      <group name="orion">
+      {/* Orion: spacecraft adapter fairing around the ESM (service module group), crew module, abort tower (fairing group) */}
+      <group name="orion-sm">
         <Tube r={2.52} h={4.6} y={coreTop + 19.4} material={MAT.white} segments={64} />
         <mesh position={[0, coreTop + 19.4 + 2.3, 0]} material={MAT.stainlessDark}>
           <cylinderGeometry args={[2.0, 2.0, 0.08, 48]} />
         </mesh>
+      </group>
+      <group name="orion">
+        <Tube r={2.5} rTop={0.95} h={3.3} y={coreTop + 24} material={MAT.silver} segments={64} />
+        <mesh position={[0, coreTop + 24.1, 0]} material={MAT.dark}>
+          <cylinderGeometry args={[2.5, 2.45, 0.25, 48]} />
+        </mesh>
+        <Tube r={0.95} h={0.5} y={coreTop + 27.3} material={MAT.dark} segments={32} />
+      </group>
+      <group name="fairing">
         <Ogive r={2.52} L={5.0} y={coreTop + 24} material={MAT.white} segments={64} />
-        {/* abort tower: truss + motor */}
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} position={[Math.cos((i / 4) * Math.PI * 2) * 0.75, coreTop + 29.9, Math.sin((i / 4) * Math.PI * 2) * 0.75]} material={MAT.dark}>
             <cylinderGeometry args={[0.09, 0.09, 2.0, 8]} />
@@ -114,7 +127,6 @@ export default function SlsModel() {
         ))}
         <Tube r={0.62} h={4.2} y={coreTop + 30.8} material={MAT.offwhite} segments={32} />
         <Ogive r={0.62} L={1.3} y={coreTop + 35} material={MAT.dark} segments={32} />
-        {/* abort motor nozzles */}
         {[0, 1, 2, 3].map((i) => (
           <mesh key={`n${i}`} position={[Math.cos((i / 4) * Math.PI * 2 + 0.4) * 0.7, coreTop + 31.6, Math.sin((i / 4) * Math.PI * 2 + 0.4) * 0.7]} rotation={[0, 0, 0]} material={MAT.dark}>
             <coneGeometry args={[0.28, 0.6, 12]} />

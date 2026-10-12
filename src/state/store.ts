@@ -42,7 +42,10 @@ function getWorker(set: (p: Partial<AppState>) => void, get: () => AppState): Wo
     const msg = e.data
     if (msg.type === 'result') {
       if (msg.id !== pending) return // stale
-      set({ result: msg.result, status: 'done', t: 0, playing: true })
+      const params = new URLSearchParams(location.search)
+      const tParam = params.get('t')
+      const t0 = tParam ? Number(tParam) : 0
+      set({ result: msg.result, status: 'done', t: t0, playing: !tParam })
     } else if (msg.type === 'porkchop') {
       set({ porkchop: msg.grid, porkchopFor: get().config.departure })
     } else if (msg.type === 'error') {
@@ -52,8 +55,10 @@ function getWorker(set: (p: Partial<AppState>) => void, get: () => AppState): Wo
   return worker
 }
 
+const initialVehicle = new URLSearchParams(location.search).get('vehicle')
+
 export const useAppStore = create<AppState>((set, get) => ({
-  config: DEFAULT_CONFIG,
+  config: initialVehicle ? { ...DEFAULT_CONFIG, vehicleId: initialVehicle } : DEFAULT_CONFIG,
   result: null,
   status: 'idle',
   error: null,

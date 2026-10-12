@@ -42,6 +42,8 @@ export default function LongMarch10Model() {
   return (
     <group>
       <group name="lm10-booster">
+        <object3D name="plume:lm10-booster" position={[-CORE_X, BELL_Y + 0.3, 0]} userData={{ radius: 2.3, engines: 'YF-100K' }} />
+        <object3D name="plume:lm10-booster" position={[CORE_X, BELL_Y + 0.3, 0]} userData={{ radius: 2.3, engines: 'YF-100K' }} />
         <Booster x={-CORE_X} />
         <Booster x={CORE_X} />
         <Engines7 x={-CORE_X} />
@@ -55,6 +57,7 @@ export default function LongMarch10Model() {
         )}
       </group>
       <group name="lm10-core">
+        <object3D name="plume:lm10-core" position={[0, BELL_Y + 0.3, 0]} userData={{ radius: 2.3, engines: 'YF-100K' }} />
         <Tube r={R} h={S1} y={BELL_Y} material={MAT.white} segments={56} />
         <Tube r={R + 0.01} h={1.6} y={BELL_Y} material={MAT.dark} segments={56} />
         <Tube r={R + 0.01} h={1.4} y={BELL_Y + S1 - 3} material={MAT.cascBlue} segments={56} />
@@ -63,22 +66,28 @@ export default function LongMarch10Model() {
         <Decal text="CZ-10" r={R} a={Math.PI / 2} y={BELL_Y + 33} w={5} h={1.6} color="#1e4ea1" font="bold 170px Helvetica, Arial, sans-serif" rotate={Math.PI / 2} />
       </group>
       <group name="lm10-s2">
+        <object3D name="plume:lm10-s2" position={[0, s2y, 0]} userData={{ radius: 2.0, engines: 'YF-100M' }} />
         <Tube r={R} h={11} y={s2y} material={MAT.white} segments={56} />
         <Tube r={R + 0.01} h={0.6} y={s2y} material={MAT.cascBlue} segments={56} />
       </group>
       <group name="lm10-s3">
+        <object3D name="plume:lm10-s3" position={[0, s3y, 0]} userData={{ radius: 1.5, engines: 'YF-75E' }} />
         <Tube r={R} h={10} y={s3y} material={MAT.white} segments={56} />
         <Tube r={R + 0.01} h={0.6} y={s3y} material={MAT.cascBlue} segments={56} />
       </group>
       {/* Mengzhou: service module, return capsule, escape tower */}
-      <group name="mengzhou">
+      <group name="mengzhou-sm">
         <Tube r={R} rTop={2.25} h={1.2} y={scy} material={MAT.offwhite} segments={48} />
         <Tube r={2.25} h={4.2} y={scy + 1.2} material={MAT.white} segments={48} />
+      </group>
+      <group name="mengzhou">
         <Tube r={2.25} rTop={0.9} h={3.6} y={scy + 5.4} material={MAT.white} segments={48} />
         <mesh position={[0, scy + 5.45, 0]} material={MAT.dark}>
           <cylinderGeometry args={[2.25, 2.2, 0.2, 48]} />
         </mesh>
         <Tube r={0.9} h={0.6} y={scy + 9} material={MAT.offwhite} segments={32} />
+      </group>
+      <group name="fairing">
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} position={[Math.cos((i / 4) * Math.PI * 2) * 0.5, scy + 10.6, Math.sin((i / 4) * Math.PI * 2) * 0.5]} material={MAT.dark}>
             <cylinderGeometry args={[0.06, 0.06, 2.0, 8]} />

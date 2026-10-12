@@ -72,6 +72,7 @@ export default function NewGlennModel() {
   return (
     <group>
       <group name="gs1">
+        <object3D name="plume:gs1" position={[0, BELL_Y + 0.4, 0]} userData={{ radius: 3.3, engines: 'BE-4' }} />
         <Tube r={R} h={GS1} y={BELL_Y} material={MAT.white} segments={80} />
         <Tube r={R + 0.01} h={2.2} y={BELL_Y} material={MAT.dark} segments={80} />
         {/* seven BE-4 */}
@@ -94,6 +95,7 @@ export default function NewGlennModel() {
         <Decal text="BLUE ORIGIN" r={R} a={0} y={BELL_Y + 20} w={8} h={1.2} color="#1546c2" font="bold 150px Helvetica, Arial, sans-serif" rotate={Math.PI / 2} />
       </group>
       <group name="gs2">
+        <object3D name="plume:gs2" position={[0, BELL_Y + GS1 - 2.3, 0]} userData={{ radius: 2.4, engines: 'BE-3U' }} />
         <Tube r={R} h={GS2} y={BELL_Y + GS1} material={MAT.white} segments={80} />
         <Tube r={R + 0.01} h={0.3} y={BELL_Y + GS1} material={MAT.blue} segments={80} />
         {[0, 1].map((i) => (

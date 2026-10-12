@@ -42,6 +42,7 @@ export default function SaturnVModel() {
   return (
     <group>
       <group name="s-ic">
+        <object3D name="plume:s-ic" position={[0, BELL_Y + 0.4, 0]} userData={{ radius: 4.6, engines: 'F-1' }} />
         <Tube r={R1} h={39.5} y={BELL_Y} material={MAT.white} segments={96} />
         {/* roll pattern: black stripes on the engine fairing section, intertank quadrants, forward quadrants */}
         <Quadrants r={R1} y={BELL_Y + 0.2} h={9.6} n={4} offset={Math.PI / 8} />
@@ -67,6 +68,7 @@ export default function SaturnVModel() {
         <UnitedStates r={R1} y={BELL_Y + 30} a={Math.PI} />
       </group>
       <group name="s-ii">
+        <object3D name="plume:s-ii" position={[0, sicTop, 0]} userData={{ radius: 3.6, engines: 'J-2' }} />
         <Tube r={R1} h={24.8} y={sicTop} material={MAT.white} segments={96} />
         {/* aft interstage stripes + forward skirt quadrants */}
         <Quadrants r={R1} y={sicTop} h={5.3} n={4} offset={Math.PI / 8} />
@@ -75,6 +77,7 @@ export default function SaturnVModel() {
         <UnitedStates r={R1} y={sicTop + 10} a={-Math.PI / 2} />
       </group>
       <group name="s-ivb">
+        <object3D name="plume:s-ivb" position={[0, siiTop + 2, 0]} userData={{ radius: 2.0, engines: 'J-2' }} />
         {/* tapered aft interstage 10.06 → 6.6 m with two black quadrants */}
         <Tube r={R1} rTop={R3} h={5.8} y={siiTop} material={MAT.white} segments={96} />
         {[0, 1].map((i) => (
@@ -95,14 +98,21 @@ export default function SaturnVModel() {
         {/* instrument unit */}
         <Tube r={R3 + 0.01} h={0.9} y={sivbTop} material={MAT.dark} segments={64} />
       </group>
-      <group name="apollo">
-        {/* SLA frustum */}
+      <group name="apollo-sm">
+        {/* SLA frustum + service module (bare metal) */}
         <Tube r={R3} rTop={1.95} h={8.5} y={sivbTop + 0.9} material={MAT.white} segments={64} />
-        {/* service module (bare metal) */}
         <Tube r={1.95} h={4.7} y={sivbTop + 9.4} material={MAT.silver} segments={48} />
-        {/* command module cone + boost protective cover */}
-        <Tube r={1.95} rTop={0.45} h={3.5} y={sivbTop + 14.1} material={MAT.offwhite} segments={48} />
-        {/* LES tower + motor */}
+      </group>
+      <group name="apollo">
+        {/* command module cone */}
+        <Tube r={1.95} rTop={0.45} h={3.5} y={sivbTop + 14.1} material={MAT.silver} segments={48} />
+        <mesh position={[0, sivbTop + 14.2, 0]} material={MAT.dark}>
+          <cylinderGeometry args={[1.95, 1.9, 0.2, 48]} />
+        </mesh>
+      </group>
+      <group name="fairing">
+        {/* boost protective cover + LES tower + motor */}
+        <Tube r={1.97} rTop={0.47} h={3.5} y={sivbTop + 14.1} material={MAT.offwhite} segments={48} />
         {[0, 1, 2, 3].map((i) => (
           <mesh key={i} position={[Math.cos((i / 4) * Math.PI * 2) * 0.5, sivbTop + 19.1, Math.sin((i / 4) * Math.PI * 2) * 0.5]} material={MAT.dark}>
             <cylinderGeometry args={[0.06, 0.06, 3.0, 8]} />

@@ -29,6 +29,7 @@ export function SuperHeavy({ hotStage = true }: { hotStage?: boolean }) {
   }, [])
   return (
     <group name="superheavy">
+      <object3D name="plume:superheavy" position={[0, 1.6, 0]} userData={{ radius: 4.3, engines: 'Raptor 3' }} />
       {/* body */}
       <Tube r={R} h={BOOSTER_H - skirtBottom} y={skirtBottom} material={MAT.stainless} segments={96} />
       {/* aft heat-affected skirt */}
@@ -108,6 +109,7 @@ export function Ship({ y = BOOSTER_H }: { y?: number }) {
   ]
   return (
     <group name="ship" position={[0, y, 0]}>
+      <object3D name="plume:ship" position={[0, 0.3, 0]} userData={{ radius: 3.6, engines: 'Raptor 3' }} />
       {/* cylinder + nose */}
       <Tube r={R} h={SHIP_CYL} y={0} material={MAT.stainless} segments={96} />
       <Ogive r={R} L={NOSE_L} y={SHIP_CYL} material={MAT.stainless} segments={96} />

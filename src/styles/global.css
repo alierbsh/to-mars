@@ -250,3 +250,6 @@ ul, ol { padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   .verdict { transition: none; }
 }
+
+/* ---------- 3D labels ---------- */
+.label3d { color: var(--c-text-2); font-size: 12px; white-space: nowrap; transform: translateY(14px); text-shadow: 0 1px 3px #000; pointer-events: none; }

@@ -60,6 +60,8 @@ export default function FalconHeavyModel() {
   return (
     <group>
       <group name="side">
+        <object3D name="plume:side" position={[-CORE_X, BELL_Y, 0]} userData={{ radius: 1.7, engines: 'Merlin 1D' }} />
+        <object3D name="plume:side" position={[CORE_X, BELL_Y, 0]} userData={{ radius: 1.7, engines: 'Merlin 1D' }} />
         <Core x={-CORE_X} side />
         <Core x={CORE_X} side />
         <Octaweb x={-CORE_X} />
@@ -74,18 +76,23 @@ export default function FalconHeavyModel() {
         )}
       </group>
       <group name="center">
+        <object3D name="plume:center" position={[0, BELL_Y, 0]} userData={{ radius: 1.7, engines: 'Merlin 1D' }} />
         <Core x={0} side={false} />
         <Octaweb x={0} />
       </group>
       <group name="s2">
+        <object3D name="plume:s2" position={[0, s2y - 3.2, 0]} userData={{ radius: 1.6, engines: 'Merlin Vacuum' }} />
         <Tube r={R} h={12.6} y={s2y} material={MAT.white} segments={48} />
         <Tube r={R + 0.01} h={0.5} y={s2y + 4} material={soot} segments={48} />
         <Bell rt={0.3} re={1.6} h={3.4} y={s2y + 0.2} segments={28} />
       </group>
       {/* Crew Dragon: trunk with solar panel half, capsule, nose cone */}
-      <group name="dragon">
+      <group name="dragon-sm">
         <Tube r={R} h={3.6} y={s2y + 12.6} material={MAT.white} segments={48} />
         <Tube r={R + 0.02} h={3.4} y={s2y + 12.7} material={panel} segments={48} thetaStart={-Math.PI / 2} thetaLength={Math.PI} open />
+      </group>
+      <group name="dragon">
+        <object3D name="plume:dragon" position={[0, s2y + 16.2, 0]} userData={{ radius: 1.6, engines: 'SuperDraco' }} />
         <Tube r={2.0} rTop={1.35} h={2.9} y={s2y + 16.2} material={MAT.white} segments={48} />
         <mesh position={[0, s2y + 16.25, 0]} material={MAT.dark}>
           <cylinderGeometry args={[2.0, 1.95, 0.2, 48]} />
