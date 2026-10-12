@@ -70,6 +70,8 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
 
   return (
     <group>
+      <hemisphereLight args={['#8fa4c2', '#3a332c', 1.0]} />
+      <directionalLight position={[180, 260, 120]} intensity={3.0} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-120} shadow-camera-right={120} shadow-camera-top={160} shadow-camera-bottom={-40} shadow-camera-far={900} />
       {/* pivot at mid-height so the pitch rotates the vehicle about its centre */}
       <group ref={rig} position={[0, h * 0.5, 0]}>
         <group position={[0, -h * 0.5, 0]}>

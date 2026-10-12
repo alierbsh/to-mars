@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { DEFAULT_CONFIG } from '../sim/presets'
+import { DEFAULT_CONFIG, PRESETS } from '../sim/presets'
+import { WINDOWS } from '../sim/transfer'
 import type { MissionConfig, MissionResult, Phase } from '../sim/types'
 import type { PorkchopGrid, WorkerRequest, WorkerResponse } from '../sim/worker'
 
@@ -55,10 +56,21 @@ function getWorker(set: (p: Partial<AppState>) => void, get: () => AppState): Wo
   return worker
 }
 
-const initialVehicle = new URLSearchParams(location.search).get('vehicle')
+/** ?vehicle=<id>&preset=<id>&window=<id> preselect a configuration (used by the screenshot scripts too) */
+function initialConfig(): MissionConfig {
+  const params = new URLSearchParams(location.search)
+  let cfg = { ...DEFAULT_CONFIG }
+  const vehicle = params.get('vehicle')
+  if (vehicle) cfg.vehicleId = vehicle
+  const preset = PRESETS.find((p) => p.id === params.get('preset'))
+  if (preset) cfg = { ...cfg, ...preset.patch }
+  const win = WINDOWS.find((w) => w.id === params.get('window'))
+  if (win) cfg = { ...cfg, departure: win.departure, transitDays: win.transitDays }
+  return cfg
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
-  config: initialVehicle ? { ...DEFAULT_CONFIG, vehicleId: initialVehicle } : DEFAULT_CONFIG,
+  config: initialConfig(),
   result: null,
   status: 'idle',
   error: null,
