@@ -12,6 +12,7 @@ import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
+import { Birds, Hangar, PadSign, Vab } from './CapeDetail'
 import { dustTexture } from './impact'
 import { LaunchClouds } from './LaunchClouds'
 import { hash2 } from './noise'
@@ -140,9 +141,7 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
         </mesh>
         {/* landmarks in the 48 km map: the VAB, the LCC, the LC-39 pads' lightning towers */}
         <Landmark at={SITES.vab} origin={origin}>
-          <mesh position={[0, 80, 0]} material={vabMat} castShadow>
-            <boxGeometry args={[218, 160, 158]} />
-          </mesh>
+          <Vab />
           <mesh position={[0, 2, 0]} material={concrete}>
             <boxGeometry args={[700, 4, 600]} />
           </mesh>
@@ -181,6 +180,12 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
       </group>
       <Scrub pad={pad} groundY={groundY} map={cape.tex} />
       <Cumulus groundY={groundY} />
+      <Birds groundY={groundY} />
+      {/* the pad road leaves west: the number board at the perimeter, the hangar beyond it */}
+      <group position={[0, groundY, 0]}>
+        <PadSign pad={pad} x={-(pad.startsWith('lc39') ? 470 : 360)} z={-40} y={0} facing={Math.PI / 2} />
+        {(pad === 'lc39a-starship' || pad === 'lc39a-fss') && <Hangar x={-720} z={120} />}
+      </group>
       {/* the selected pad's structures: the deck is at y = −PAD_DECK, the vehicle base at 0 */}
       <Suspense fallback={null}>
         <PadStructures pad={pad} />

@@ -498,6 +498,31 @@ export function capeMap(center: [number, number]): THREE.CanvasTexture {
   ctx.globalCompositeOperation = 'destination-out'
   ctx.drawImage(mask, 0, 0)
   ctx.globalCompositeOperation = 'source-over'
+  // the surf: a broken white foam line just inside the water's edge, drawn over the hole
+  {
+    const foam = document.createElement('canvas')
+    foam.width = foam.height = n
+    const fctx = foam.getContext('2d')!
+    poly(fctx, SHORE, n, half, cx, cz, false)
+    fctx.strokeStyle = '#ffffff'
+    fctx.lineWidth = 55 * s
+    fctx.lineCap = 'round'
+    fctx.stroke()
+    // break the line up with noise
+    const img = fctx.getImageData(0, 0, n, n)
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        const k = (j * n + i) * 4
+        if (!img.data[k + 3]) continue
+        const v = fbm(i * 0.09, j * 0.09, 3)
+        img.data[k + 3] = Math.max(0, Math.min(255, (v - 0.35) * 600))
+      }
+    fctx.putImageData(img, 0, 0)
+    // shift the foam 90 m seaward of the shoreline polyline (the beach band lies landward)
+    ctx.globalAlpha = 0.85
+    ctx.drawImage(foam, 90 * s * 0.7, 90 * s * 0.7)
+    ctx.globalAlpha = 1
+  }
   return canvasTexture(c, 16)
 }
 
