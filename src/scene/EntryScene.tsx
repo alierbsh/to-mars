@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { entryAt } from '../ui/hud'
+import { FirstSteps } from './FirstSteps'
 import { dustTexture, fragmentAt, makeFragments, makePuffs } from './impact'
 import { MarsSurface } from './MarsSurface'
 import { Plume } from './Plume'
@@ -59,6 +60,7 @@ const smooth = (v: number) => {
 
 export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
+  const crew = useAppStore((s) => s.config.crew)
   const L = SPACECRAFT_LENGTH[vehicleId] ?? 20
   const isShip = vehicle.spacecraft.entry?.kind === 'ship'
   const rig = useRef<THREE.Group>(null)
@@ -350,6 +352,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     const tIgn = phase && ignTel ? phase.start + ignTel.t : Infinity
     const tTd = phase ? phase.end : Infinity
     const after = impact && tau >= 0
+    // seconds into the first-steps sequence (the aftermath comes first)
+    const donePhase = result?.phases.find((p) => p.phase === 'done' && p.label === 'First steps')
+    const tauSteps = donePhase ? t - donePhase.start : -1
     let dist: number
     let elev: number
     let shot: string
@@ -371,10 +376,19 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       shot = 'glide'
       dist = L * 2.7
       elev = -0.15
+    } else if (ended && isShip && landed && tauSteps >= 60 && tauSteps < 118) {
+      // the first steps: close on the foot of the elevator
+      shot = 'steps'
+      dist = L * 0.95
+      elev = 0.3
+    } else if (ended && isShip && landed && tauSteps >= 118) {
+      shot = 'base'
+      dist = L * 2.7
+      elev = 0.1
     } else if (ended) {
       shot = 'landed'
-      dist = L * 3.0
-      elev = 0.18
+      dist = L * 3.2
+      elev = 0.14
     } else {
       shot = 'fall'
       dist = Math.max(L * 3.2, 26) * (1 - 0.15 * k)
@@ -397,7 +411,11 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     st.el += ((elev + view.el) - st.el) * (1 - Math.exp(-dt * 1.6))
     const flat = Math.cos(st.el)
     const lookY = after ? groundY + L * 0.4 : shot === 'descent' || shot === 'landed' ? -L * 0.15 : 0
-    const target = new THREE.Vector3(Math.cos(az) * st.dist * flat, lookY + Math.sin(st.el) * st.dist, Math.sin(az) * st.dist * flat)
+    // once the crew is out, look toward the activity beside the ship
+    const outside = isShip && landed && ended ? smooth((tauSteps - 40) / 20) : 0
+    const lookX = shot === 'steps' ? -8 : -20 * outside
+    const lookUp = shot === 'steps' ? groundY + 2.5 - lookY : 6 * outside
+    const target = new THREE.Vector3(lookX + Math.cos(az) * st.dist * flat, lookY + lookUp + Math.sin(st.el) * st.dist, Math.sin(az) * st.dist * flat)
     if (!st.init) {
       camera.position.copy(target)
       st.init = true
@@ -414,7 +432,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       camera.position.y += (Math.random() - 0.5) * shake
       camera.position.z += (Math.random() - 0.5) * shake
     }
-    camera.lookAt(0, lookY, 0)
+    camera.lookAt(lookX, lookY + lookUp, 0)
     camera.up.set(0, 1, 0)
     camera.near = 0.5
     camera.far = 6_000_000
@@ -480,6 +498,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
           <MarsSurface />
         </Suspense>
       </group>
+      {isShip && <FirstSteps groundY={-L / 2 - 2.7} hatchY={2.7 + 19.4} shipR={4.5} crew={crew} />}
       {/* the sun: low in the west; its shadow map follows the ship (always at the origin) */}
       <directionalLight ref={dirLight} position={[300, 400, 200]} intensity={2.0} color="#ffe2c4" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
       <hemisphereLight ref={hemi} args={['#d8a877', '#4a2c1a', 0.6]} />

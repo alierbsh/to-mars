@@ -172,7 +172,7 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
               title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
             >
               <span className="tl__tick" />
-              <span className="tl__phaselabel">{SHORT[p.phase] ?? p.label}</span>
+              <span className="tl__phaselabel">{p.phase === 'done' ? p.label : SHORT[p.phase] ?? p.label}</span>
             </button>
           )
         })}

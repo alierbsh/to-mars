@@ -196,6 +196,19 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
     const aftermath = burned || skipped ? 12 : 24
     phases.push({ phase: 'landing', start: tCursor, end: tCursor + aftermath, label: entry.landed ? 'On the surface' : skipped ? 'Lost to space' : burned ? 'Break-up' : 'Impact' })
     tCursor += aftermath
+    // a ship that lands with its crew alive: the first steps — hatch, elevator, boots on the
+    // ground, the flag, the first habitat and power (a closing sequence; nothing is simulated)
+    const crewAlive = crew > 0 && (cruise?.lifeSupportOk ?? true) && (cruise ? cruise.doseMsv <= 1000 : true)
+    if (entry.landed && sc.entry?.kind === 'ship' && crewAlive) {
+      const t1 = tCursor
+      events.push({ t: t1 + 30, phase: 'done', label: 'Hatch opens', detail: 'cabin pressure equalised to 0.6 kPa outside; the crew elevator deploys', severity: 'info' })
+      events.push({ t: t1 + 75, phase: 'done', label: 'First boots on Mars', detail: `${Math.min(crew, 6)} of the crew down the elevator; the surface holds`, severity: 'ok' })
+      events.push({ t: t1 + 120, phase: 'done', label: 'The flag', detail: 'planted 25 m from the ship, in the lee of the landing legs', severity: 'info' })
+      events.push({ t: t1 + 190, phase: 'done', label: 'Habitat inflated', detail: 'the first inflatable module up, airlock mated', severity: 'info' })
+      events.push({ t: t1 + 245, phase: 'done', label: 'Power on', detail: 'three roll-out solar blankets, ~40 kW at noon in clear air', severity: 'ok' })
+      phases.push({ phase: 'done', start: t1, end: t1 + 300, label: 'First steps' })
+      tCursor += 300
+    }
   } else {
     events.push({ t: tCursor, phase: 'entry', label: 'Mars flyby', detail: `${sc.name} has no entry system; it passes Mars at ${transfer.vInfArr.toFixed(2)} km/s and stays in solar orbit`, severity: 'warn' })
     phases.push({ phase: 'entry', start: tCursor, end: tCursor + 3600, label: 'Mars flyby' })

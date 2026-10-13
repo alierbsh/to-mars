@@ -281,6 +281,11 @@ const SHORT: Array<[RegExp, string]> = [
   [/^Impact/i, 'IMPACT'],
   [/exhausted/i, 'PROP OUT'],
   [/^Life support/i, 'LIFE SUPPORT'],
+  [/^Hatch opens/i, 'HATCH'],
+  [/^First boots/i, 'FIRST STEPS'],
+  [/^The flag/i, 'FLAG'],
+  [/^Habitat/i, 'HABITAT'],
+  [/^Power on/i, 'POWER'],
 ]
 
 function shortLabel(label: string): string | null {
