@@ -32,7 +32,7 @@ The ground is painted offline (`scripts/cape-assets.py`) in the azimuthal-equidi
 
 The air is a physically based atmosphere (Rayleigh + Mie single scattering, `src/scene/atmosphere.ts`, injected into every ground material and the sky): blue sky and a pale horizon band at the pad, aerial perspective on distant ground, the thin blue limb and black sky above 100 km, the stars fading in on the way. The chase camera knows where the horizon is and frames the limb as the rocket pitches over.
 
-In orbit the Earth is NASA's relief map reworked into a day map (deep sea, muted land, the ice sheets), with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py`).
+In orbit the Earth is the NASA Blue Marble at 4k with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py` builds the clouds and the star map).
 
 The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker. The weather at arrival (season, dust storm, surface wind) is drawn from the storm record, seeded by the date.
 

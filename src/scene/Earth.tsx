@@ -107,7 +107,7 @@ function sunGlowTexture(): THREE.CanvasTexture {
 }
 
 export function Earth() {
-  const [day, rough, clouds, stars] = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/earth-day.jpg`, `${BASE_URL}assets/earth/earth-rough.jpg`, `${BASE_URL}assets/earth/earth-clouds.png`, `${BASE_URL}assets/earth/stars.jpg`])
+  const [day, rough, clouds, stars] = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/earth-day-4k.jpg`, `${BASE_URL}assets/earth/earth-rough-4k.jpg`, `${BASE_URL}assets/earth/earth-clouds.png`, `${BASE_URL}assets/earth/stars.jpg`])
   day.colorSpace = THREE.SRGBColorSpace
   day.anisotropy = 8
   stars.colorSpace = THREE.SRGBColorSpace
