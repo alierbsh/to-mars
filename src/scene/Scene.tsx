@@ -93,7 +93,7 @@ export default function Scene() {
   }, [])
 
   return (
-    <Canvas key={`${q.antialias}-${q.logDepth}-${q.textures}`} shadows={q.shadowMap > 0} camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={[1, q.dpr]} gl={{ logarithmicDepthBuffer: q.logDepth, antialias: q.antialias, powerPreference: 'high-performance' }}>
+    <Canvas key={`${q.antialias}-${q.logDepth}-${q.textures}`} shadows={q.shadowMap > 0} camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={[1, q.dpr]} gl={{ logarithmicDepthBuffer: q.logDepth, antialias: q.antialias, powerPreference: quality === 'low' ? 'default' : 'high-performance' }}>
       <color attach="background" args={['#070b12']} />
       <fog attach="fog" args={['#070b12', 2000, 60_000]} />
       <Suspense fallback={null}>
