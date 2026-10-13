@@ -22,7 +22,7 @@ export default function TopBar() {
       <div className="brand">
         <div className="wordmark">
           <span className="wordmark__dot" aria-hidden="true" />
-          Occupy Mars
+          Occupy Mars Simulation
         </div>
         <a className="byline" href="https://alierbash.com" target="_blank" rel="noreferrer">
           Built by arbash
@@ -67,7 +67,7 @@ export default function TopBar() {
           )}
         </button>
         <button className={`pill ${drawer === 'mission' ? 'pill--on' : ''}`} onClick={() => setDrawer('mission')}>
-          Mission
+          Mission settings
         </button>
         <button className={`pill ${drawer === 'details' ? 'pill--on' : ''}`} onClick={() => setDrawer('details')}>
           Data

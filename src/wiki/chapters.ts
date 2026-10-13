@@ -33,7 +33,7 @@ export const CHAPTERS: Chapter[] = [
       'A rocket moves by throwing mass out of the back very fast. To go faster it has to throw more, but the propellant it has not thrown yet is dead weight that also has to be accelerated. That feedback is brutal: reaching orbit needs a change of speed of about 9.4 km/s, and with the best chemical engines that means roughly 90 % of a rocket on the pad is propellant. Starship V3 weighs about 5,700 tonnes on the pad and under 400 tonnes empty.',
       'Staging is the escape from that arithmetic. Once the first tanks are empty they are dropped, so the engines of the next stage push only what is still useful. Every vehicle here has two or three stages; Falcon Heavy and SLS also strap boosters to the side of the core and drop them first.',
       '## What the simulation does with it',
-      'Each stage carries its real dry mass, propellant load and engines (thrust and efficiency at sea level and in vacuum). Numbers nobody has published — Starship’s dry masses above all — are not guessed once and hidden: they are sliders under Mission → Advanced, with the published bracket as the range.',
+      'Each stage carries its real dry mass, propellant load and engines (thrust and efficiency at sea level and in vacuum). Numbers nobody has published — Starship’s dry masses above all — are not guessed once and hidden: they are sliders under Mission settings → Advanced, with the published bracket as the range.',
     ],
   },
   {
@@ -82,7 +82,7 @@ export const CHAPTERS: Chapter[] = [
       'Earth and Mars both circle the Sun, Earth faster. A ship leaving Earth does not aim at where Mars is but at where it will be eight or nine months later, coasting on an ellipse that touches both orbits. That geometry lines up only once every 26 months; miss it, and the next chance is two years away.',
       'The windows are not equal. Mars’s orbit is noticeably elliptical, so in some years the two planets meet where Mars is far from the Sun and the ship arrives slowly; in others (2031, 2033) it arrives fast. The number that captures this is v-infinity, the leftover speed relative to the planet: 2.7 km/s for the easy windows, over 5 km/s for the hard ones. Arrival speed becomes entry speed, and entry speed becomes heat.',
       '## In the simulation',
-      'The transfer is solved as Lambert’s problem on JPL’s planetary positions, for the chosen departure date and trip length, and checked against NASA’s published minimum-energy opportunities. The Mission panel lets you pick the window; the porkchop plot under Data shows how departure and arrival dates trade against each other.',
+      'The transfer is solved as Lambert’s problem on JPL’s planetary positions, for the chosen departure date and trip length, and checked against NASA’s published minimum-energy opportunities. Mission settings lets you pick the window; the porkchop plot under Data shows how departure and arrival dates trade against each other.',
     ],
   },
   {
@@ -148,7 +148,7 @@ export const CHAPTERS: Chapter[] = [
     lead: 'The one thing about Mars that can change the answer from one month to the next.',
     body: [
       'Mars has seasons, and a dust-storm season: southern spring and summer, when the planet is closest to the Sun. Most years bring regional storms; roughly one Mars year in three a storm grows until it wraps the whole planet and the surface disappears for weeks. Dust lifted to high altitude also makes the upper atmosphere denser — which changes the entry.',
-      'The simulation draws the weather for the arrival date from the historical record: the season from the solar longitude, a storm roll seeded by the date, the extra density, the surface wind, and the chance that a landing system which cannot see the ground sets down on a rock. You can override it under Mission → Advanced to see a clear day.',
+      'The simulation draws the weather for the arrival date from the historical record: the season from the solar longitude, a storm roll seeded by the date, the extra density, the surface wind, and the chance that a landing system which cannot see the ground sets down on a rock. You can override it under Mission settings → Advanced to see a clear day.',
     ],
   },
   {
@@ -156,7 +156,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'What nobody knows yet',
     lead: 'The four numbers that decide the Starship verdict, and how to play with them.',
     body: [
-      'Four quantities have never been measured and dominate the Starship answer: the ship’s dry mass (published only as a bracket), the propellant a tanker really delivers, the daily boil-off in orbit, and the heat flux the tiles can survive at Mars. The three presets bracket them; the sliders under Mission → Advanced let you set your own.',
+      'Four quantities have never been measured and dominate the Starship answer: the ship’s dry mass (published only as a bracket), the propellant a tanker really delivers, the daily boil-off in orbit, and the heat flux the tiles can survive at Mars. The three presets bracket them; the sliders under Mission settings → Advanced let you set your own.',
       'The site’s position is simple: where a number is unknown it is a control, not a constant. A verdict is only as honest as the inputs behind it, so the inputs are on the table.',
     ],
   },

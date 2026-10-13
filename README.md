@@ -4,7 +4,7 @@
 
 Pick a real launch vehicle, give it a crew and a departure window, and let a physics simulation run the whole chain — launch, orbital refuelling, trans-Mars injection, the cruise, and entry, descent and landing at Mars — then tell you whether the crew arrives alive, and if not, what broke first.
 
-Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question. The screen is the stage: a full-screen 3D mission with a webcast-style lower third (dials, the T+ clock, the timeline with its event marks, engine status), one verdict card, two drawers — *Mission* (rocket, window, crew, assumptions; everything else under *Advanced*) and *Data* (timeline, telemetry, trajectory, vehicle) — and a *Wiki* that explains every stage in plain language.
+Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question. The screen is the stage: a full-screen 3D mission with a webcast-style lower third (dials, the T+ clock, the timeline with its event marks, engine status), one verdict card, two drawers — *Mission settings* (graphics first, then the rocket, window, crew and assumptions; everything else under *Advanced*) and *Data* (timeline, telemetry, trajectory, vehicle) — and a *Wiki* that explains every stage in plain language.
 
 ## What it simulates
 
@@ -32,7 +32,7 @@ The ground is painted offline (`scripts/cape-assets.py`) in the azimuthal-equidi
 
 The air is a physically based atmosphere (Rayleigh + Mie single scattering, `src/scene/atmosphere.ts`, injected into every ground material and the sky): blue sky and a pale horizon band at the pad, aerial perspective on distant ground, the thin blue limb and black sky above 100 km, the stars fading in on the way. The chase camera knows where the horizon is and frames the limb as the rocket pitches over.
 
-In orbit the Earth is the NASA Blue Marble at 4k with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py` builds the clouds and the star map).
+In orbit the Earth is the NASA Blue Marble at 4k (each tanker docking gets a close shot of the two ships in daylight, the limb above them) with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py` builds the clouds and the star map).
 
 The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker. The weather at arrival (season, dust storm, surface wind) is drawn from the storm record, seeded by the date.
 
@@ -54,7 +54,7 @@ The numbers come from a sourced research pass made in October 2026 — the state
 
 ## Performance
 
-The scene runs on three graphics tiers — high, medium, low — chosen for the device (phones start on low) and stepped down automatically if the opening screens or the first seconds of the climb cannot hold 30 fps; *Mission → Graphics* pins a choice. The tiers trade pixel ratio, multisampling, shadows, the logarithmic depth buffer, the sky's ray-march samples, the flame's layers, sprite and mesh density, texture resolution (half-size maps on low, ~120 MB of GPU memory instead of ~320) and the frame-rate cap (30 fps on low, lower on the opening screens). `?quality=high|medium|low` forces a tier; `?debug=1` logs draw calls, triangles and texture bytes to the console.
+The scene runs on three graphics tiers — high, medium, low — chosen for the device (phones start on low) and stepped down automatically if the opening screens or the first seconds of the climb cannot hold 30 fps; *Mission settings → Graphics* pins a choice. The tiers trade pixel ratio, multisampling, shadows, the logarithmic depth buffer, the sky's ray-march samples, the flame's layers, sprite and mesh density, texture resolution (half-size maps on low, ~120 MB of GPU memory instead of ~320) and the frame-rate cap (30 fps on low, lower on the opening screens). `?quality=high|medium|low` forces a tier; `?debug=1` logs draw calls, triangles and texture bytes to the console.
 
 ## Develop
 

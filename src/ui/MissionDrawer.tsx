@@ -28,7 +28,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   )
 }
 
-/** Mission set-up: the rocket, the window, the crew, and the assumptions that decide the verdict. Everything else is behind "Advanced". */
+/** Mission settings: the graphics tier first, then the rocket, the window, the crew, and the assumptions that decide the verdict. Everything else is behind "Advanced". */
 export default function MissionDrawer() {
   const config = useAppStore((s) => s.config)
   const setConfig = useAppStore((s) => s.setConfig)
@@ -53,12 +53,41 @@ export default function MissionDrawer() {
   return (
     <aside className={`drawer drawer--left ${open ? 'drawer--open' : ''}`} inert={!open}>
       <div className="drawer__head">
-        <p className="label">Mission</p>
+        <p className="label">Mission settings</p>
         <button className="drawer__close" onClick={() => setDrawer('mission')} aria-label="Close">
           ×
         </button>
       </div>
       <div className="drawer__body">
+        <section className="section">
+          <p className="label">Graphics</p>
+          <div className="chips">
+            {(
+              [
+                ['auto', 'Auto'],
+                ['high', 'High'],
+                ['medium', 'Medium'],
+                ['low', 'Low'],
+              ] as const
+            ).map(([id, name]) => (
+              <button
+                key={id}
+                className={`chip ${(id === 'auto' ? !qualityPinned : qualityPinned && quality === id) ? 'chip--on' : ''}`}
+                onClick={() => {
+                  if (id === 'auto') {
+                    saveQuality(null)
+                    setQuality(detectQuality(), false)
+                  } else setQuality(id, true)
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <p className="hint">
+            Now {quality}{qualityPinned ? '' : ' (chosen for this device)'}. Low halves the texture resolution, turns off shadows, multisampling and the flame's glow layer, and renders at the screen's native pixels — for phones and older machines.
+          </p>
+        </section>
         <section className="section">
           <p className="label">Rocket</p>
           <div className="vehicle vehicle--on vehicle--fixed">
@@ -173,35 +202,6 @@ export default function MissionDrawer() {
           )}
         </section>
 
-        <section className="section">
-          <p className="label">Graphics</p>
-          <div className="chips">
-            {(
-              [
-                ['auto', 'Auto'],
-                ['high', 'High'],
-                ['medium', 'Medium'],
-                ['low', 'Low'],
-              ] as const
-            ).map(([id, name]) => (
-              <button
-                key={id}
-                className={`chip ${(id === 'auto' ? !qualityPinned : qualityPinned && quality === id) ? 'chip--on' : ''}`}
-                onClick={() => {
-                  if (id === 'auto') {
-                    saveQuality(null)
-                    setQuality(detectQuality(), false)
-                  } else setQuality(id, true)
-                }}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-          <p className="hint">
-            Now {quality}{qualityPinned ? '' : ' (chosen for this device)'}. Low halves the texture resolution, turns off shadows, multisampling and the flame's glow layer, and renders at the screen's native pixels — for phones and older machines.
-          </p>
-        </section>
       </div>
     </aside>
   )
