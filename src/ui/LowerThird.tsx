@@ -185,8 +185,10 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
         const inActive = phases[activeIdx].phase === m.phase
         const idxInPhase = marks.filter((x) => x.phase === m.phase).indexOf(m)
         const chapter = chapterForMark(m.label)
+        // names alternate above and below the line (the phase labels sit in a third row)
+        const low = idxInPhase % 2 === 1
         return (
-          <span key={`${m.label}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${idxInPhase % 2 ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
+          <span key={`${m.label}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${low ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
             <span className="tl__dot" />
             {chapter ? (
               <button className="tl__name tl__name--link" onClick={() => openWiki(chapter.id)} title={`Wiki: ${chapter.title}`}>

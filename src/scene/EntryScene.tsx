@@ -25,7 +25,6 @@ import { autoOrbit, view } from './viewControl'
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
 const SKY_STORM = new THREE.Color('#9c6236')
-const SKY_HORIZON = new THREE.Color('#dba366')
 const SKY_ZENITH = new THREE.Color('#5c4029')
 const SKY_STORM_ZENITH = new THREE.Color('#6a3f22')
 const R_MARS = 3_389_500
@@ -300,7 +299,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     if (scorch.current) {
       scorch.current.visible = (impact && tau >= 0) || (isShip && landed && ended)
       scorch.current.position.set(0, groundY + 0.12, 0)
-      const sc = impact ? Math.max(12, L * 1.1) : L * 0.28
+      const sc = impact ? Math.max(12, L * 1.1) : L * 0.2
       scorch.current.scale.setScalar(sc)
     }
     if (debris.current) {
@@ -335,7 +334,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       fog.near = fog.far * (0.35 - 0.25 * storm * f)
     }
     // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
-    setSky(sky.current, camera, Math.min(1, f * f * (1 + 0.8 * storm)), skyHorizon.copy(SKY_HORIZON).lerp(SKY_STORM, storm), skyZenith.copy(SKY_ZENITH).lerp(SKY_STORM_ZENITH, storm))
+    // the dome's horizon is the fog colour, so the fogged ground runs into the sky without a seam
+    setSky(sky.current, camera, Math.min(1, f * f * (1 + 0.8 * storm)), skyHorizon.copy(skyLow), skyZenith.copy(SKY_ZENITH).lerp(SKY_STORM_ZENITH, storm))
     // light: a storm takes the sun's edge off and fills the scene with diffuse dust-light
     if (dirLight.current) dirLight.current.intensity = 2.0 * (1 - 0.4 * storm * f)
     if (hemi.current) hemi.current.intensity = 0.6 + 0.9 * storm * f
@@ -367,10 +367,10 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       shot = 'flip'
       const f = smooth((t - (tIgn - 6)) / 20)
       dist = L * (2.9 - 0.9 * f)
-      elev = -0.32 + 0.12 * f
+      elev = -0.26 + 0.12 * f
     } else if (isShip && t >= tIgn + 14 && t < tTd + 6) {
       shot = 'descent'
-      dist = L * 2.3
+      dist = L * 2.6
       elev = 0.06
     } else if (isShip && t >= tIgn - 70 && t < tIgn - 6) {
       shot = 'glide'
@@ -414,7 +414,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     // once the crew is out, look toward the activity beside the ship
     const outside = isShip && landed && ended ? smooth((tauSteps - 40) / 20) : 0
     const lookX = shot === 'steps' ? -8 : -20 * outside
-    const lookUp = shot === 'steps' ? groundY + 2.5 - lookY : 6 * outside
+    // the first steps and the base are at ground level: aim there, not at the ship's middle
+    const lookUp = shot === 'steps' ? groundY + 2.5 - lookY : shot === 'base' ? groundY + 9 - lookY : 6 * outside
     const target = new THREE.Vector3(lookX + Math.cos(az) * st.dist * flat, lookY + lookUp + Math.sin(st.el) * st.dist, Math.sin(az) * st.dist * flat)
     if (!st.init) {
       camera.position.copy(target)
@@ -481,7 +482,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       <group ref={scorch} visible={false} rotation={[-Math.PI / 2, 0, 0]}>
         <mesh>
           <circleGeometry args={[1, 40]} />
-          <meshStandardMaterial color="#3a2418" roughness={1} transparent opacity={0.85} depthWrite={false} polygonOffset polygonOffsetFactor={-2} />
+          <meshStandardMaterial color="#3a2418" roughness={1} transparent opacity={0.55} depthWrite={false} polygonOffset polygonOffsetFactor={-2} />
         </mesh>
         <mesh>
           <ringGeometry args={[1, 1.9, 40]} />

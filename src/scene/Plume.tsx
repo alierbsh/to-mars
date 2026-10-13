@@ -270,6 +270,25 @@ function hull(): THREE.BufferGeometry {
   return g
 }
 
+let glowCache: THREE.CanvasTexture | null = null
+/** a soft radial glow for the end-on view of a plume */
+function glowTexture(): THREE.CanvasTexture {
+  if (glowCache) return glowCache
+  const n = 128
+  const c = document.createElement('canvas')
+  c.width = c.height = n
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.25, 'rgba(255,255,255,0.75)')
+  g.addColorStop(0.6, 'rgba(255,255,255,0.22)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, n, n)
+  glowCache = new THREE.CanvasTexture(c)
+  return glowCache
+}
+
 const N_TONGUES = 14
 
 /**
@@ -286,6 +305,9 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   const splashLight = useRef<THREE.PointLight>(null)
   const mats = useMemo(() => [plumeMaterial(look, 0), plumeMaterial(look, 1), plumeMaterial(look, 2)], [look])
   const geo = useMemo(() => hull(), [])
+  const endGlow = useRef<THREE.Sprite>(null)
+  const glowTex = useMemo(() => glowTexture(), [])
+  const tmpV = useMemo(() => ({ axis: new THREE.Vector3(), origin: new THREE.Vector3(), toCam: new THREE.Vector3() }), [])
   // the tongues: around the impact point, pointing outward and a little up, each its own size
   const tongues = useMemo(
     () =>
@@ -298,7 +320,7 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
       }),
     [look],
   )
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const T = clock.elapsedTime
     // 20–40 Hz flicker of the length and brightness, plus a slow breathing
     const f = 0.94 + 0.045 * Math.sin(T * 41.0) * Math.sin(T * 27.3) + 0.03 * Math.sin(T * 3.1)
@@ -321,6 +343,24 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
       u.uThrottle.value = throttle
     })
     if (light.current) light.current.intensity = on ? 9 * throttle * radius * radius * f * (1 - 0.7 * k) : 0
+    // seen along its axis the hull is all silhouette and nearly vanishes: a glow at the throat
+    // stands in for the fire you look into (the landing burn from below, the booster from the pad)
+    if (endGlow.current && group.current) {
+      const sp = endGlow.current
+      sp.visible = on
+      if (on) {
+        group.current.getWorldPosition(tmpV.origin)
+        tmpV.axis.set(0, -1, 0).transformDirection(group.current.matrixWorld)
+        tmpV.toCam.copy(camera.position).sub(tmpV.origin).normalize()
+        const endOn = Math.abs(tmpV.axis.dot(tmpV.toCam))
+        const w = Math.max(0, (endOn - 0.45) / 0.55)
+        const m = sp.material as THREE.SpriteMaterial
+        m.opacity = 0.9 * throttle * w * w * (1 - 0.6 * k) * (0.9 + 0.1 * Math.sin(T * 37))
+        const sz = radius * (2.6 + 0.6 * k) * (0.95 + 0.05 * f)
+        sp.scale.set(sz, sz, 1)
+        sp.position.set(0, -radius * 1.2, 0)
+      }
+    }
     // the fireball at the deck: strongest with the nozzle just above it, gone once the flame
     // no longer reaches it
     const hit = on && floorDist < Lfree * 0.9 ? Math.min(1, Math.max(0, 1 - floorDist / (Lfree * 0.9))) : 0
@@ -361,6 +401,9 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
         <mesh geometry={geo} material={mats[0]} renderOrder={6} frustumCulled={false} />
         <mesh geometry={geo} material={mats[1]} renderOrder={7} frustumCulled={false} />
         <mesh geometry={geo} material={mats[2]} renderOrder={8} frustumCulled={false} />
+        <sprite ref={endGlow} renderOrder={9} visible={false}>
+          <spriteMaterial map={glowTex} color={look.core} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </sprite>
       </group>
       <group ref={splash} visible={false}>
         {tongues.map((tg, i) => (

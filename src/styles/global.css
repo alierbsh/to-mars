@@ -175,7 +175,7 @@ ul, ol { padding: 0; list-style: none; }
 .lower__phase { font-size: 10.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t2); }
 .lower__t { font-size: 34px; font-weight: 500; letter-spacing: -0.03em; line-height: 1; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6); }
 .lower__end { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t4); }
-.tl { position: relative; height: 54px; }
+.tl { position: relative; height: 62px; }
 .tl__line { position: absolute; left: 0; right: 0; top: 22px; height: 1px; background: rgba(255, 255, 255, 0.28); transform: scaleX(0); transform-origin: left; }
 .lower--open .tl__line { animation: drawx 1.1s var(--ease) 0.25s forwards; }
 .tl__fill { position: absolute; left: 0; top: 21px; height: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); opacity: 0; transition: width 0.6s var(--ease); }
@@ -184,7 +184,7 @@ ul, ol { padding: 0; list-style: none; }
 .tl__phase { position: absolute; top: 0; height: 100%; display: flex; flex-direction: column; align-items: flex-start; padding: 0; opacity: 0; transition: left 0.6s var(--ease), width 0.6s var(--ease); }
 .lower--open .tl__phase { animation: fade 0.4s var(--ease) 1.0s forwards; }
 .tl__tick { display: block; width: 1px; height: 8px; margin-top: 18px; background: rgba(255, 255, 255, 0.35); }
-.tl__phaselabel { margin-top: 9px; font-size: 9.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t4); white-space: nowrap; transform: translateX(-50%); }
+.tl__phaselabel { margin-top: 19px; font-size: 9.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t4); white-space: nowrap; transform: translateX(-50%); }
 .tl__phase--done .tl__phaselabel { color: var(--t3); }
 .tl__phase--active .tl__phaselabel { color: var(--t1); }
 .tl__mark { position: absolute; top: 22px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; opacity: 0; transition: left 0.6s var(--ease); }
@@ -386,7 +386,7 @@ ul, ol { padding: 0; list-style: none; }
   .lower__third { padding-bottom: 18px; }
   .lower__t { font-size: 26px; }
   .lower__end, .eng, .speeds { display: none; }
-  .tl { height: 46px; }
+  .tl { height: 50px; }
   .tl__name { display: none; }
   .lower__right { flex-direction: row; justify-content: flex-end; }
   :root { --drawer-w: 100vw; }

@@ -10,7 +10,7 @@ export const MAT = {
   stainless: new THREE.MeshStandardMaterial({ color: '#c9ccd0', metalness: 0.85, roughness: 0.42 }),
   stainlessDark: new THREE.MeshStandardMaterial({ color: '#9ea2a7', metalness: 0.85, roughness: 0.5 }),
   heatTint: new THREE.MeshStandardMaterial({ color: '#8a8078', metalness: 0.8, roughness: 0.5 }),
-  tiles: new THREE.MeshStandardMaterial({ color: '#17181b', metalness: 0.05, roughness: 0.92 }),
+  tiles: new THREE.MeshStandardMaterial({ color: '#2a2b2f', metalness: 0.05, roughness: 0.92 }),
   white: new THREE.MeshStandardMaterial({ color: '#f1f2f3', metalness: 0.05, roughness: 0.55 }),
   offwhite: new THREE.MeshStandardMaterial({ color: '#e6e7e5', metalness: 0.05, roughness: 0.6 }),
   black: new THREE.MeshStandardMaterial({ color: '#141516', metalness: 0.2, roughness: 0.6 }),
@@ -224,7 +224,7 @@ export function getHexTiles(): THREE.CanvasTexture {
   c.width = 512
   c.height = 512
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#2a2b2e'
+  ctx.fillStyle = '#35363a'
   ctx.fillRect(0, 0, 512, 512)
   const s = 14 // hex radius px
   const w = Math.sqrt(3) * s
@@ -236,7 +236,7 @@ export function getHexTiles(): THREE.CanvasTexture {
       const cx = col * w + (row % 2 ? w / 2 : 0)
       const cy = row * hh
       const fresh = rnd() > 0.985
-      const shade = fresh ? 62 : 22 + Math.floor(rnd() * 12)
+      const shade = fresh ? 88 : 40 + Math.floor(rnd() * 14)
       ctx.fillStyle = `rgb(${shade},${shade + 1},${shade + 3})`
       ctx.beginPath()
       for (let k = 0; k < 6; k++) {

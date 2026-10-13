@@ -31,9 +31,14 @@ export function skyMaterial(horizon: string, zenith: string): THREE.ShaderMateri
       void main(){
         #include <logdepthbuf_fragment>
         float up = clamp(vDir.y, -0.2, 1.0);
-        vec3 c = mix(horizon, zenith, smoothstep(0.0, 0.6, up));
-        float a = haze * (up > -0.015 ? 1.0 : 0.0);
-        gl_FragColor = vec4(c, a);
+        // horizon colour held for the first degrees, then up to the zenith; below the horizontal
+        // the dome keeps the horizon colour, so the fogged ground meets it without a seam
+        vec3 c = mix(horizon, zenith, smoothstep(0.04, 0.7, up));
+        gl_FragColor = vec4(c, haze);
+        // through the tone mapper and into the output colour space like every lit material, or
+        // the dome comes out far darker than its colours and seams against the fogged ground
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
       }`,
   })
 }
