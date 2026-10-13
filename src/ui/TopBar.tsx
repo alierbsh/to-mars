@@ -12,6 +12,9 @@ export default function TopBar() {
   const setDrawer = useAppStore((s) => s.setDrawer)
   const status = useAppStore((s) => s.status)
   const [muted, setMuted] = useState(sound.muted)
+  const wiki = useAppStore((s) => s.wiki)
+  const openWiki = useAppStore((s) => s.openWiki)
+  const closeWiki = useAppStore((s) => s.closeWiki)
 
   return (
     <header className="top">
@@ -61,6 +64,9 @@ export default function TopBar() {
         </button>
         <button className={`pill ${drawer === 'details' ? 'pill--on' : ''}`} onClick={() => setDrawer('details')}>
           Data
+        </button>
+        <button className={`pill ${wiki ? 'pill--on' : ''}`} onClick={() => (wiki ? closeWiki() : openWiki())}>
+          Wiki
         </button>
       </div>
     </header>

@@ -13,6 +13,7 @@ import type { MissionResult, Phase, Stage as StageDef, Vehicle } from '../sim/ty
 import { useAppStore } from '../state/store'
 import { fmtT } from './format'
 import { burningAt, dialsAt, hudAt, marksAt, propFractionAt, type Dial as DialData } from './hud'
+import { chapterForMark } from '../wiki/chapters'
 
 const SPEEDS = [0.5, 1, 2, 4, 10]
 const STILL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('still') === '1'
@@ -128,6 +129,7 @@ function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle:
 
 function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onSeek: (t: number) => void }) {
   const marks = useMemo(() => marksAt(result), [result])
+  const openWiki = useAppStore((s) => s.openWiki)
   const phases = result.phases
   const n = phases.length
   // the phase under way opens wide (like a webcast's flight timeline); the others share the rest
@@ -182,10 +184,17 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
         const past = t >= m.t
         const inActive = phases[activeIdx].phase === m.phase
         const idxInPhase = marks.filter((x) => x.phase === m.phase).indexOf(m)
+        const chapter = chapterForMark(m.label)
         return (
           <span key={`${m.label}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${idxInPhase % 2 ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
             <span className="tl__dot" />
-            <span className="tl__name">{m.label}</span>
+            {chapter ? (
+              <button className="tl__name tl__name--link" onClick={() => openWiki(chapter.id)} title={`Wiki: ${chapter.title}`}>
+                {m.label}
+              </button>
+            ) : (
+              <span className="tl__name">{m.label}</span>
+            )}
           </span>
         )
       })}

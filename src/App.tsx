@@ -6,6 +6,7 @@ import MissionDrawer from './ui/MissionDrawer'
 import Stage from './ui/Stage'
 import TopBar from './ui/TopBar'
 import VerdictCard from './ui/VerdictCard'
+import Wiki from './ui/Wiki'
 
 export default function App() {
   const run = useAppStore((s) => s.run)
@@ -23,14 +24,16 @@ export default function App() {
   }, [drawer, setDrawer])
 
   const intro = useAppStore((s) => s.intro)
+  const wiki = useAppStore((s) => s.wiki)
   return (
-    <div className={`app ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''}`}>
+    <div className={`app ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''} ${wiki ? 'app--wiki' : ''}`}>
       <Stage />
       <TopBar />
       <VerdictCard />
       <MissionDrawer />
       <DetailsSheet />
       {drawer && <button className="scrim" aria-label="Close panel" onClick={() => setDrawer(drawer)} />}
+      <Wiki />
       <Intro />
     </div>
   )

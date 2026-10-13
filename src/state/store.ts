@@ -4,6 +4,7 @@ import { DEFAULT_CONFIG, PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import type { MissionConfig, MissionResult, Phase } from '../sim/types'
 import type { PorkchopGrid, WorkerRequest, WorkerResponse } from '../sim/worker'
+import { CHAPTERS } from '../wiki/chapters'
 
 export type Tab = 'timeline' | 'telemetry' | 'trajectory' | 'model'
 export type Drawer = 'mission' | 'details' | null
@@ -31,6 +32,8 @@ export interface AppState {
   countdown: number
   /** bumps at ignition and on restart: the lower third replays its opening */
   openSeq: number
+  /** the wiki chapter open, or null */
+  wiki: string | null
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -41,6 +44,8 @@ export interface AppState {
   setTab: (tab: Tab) => void
   setDrawer: (d: Drawer) => void
   setIntro: (i: Intro) => void
+  openWiki: (id?: string) => void
+  closeWiki: () => void
   /** from the picker: set the ship and the clock, then count down */
   launch: (vehicleId: string, speed: number) => void
   /** the countdown reached zero: ignition */
@@ -88,12 +93,16 @@ function initialConfig(): MissionConfig {
 
 /** deep links (?vehicle=, ?t=, …) skip the opening flow */
 const hasParams = new URLSearchParams(location.search).toString().length > 0
+/** ?wiki=<chapter id> opens the wiki on that chapter */
+const wikiParam = new URLSearchParams(location.search).get('wiki')
+const initialWiki = wikiParam && CHAPTERS.some((c) => c.id === wikiParam) ? wikiParam : null
 
 export const useAppStore = create<AppState>((set, get) => ({
   config: initialConfig(),
   intro: hasParams ? null : 'start',
   countdown: 5,
   openSeq: 0,
+  wiki: initialWiki,
   result: null,
   status: 'idle',
   error: null,
@@ -131,6 +140,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setTab: (tab) => set({ tab, drawer: 'details' }),
   setDrawer: (drawer) => set((s) => ({ drawer: s.drawer === drawer ? null : drawer })),
   setIntro: (intro) => set({ intro }),
+  openWiki: (id) => set({ wiki: id ?? 'why', drawer: null }),
+  closeWiki: () => set({ wiki: null }),
   launch: (vehicleId, speed) => {
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
