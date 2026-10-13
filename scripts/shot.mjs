@@ -32,7 +32,8 @@ const server = createServer(async (req, res) => {
     res.end()
   }
 })
-await new Promise((r) => server.listen(4173, r))
+const port = Number(process.env.SHOT_PORT ?? 4173)
+await new Promise((r) => server.listen(port, r))
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 const page = await browser.newPage({ viewport: { width, height } })
@@ -40,7 +41,7 @@ const logs = []
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`))
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`))
 page.on('requestfailed', (r) => logs.push(`[requestfailed] ${r.url()} ${r.failure()?.errorText}`))
-await page.goto(`http://localhost:4173/${query}`)
+await page.goto(`http://localhost:${port}/${query}`)
 // CSS transitions do not advance under headless SwiftShader: disable them when clicking around
 if (click) await page.addStyleTag({ content: '* { transition: none !important; animation: none !important; }' })
 await page.waitForTimeout(waitMs)
