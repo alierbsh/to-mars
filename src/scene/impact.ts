@@ -106,7 +106,7 @@ export function cloudPuffTexture(): THREE.CanvasTexture {
       img.data[k] = v
       img.data[k + 1] = v
       img.data[k + 2] = v
-      img.data[k + 3] = Math.round(255 * Math.min(1, dens * 1.25))
+      img.data[k + 3] = Math.round(255 * Math.min(1, dens * 0.95))
     }
   ctx.putImageData(img, 0, 0)
   puffCache = new THREE.CanvasTexture(c)

@@ -15,6 +15,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { hash2 } from './noise'
+import { useQuality } from './useQuality'
 
 export type PlumeKind = 'methalox' | 'kerolox' | 'hydrolox' | 'solid' | 'hypergolic' | 'plasma'
 
@@ -54,7 +55,8 @@ const LOOK: Record<PlumeKind, Look> = {
   plasma: { core: new THREE.Color(1.0, 0.93, 0.96), mid: new THREE.Color(1.0, 0.62, 0.8), outer: new THREE.Color(0.85, 0.32, 0.62), vac: new THREE.Color(0.7, 0.35, 0.9), gain: 0.9, alpha: 0.55, soot: 0.0, length: 1.0, light: '#ff8ab0' },
 }
 
-const NOISE_GLSL = /* glsl */ `
+/** value noise and its fbm; the low tier drops the third octave (the finest grain) */
+const noiseGlsl = (octaves: 2 | 3) => /* glsl */ `
 float pHash(vec3 p) {
   p = fract(p * vec3(443.897, 441.423, 437.195));
   p += dot(p, p.yzx + 19.19);
@@ -69,15 +71,15 @@ float vnoise(vec3 p) {
   return mix(mix(mix(a, b, f.x), mix(c, d, f.x), f.y), mix(mix(e, g, f.x), mix(h, k, f.x), f.y), f.z);
 }
 float fbm3(vec3 p) {
-  return vnoise(p) * 0.5 + vnoise(p * 2.03 + 11.0) * 0.3 + vnoise(p * 4.1 + 23.0) * 0.2;
+  ${octaves === 3 ? 'return vnoise(p) * 0.5 + vnoise(p * 2.03 + 11.0) * 0.3 + vnoise(p * 4.1 + 23.0) * 0.2;' : 'return vnoise(p) * 0.62 + vnoise(p * 2.03 + 11.0) * 0.38;'}
 }
 `
 
-const VERT = /* glsl */ `
+const vert = (octaves: 2 | 3) => /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
 #include <fog_pars_vertex>
-${NOISE_GLSL}
+${noiseGlsl(octaves)}
 uniform float uTime;
 uniform float uLength;
 uniform float uRadius;
@@ -119,11 +121,11 @@ void main() {
 }
 `
 
-const FRAG = /* glsl */ `
+const frag = (octaves: 2 | 3) => /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 #include <fog_pars_fragment>
-${NOISE_GLSL}
+${noiseGlsl(octaves)}
 uniform float uTime;
 uniform float uLength;
 uniform float uRadius;
@@ -203,7 +205,7 @@ void main() {
 }
 `
 
-function plumeMaterial(look: Look, layer: number, seed = 0): THREE.ShaderMaterial {
+function plumeMaterial(look: Look, layer: number, seed = 0, octaves: 2 | 3 = 3): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -224,8 +226,8 @@ function plumeMaterial(look: Look, layer: number, seed = 0): THREE.ShaderMateria
       fogNear: { value: 1 },
       fogFar: { value: 1e9 },
     },
-    vertexShader: VERT,
-    fragmentShader: FRAG,
+    vertexShader: vert(octaves),
+    fragmentShader: frag(octaves),
     transparent: true,
     depthWrite: false,
     side: THREE.FrontSide,
@@ -303,22 +305,24 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   const light = useRef<THREE.PointLight>(null)
   const splash = useRef<THREE.Group>(null)
   const splashLight = useRef<THREE.PointLight>(null)
-  const mats = useMemo(() => [plumeMaterial(look, 0), plumeMaterial(look, 1), plumeMaterial(look, 2)], [look])
+  const q = useQuality()
+  const mats = useMemo(() => [plumeMaterial(look, 0, 0, q.fbmOctaves), plumeMaterial(look, 1, 0, q.fbmOctaves), plumeMaterial(look, 2, 0, q.fbmOctaves)], [look, q.fbmOctaves])
   const geo = useMemo(() => hull(), [])
   const endGlow = useRef<THREE.Sprite>(null)
   const glowTex = useMemo(() => glowTexture(), [])
   const tmpV = useMemo(() => ({ axis: new THREE.Vector3(), origin: new THREE.Vector3(), toCam: new THREE.Vector3() }), [])
   // the tongues: around the impact point, pointing outward and a little up, each its own size
+  const nTongues = Math.min(N_TONGUES, q.tongues)
   const tongues = useMemo(
     () =>
-      Array.from({ length: N_TONGUES }, (_, i) => {
-        const a = (i / N_TONGUES) * Math.PI * 2 + hash2(i, 71) * 0.5
+      Array.from({ length: nTongues }, (_, i) => {
+        const a = (i / nTongues) * Math.PI * 2 + hash2(i, 71) * 0.5
         const up = 0.12 + hash2(i, 72) * 0.4 // radians above the deck
         const dir = new THREE.Vector3(Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up))
-        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir)
-        return { a, q, size: 0.7 + hash2(i, 73) * 0.6, len: 0.7 + hash2(i, 74) * 0.7, ph: hash2(i, 75) * 6.28, mats: [plumeMaterial(look, 1, i * 3.7), plumeMaterial(look, 2, i * 3.7)] }
+        const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir)
+        return { a, q: rot, size: 0.7 + hash2(i, 73) * 0.6, len: 0.7 + hash2(i, 74) * 0.7, ph: hash2(i, 75) * 6.28, mats: [plumeMaterial(look, 1, i * 3.7, q.fbmOctaves), plumeMaterial(look, 2, i * 3.7, q.fbmOctaves)] }
       }),
-    [look],
+    [look, nTongues, q.fbmOctaves],
   )
   useFrame(({ clock, camera }) => {
     const T = clock.elapsedTime
@@ -398,7 +402,7 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   return (
     <group position={[x, y, z]}>
       <group ref={group}>
-        <mesh geometry={geo} material={mats[0]} renderOrder={6} frustumCulled={false} />
+        {q.plumeGlow && <mesh geometry={geo} material={mats[0]} renderOrder={6} frustumCulled={false} />}
         <mesh geometry={geo} material={mats[1]} renderOrder={7} frustumCulled={false} />
         <mesh geometry={geo} material={mats[2]} renderOrder={8} frustumCulled={false} />
         <sprite ref={endGlow} renderOrder={9} visible={false}>

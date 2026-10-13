@@ -6,8 +6,10 @@
  * Assets: public/assets/earth (built by scripts/earth-assets.py from NASA-3D-Resources).
  */
 import { useFrame, useLoader } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { texName } from './quality'
+import { useQuality } from './useQuality'
 
 export const EARTH_R = 6371
 const BASE_URL = import.meta.env.BASE_URL
@@ -107,7 +109,11 @@ function sunGlowTexture(): THREE.CanvasTexture {
 }
 
 export function Earth() {
-  const [day, rough, clouds, stars] = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/earth-day-4k.jpg`, `${BASE_URL}assets/earth/earth-rough-4k.jpg`, `${BASE_URL}assets/earth/earth-clouds.png`, `${BASE_URL}assets/earth/stars.jpg`])
+  const q = useQuality()
+  const textures = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/${texName('earth-day-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-rough-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-clouds.png', q.textures)}`, `${BASE_URL}assets/earth/stars.jpg`])
+  const [day, rough, clouds, stars] = textures
+  // free the GPU copies when the orbit is left (the images stay cached for the next mission)
+  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])
   day.colorSpace = THREE.SRGBColorSpace
   day.anisotropy = 8
   stars.colorSpace = THREE.SRGBColorSpace

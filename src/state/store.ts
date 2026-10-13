@@ -1,10 +1,12 @@
 import { create } from 'zustand'
+import { useEffect, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { DEFAULT_CONFIG, PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import type { MissionConfig, MissionResult, Phase } from '../sim/types'
 import type { PorkchopGrid, WorkerRequest, WorkerResponse } from '../sim/worker'
 import { CHAPTERS } from '../wiki/chapters'
+import { detectQuality, saveQuality, type Quality } from '../scene/quality'
 
 export type Tab = 'timeline' | 'telemetry' | 'trajectory' | 'model'
 export type Drawer = 'mission' | 'details' | null
@@ -34,6 +36,10 @@ export interface AppState {
   openSeq: number
   /** the wiki chapter open, or null */
   wiki: string | null
+  /** graphics tier (see scene/quality.ts); the canvas remounts when it changes */
+  quality: Quality
+  /** true once the viewer chose a tier themselves (no automatic stepping down then) */
+  qualityPinned: boolean
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -46,6 +52,8 @@ export interface AppState {
   setIntro: (i: Intro) => void
   openWiki: (id?: string) => void
   closeWiki: () => void
+  /** set the graphics tier; `pin` records it as the viewer's choice (null clears the choice) */
+  setQuality: (q: Quality, pin?: boolean) => void
   /** from the picker: set the ship and the clock, then count down */
   launch: (vehicleId: string, speed: number) => void
   /** the countdown reached zero: ignition */
@@ -103,6 +111,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   countdown: 5,
   openSeq: 0,
   wiki: initialWiki,
+  quality: detectQuality(),
+  qualityPinned: (typeof location !== 'undefined' && new URLSearchParams(location.search).has('quality')) || (typeof localStorage !== 'undefined' && !!localStorage.getItem('occupy-mars:quality')),
   result: null,
   status: 'idle',
   error: null,
@@ -142,6 +152,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setIntro: (intro) => set({ intro }),
   openWiki: (id) => set({ wiki: id ?? 'why', drawer: null }),
   closeWiki: () => set({ wiki: null }),
+  setQuality: (quality, pin = false) => {
+    if (pin) saveQuality(quality)
+    set({ quality, qualityPinned: pin })
+  },
   launch: (vehicleId, speed) => {
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
@@ -194,4 +208,38 @@ export const PHASE_RATE: Record<Phase, number> = {
 export function phaseAt(result: MissionResult, t: number) {
   for (const p of result.phases) if (t >= p.start && t < p.end) return p
   return result.phases[result.phases.length - 1]
+}
+
+/**
+ * The clock for the DOM: the store's `t` moves every frame for the scenes, but a React tree
+ * re-rendering 60 times a second for a changing number is wasted work on a slow CPU. This
+ * delivers `t` at most `hz` times a second, plus a trailing update so a pause or a seek settles
+ * on the exact value.
+ */
+export function useThrottledT(hz = 12): number {
+  const [t, setT] = useState(() => useAppStore.getState().t)
+  useEffect(() => {
+    let last = 0
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const period = 1000 / hz
+    const unsub = useAppStore.subscribe((s, prev) => {
+      if (s.t === prev.t) return
+      const now = performance.now()
+      if (now - last >= period) {
+        last = now
+        setT(s.t)
+      } else if (!timer) {
+        timer = setTimeout(() => {
+          timer = null
+          last = performance.now()
+          setT(useAppStore.getState().t)
+        }, period - (now - last))
+      }
+    })
+    return () => {
+      unsub()
+      if (timer) clearTimeout(timer)
+    }
+  }, [hz])
+  return t
 }

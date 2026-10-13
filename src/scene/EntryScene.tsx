@@ -21,6 +21,7 @@ import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 import { autoOrbit, view } from './viewControl'
+import { useQuality } from './useQuality'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
@@ -58,6 +59,7 @@ const smooth = (v: number) => {
 }
 
 export default function EntryScene({ vehicleId }: { vehicleId: string }) {
+  const q = useQuality()
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
   const crew = useAppStore((s) => s.config.crew)
   const L = SPACECRAFT_LENGTH[vehicleId] ?? 20
@@ -108,7 +110,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     return new THREE.Quaternion().setFromRotationMatrix(m)
   }, [])
   const capsuleTilt = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.35)), [])
-  const puffs = useMemo(() => makePuffs(5, N_PUFFS), [])
+  const nPuffs = Math.max(12, Math.round(N_PUFFS * q.sprites))
+  const puffs = useMemo(() => makePuffs(5, nPuffs), [nPuffs])
   const fragments = useMemo(() => makeFragments(9, N_FRAGMENTS, isShip ? 45 : 75, isShip ? 6 : 1.7), [isShip])
   const tmp = useMemo(() => ({ o: new THREE.Object3D(), origin: new THREE.Vector3() }), [])
 
@@ -502,7 +505,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       </group>
       {isShip && <FirstSteps groundY={-L / 2 - 2.7} hatchY={2.7 + 19.4} shipR={4.5} crew={crew} />}
       {/* the sun: low in the west; its shadow map follows the ship (always at the origin) */}
-      <directionalLight ref={dirLight} position={[300, 400, 200]} intensity={2.0} color="#ffe2c4" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
+      <directionalLight ref={dirLight} position={[300, 400, 200]} intensity={2.0} color="#ffe2c4" castShadow={q.shadowMap > 0} shadow-mapSize={[q.shadowMap || 1, q.shadowMap || 1]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
       <hemisphereLight ref={hemi} args={['#d8a877', '#4a2c1a', 0.6]} />
       <sprite ref={sun} scale={[9000, 9000, 1]} renderOrder={-9}>
         <spriteMaterial map={sunTex} color="#dfe8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />

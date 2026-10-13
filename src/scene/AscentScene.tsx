@@ -20,6 +20,7 @@ import { AscentSky } from './EarthBelow'
 import { dustTexture } from './impact'
 import { VehicleRig } from './VehicleRig'
 import { autoOrbit, view } from './viewControl'
+import { useQuality } from './useQuality'
 
 /** the sun: ~50° up in the south-east (a late Florida morning); shared by the lights and the sky */
 const SUN = new THREE.Vector3(180, 260, 120).normalize()
@@ -34,6 +35,7 @@ const smooth = (a: number, b: number, x: number) => {
 }
 
 export default function AscentScene({ vehicleId }: { vehicleId: string }) {
+  const q = useQuality()
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
   const h = vehicle.height
   const rig = useRef<THREE.Group>(null)
@@ -142,7 +144,7 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   return (
     <group>
       <hemisphereLight args={['#9fb9dc', '#4a4636', 0.6]} />
-      <directionalLight position={[SUN.x * 400, SUN.y * 400, SUN.z * 400]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
+      <directionalLight position={[SUN.x * 400, SUN.y * 400, SUN.z * 400]} intensity={2.4} color="#fff1dc" castShadow={q.shadowMap > 0} shadow-mapSize={[q.shadowMap || 1, q.shadowMap || 1]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
       <Suspense fallback={null}>
         <AscentSky />
       </Suspense>

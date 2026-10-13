@@ -161,8 +161,26 @@ export function applyAerialPerspective<T extends THREE.Material>(material: T, st
   return material
 }
 
+/**
+ * Logarithmic depth from the vertex shader rather than gl_FragDepth: the fragment path defeats
+ * the early depth test, and the sky is the most expensive shader on screen — with its depth
+ * set per vertex, the fragments behind the ground are rejected before they are shaded. The sky
+ * sphere is thousands of kilometres out, so the interpolation error of the vertex path is moot.
+ */
+export const SKY_LOGDEPTH_VERTEX = /* glsl */ `
+  #ifdef USE_LOGARITHMIC_DEPTH_BUFFER
+    gl_Position.z = (log2(max(1e-6, gl_Position.w + 1.0)) * logDepthBufFC - 1.0) * gl_Position.w;
+  #endif
+`
+/** goes with SKY_LOGDEPTH_VERTEX, above main(): the renderer sets this uniform on every program */
+export const SKY_LOGDEPTH_PARS = /* glsl */ `
+  #ifdef USE_LOGARITHMIC_DEPTH_BUFFER
+    uniform float logDepthBufFC;
+  #endif
+`
+
 /** the sky material: a camera-centred sphere; the fragment marches the full ray */
-export function skyScatterMaterial(): THREE.ShaderMaterial {
+export function skyScatterMaterial(samples: [number, number] = [16, 4]): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: ATMO_UNIFORMS(),
     side: THREE.BackSide,
@@ -176,26 +194,24 @@ export function skyScatterMaterial(): THREE.ShaderMaterial {
     fog: false,
     vertexShader: /* glsl */ `
       #include <common>
-      #include <logdepthbuf_pars_vertex>
+      ${SKY_LOGDEPTH_PARS}
       varying vec3 vDir;
       void main() {
         vDir = (modelMatrix * vec4(position, 1.0)).xyz - cameraPosition;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        #include <logdepthbuf_vertex>
+        ${SKY_LOGDEPTH_VERTEX}
       }`,
     fragmentShader: /* glsl */ `
       #include <common>
-      #include <logdepthbuf_pars_fragment>
       ${ATMO_PARS}
       varying vec3 vDir;
       void main() {
-        #include <logdepthbuf_fragment>
         vec3 rd = normalize(vDir);
         vec3 T;
         // stop at the ground if the ray meets it (the ground draws itself; this keeps the limb clean)
         vec2 tg = atmoRaySphere(cameraPosition - uAtmoCenter, rd, ATMO_RE);
         float tMax = (tg.x > 0.0) ? tg.x : 1e12;
-        vec3 col = atmoScatter(cameraPosition, rd, tMax, T, 16, 4);
+        vec3 col = atmoScatter(cameraPosition, rd, tMax, T, ${samples[0]}, ${samples[1]});
         // the sun's disc, seen through the air (reddens and dims low down)
         float mu = dot(rd, uAtmoSun);
         float disc = smoothstep(0.99988, 0.99996, mu);

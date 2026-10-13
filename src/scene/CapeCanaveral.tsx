@@ -9,7 +9,7 @@
  * Earth's centre as the vehicle flies downrange.
  */
 import { useFrame, useLoader } from '@react-three/fiber'
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, ll, padHeight, waveNormalTexture } from './capeSite'
@@ -22,6 +22,8 @@ import { VEHICLES } from '../data/vehicles'
 import { hash2 } from './noise'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
+import { texName } from './quality'
+import { useQuality } from './useQuality'
 
 const KM = 1000
 const BASE_URL = import.meta.env.BASE_URL
@@ -56,12 +58,17 @@ function waterAt(alpha: THREE.Texture, half: number, x: number, z: number): bool
   return img.__alpha[(j * n + i) * 4 + 1] < 200
 }
 
-function groundMaterial(map: THREE.Texture, alpha: THREE.Texture | null, edgeFade = 0): THREE.MeshStandardMaterial {
+/**
+ * `depthPush` pushes the tile back in the depth buffer (polygon offset units): the coarser
+ * tiers sit a few metres under the finer ones, which the depth buffer cannot resolve at a
+ * distance without the logarithmic depth buffer — the push settles who wins where they overlap.
+ */
+function groundMaterial(map: THREE.Texture, alpha: THREE.Texture | null, edgeFade = 0, depthPush = 0): THREE.MeshStandardMaterial {
   map.colorSpace = THREE.SRGBColorSpace
   map.anisotropy = 16
   map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping
   if (alpha) alpha.wrapS = alpha.wrapT = THREE.ClampToEdgeWrapping
-  const m = new THREE.MeshStandardMaterial({ map, alphaMap: alpha ?? undefined, transparent: true, roughness: 1, envMapIntensity: 0.15 })
+  const m = new THREE.MeshStandardMaterial({ map, alphaMap: alpha ?? undefined, transparent: true, roughness: 1, envMapIntensity: 0.15, polygonOffset: depthPush > 0, polygonOffsetFactor: depthPush, polygonOffsetUnits: depthPush * 2 })
   applyAerialPerspective(m)
   applyCloudShadow(m)
   if (edgeFade > 0) applyEdgeFade(m, edgeFade)
@@ -146,31 +153,37 @@ function Scrub({ pad, groundY, alpha }: { pad: PadId; groundY: number; alpha: TH
 function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
   const cfg = TILES[pad]
   const origin = PAD_SITE[pad]
-  const [capeMap, capeAlpha, waterMap, complexMap, complexAlpha, padMap, padAlpha] = useLoader(THREE.TextureLoader, [
-    `${BASE_URL}assets/cape/cape-${cfg.cape}.jpg`,
-    `${BASE_URL}assets/cape/cape-${cfg.cape}-alpha.png`,
-    `${BASE_URL}assets/cape/cape-${cfg.cape}-water.jpg`,
-    `${BASE_URL}assets/cape/complex-${cfg.site}.jpg`,
-    `${BASE_URL}assets/cape/complex-${cfg.site}-alpha.png`,
-    `${BASE_URL}assets/cape/pad-${pad}.jpg`,
-    `${BASE_URL}assets/cape/pad-${pad}-alpha.png`,
+  const q = useQuality()
+  const textures = useLoader(THREE.TextureLoader, [
+    `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}.jpg`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}-alpha.png`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}-water.jpg`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`complex-${cfg.site}.jpg`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`complex-${cfg.site}-alpha.png`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`pad-${pad}.jpg`, q.textures)}`,
+    `${BASE_URL}assets/cape/${texName(`pad-${pad}-alpha.png`, q.textures)}`,
   ])
+  const [capeMap, capeAlpha, waterMap, complexMap, complexAlpha, padMap, padAlpha] = textures
+  // the GPU copies go when the Cape leaves the stage (the loader keeps the images; they are
+  // re-uploaded if a new mission brings the pad back)
+  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])
   const tiles = useMemo(() => {
     const c = CAPE_TILE_CENTRE[cfg.cape]
     const cx = c[0] - origin[0]
     const cz = c[1] - origin[1]
     const bounds = { x0: cx - 24 * KM, x1: cx + 24 * KM, z0: cz - 24 * KM, z1: cz + 24 * KM }
-    const capeGeo = capGeometry(R_EARTH, bounds, 96)
-    const complexGeo = capGeometry(R_EARTH, 4 * KM, 64)
-    const padGeo = capGeometry(R_EARTH, 1000, 160, (x, z) => padHeight(pad, x, z))
+    const seg = (n: number) => Math.max(16, Math.round(n * q.mesh))
+    const capeGeo = capGeometry(R_EARTH, bounds, seg(96))
+    const complexGeo = capGeometry(R_EARTH, 4 * KM, seg(64))
+    const padGeo = capGeometry(R_EARTH, 1000, seg(160), (x, z) => padHeight(pad, x, z))
     // the finer tiles fade out at their edges into the coarser one beneath
-    return { bounds, capeGeo, complexGeo, padGeo, capeMat: groundMaterial(capeMap, capeAlpha, 0.03), complexMat: groundMaterial(complexMap, complexAlpha, 0.06), padMat: groundMaterial(padMap, padAlpha, 0.08) }
-  }, [pad, cfg, origin, capeMap, capeAlpha, complexMap, complexAlpha, padMap, padAlpha])
+    return { bounds, capeGeo, complexGeo, padGeo, capeMat: groundMaterial(capeMap, capeAlpha, 0.03, 2), complexMat: groundMaterial(complexMap, complexAlpha, 0.06, 1), padMat: groundMaterial(padMap, padAlpha, 0.08) }
+  }, [pad, cfg, origin, capeMap, capeAlpha, complexMap, complexAlpha, padMap, padAlpha, q.mesh])
   return (
     <group>
       <group position={[0, groundY, 0]}>
         {/* the water under the tiles' transparent open water, with the Cape tile's frame */}
-        <Water y={-2.5} bounds={tiles.bounds} map={waterMap} segments={96} tile={270} />
+        <Water y={-2.5} bounds={tiles.bounds} map={waterMap} segments={Math.max(24, Math.round(96 * q.mesh))} tile={270} />
         <mesh geometry={tiles.capeGeo} material={tiles.capeMat} position={[0, -1.5, 0]} receiveShadow renderOrder={3} />
         <mesh geometry={tiles.complexGeo} material={tiles.complexMat} position={[0, -0.6, 0]} receiveShadow renderOrder={4} />
         <mesh geometry={tiles.padGeo} material={tiles.padMat} receiveShadow renderOrder={5} />

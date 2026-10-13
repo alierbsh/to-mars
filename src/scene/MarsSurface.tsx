@@ -19,6 +19,7 @@ import { DustDevils, Rocks, SandTails, SpiritLander, regolithNormal } from './Ma
 import { GLOBE_HALF, MID_HALF, MID_SEG, NEAR_HALF, NEAR_SEG, R_MARS, REGION_HALF, REGION_SEG, SITE_LAT, SITE_LON, SITE_X, SITE_Z, buildSite, rockField } from './marsSite'
 import type { MapsWorkerRequest, MapsWorkerResponse } from './marsMaps.worker'
 import { canvasTexture, capGeometry, loadHeightmap, type Heightmap } from './terrain'
+import { qualityNow, useQuality } from './useQuality'
 
 const BASE_URL = import.meta.env.BASE_URL
 const GLOBE_N = 1536
@@ -104,14 +105,16 @@ function requestMaps(gusev: Heightmap, victoria: Heightmap, globe: Uint8ClampedA
     const req: MapsWorkerRequest = { type: 'globe', n: GLOBE_N, data: globe }
     mapWorker.postMessage(req, [globe.buffer])
   }
+  // the full maps: half size on the low tier (a quarter of the pixels to rasterise and to hold)
+  const k = qualityNow().textures === 'half' ? 0.5 : 1
   const full: MapsWorkerRequest = {
     type: 'maps',
     gusev,
     victoria,
     maps: [
-      { kind: 'near', n: 1536, half: NEAR_HALF },
-      { kind: 'mid', n: 1536, half: MID_HALF },
-      { kind: 'region', n: 1024, half: REGION_HALF },
+      { kind: 'near', n: 1536 * k, half: NEAR_HALF },
+      { kind: 'mid', n: 1536 * k, half: MID_HALF },
+      { kind: 'region', n: 1024 * k, half: REGION_HALF },
     ],
   }
   mapWorker.postMessage(full)
@@ -156,13 +159,15 @@ export function MarsSurface() {
 
   // heightfields and geometry on the main thread (fast); the colour maps from the worker
   const site = useMemo(() => (gusev && victoria ? buildSite(gusev, victoria) : null), [gusev, victoria])
+  const mesh = useQuality().mesh
   const geo = useMemo(() => {
     if (!site) return null
-    const regionGeo = capGeometry(R_MARS, { x0: -REGION_HALF - SITE_X, x1: REGION_HALF - SITE_X, z0: -REGION_HALF - SITE_Z, z1: REGION_HALF - SITE_Z }, REGION_SEG, site.regionHeight)
-    const midGeo = capGeometry(R_MARS, MID_HALF, MID_SEG, site.midHeight)
-    const nearGeo = capGeometry(R_MARS, NEAR_HALF, NEAR_SEG, site.nearHeight)
+    const seg = (n: number) => Math.max(32, Math.round(n * mesh))
+    const regionGeo = capGeometry(R_MARS, { x0: -REGION_HALF - SITE_X, x1: REGION_HALF - SITE_X, z0: -REGION_HALF - SITE_Z, z1: REGION_HALF - SITE_Z }, seg(REGION_SEG), site.regionHeight)
+    const midGeo = capGeometry(R_MARS, MID_HALF, seg(MID_SEG), site.midHeight)
+    const nearGeo = capGeometry(R_MARS, NEAR_HALF, seg(NEAR_SEG), site.nearHeight)
     return { regionGeo, midGeo, nearGeo }
-  }, [site])
+  }, [site, mesh])
 
   useEffect(() => {
     if (!gusev || !victoria) return
@@ -178,8 +183,9 @@ export function MarsSurface() {
 
   // materials are created once and re-targeted when a map arrives (a map change needs a recompile)
   const mats = useMemo(() => {
-    const mk = (transparent: boolean, normal?: THREE.Texture, repeat = 1, strength = 0) => {
-      const m = new THREE.MeshStandardMaterial({ color: '#8a5234', roughness: 1, envMapIntensity: 0.2, transparent })
+    // depthPush (polygon offset units) settles the overlap of the tiers without the logarithmic depth buffer
+    const mk = (transparent: boolean, normal?: THREE.Texture, repeat = 1, strength = 0, depthPush = 0) => {
+      const m = new THREE.MeshStandardMaterial({ color: '#8a5234', roughness: 1, envMapIntensity: 0.2, transparent, polygonOffset: depthPush > 0, polygonOffsetFactor: depthPush, polygonOffsetUnits: depthPush * 2 })
       if (normal) {
         const n = normal.clone()
         n.repeat.set(repeat, repeat)
@@ -191,7 +197,7 @@ export function MarsSurface() {
     }
     const nrm = regolithNormal()
     // one tile = 40 m: the near patch (2.4 km) repeats 60×, the mid tile (16 km) 400× (grain only, faint)
-    return { globe: new THREE.MeshStandardMaterial({ map: globeImg, roughness: 1, envMapIntensity: 0.2 }), region: mk(false), mid: mk(true, nrm, 400, 0.3), near: mk(true, nrm, 60, 0.6) }
+    return { globe: new THREE.MeshStandardMaterial({ map: globeImg, roughness: 1, envMapIntensity: 0.2, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 }), region: mk(false, undefined, 1, 0, 3), mid: mk(true, nrm, 400, 0.3, 1), near: mk(true, nrm, 60, 0.6) }
   }, [globeImg])
   useEffect(() => {
     for (const k of ['globe', 'region', 'mid', 'near'] as const) {

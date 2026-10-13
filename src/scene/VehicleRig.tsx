@@ -32,10 +32,13 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   /** distance from the vehicle base to the pad deck (ascent only; Infinity elsewhere) */
   const floor = useRef(Infinity)
   const bells = useRef<Array<{ mesh: THREE.Mesh; stage: string; cold: THREE.Material }> | null>(null)
+  const parts = useRef<{ list: THREE.Group[]; frostGroup: THREE.Group | null; frostMats: THREE.MeshStandardMaterial[] } | null>(null)
   const vehicle = VEHICLES.find((v) => v.id === id)!
 
   useEffect(() => {
     if (!root.current) return
+    parts.current = null
+    bells.current = null
     const list: Anchor[] = []
     root.current.traverse((o) => {
       if (o.name.startsWith('plume:')) {
@@ -118,26 +121,41 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       frost = useAppStore.getState().intro ? 1 : Math.max(0, 1 - ta / 20)
     }
 
-    // apply
-    g.traverse((o) => {
-      if (!(o instanceof THREE.Group) || !o.name || o.name.startsWith('plume:')) return
+    // apply — to the named groups, collected once (a traverse of the whole model every frame
+    // is a few hundred objects on a 33-engine booster)
+    if (!parts.current) {
+      const list: THREE.Group[] = []
+      const frostMats: THREE.MeshStandardMaterial[] = []
+      let frostGroup: THREE.Group | null = null
+      g.traverse((o) => {
+        if (!(o instanceof THREE.Group) || !o.name || o.name.startsWith('plume:')) return
+        if (o.name === 'frost') {
+          frostGroup = o
+          o.traverse((c) => {
+            const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined
+            if (m && m.transparent) frostMats.push(m)
+          })
+          return
+        }
+        if (o.name === 'leg' || o.name === 'legExt') return
+        o.userData.baseY ??= o.position.y
+        o.userData.baseRz ??= o.rotation.z
+        list.push(o)
+      })
+      parts.current = { list, frostGroup, frostMats }
+    }
+    const { list, frostGroup, frostMats } = parts.current
+    if (frostGroup) {
+      frostGroup.visible = frost > 0.01
+      for (const m of frostMats) m.opacity = 0.75 * frost
+    }
+    for (const o of list) {
       const key = o.name
-      if (key === 'frost') {
-        o.visible = frost > 0.01
-        o.traverse((c) => {
-          const m = (c as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined
-          if (m && m.transparent) m.opacity = 0.75 * frost
-        })
-        return
-      }
-      if (key === 'leg' || key === 'legExt') return
-      const base = (o.userData.baseY ??= o.position.y) as number
-      const baseRz = (o.userData.baseRz ??= o.rotation.z) as number
       o.visible = !hidden.has(key)
       const off = offsets[key]
-      o.position.y = base + (off ? off.dy : 0)
-      o.rotation.z = baseRz + (off ? off.rz : 0)
-    })
+      o.position.y = (o.userData.baseY as number) + (off ? off.dy : 0)
+      o.rotation.z = (o.userData.baseRz as number) + (off ? off.rz : 0)
+    }
     for (const a of anchors) throttles.current[a.stage] = burning.has(a.stage) ? 1 : 0
     // engine bells glow while their stage fires
     if (!bells.current) {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
+import { detectQuality, saveQuality } from '../scene/quality'
 import { PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import { useAppStore } from '../state/store'
@@ -35,6 +36,9 @@ export default function MissionDrawer() {
   const setDrawer = useAppStore((s) => s.setDrawer)
   const setIntro = useAppStore((s) => s.setIntro)
   const setPlaying = useAppStore((s) => s.setPlaying)
+  const quality = useAppStore((s) => s.quality)
+  const qualityPinned = useAppStore((s) => s.qualityPinned)
+  const setQuality = useAppStore((s) => s.setQuality)
   const [advanced, setAdvanced] = useState(false)
   const vehicle = VEHICLES.find((v) => v.id === config.vehicleId)!
   const isShip = vehicle.refuelable
@@ -167,6 +171,36 @@ export default function MissionDrawer() {
               <Slider label="Surface wind" value={config.surfaceWind} min={0} max={30} step={1} unit="m/s" onChange={(v) => setConfig({ surfaceWind: v })} note="In 0.6 % of Earth's air pressure even a 30 m/s gale cannot tip a landed ship; it matters for what the landing can see." />
             </div>
           )}
+        </section>
+
+        <section className="section">
+          <p className="label">Graphics</p>
+          <div className="chips">
+            {(
+              [
+                ['auto', 'Auto'],
+                ['high', 'High'],
+                ['medium', 'Medium'],
+                ['low', 'Low'],
+              ] as const
+            ).map(([id, name]) => (
+              <button
+                key={id}
+                className={`chip ${(id === 'auto' ? !qualityPinned : qualityPinned && quality === id) ? 'chip--on' : ''}`}
+                onClick={() => {
+                  if (id === 'auto') {
+                    saveQuality(null)
+                    setQuality(detectQuality(), false)
+                  } else setQuality(id, true)
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <p className="hint">
+            Now {quality}{qualityPinned ? '' : ' (chosen for this device)'}. Low halves the texture resolution, turns off shadows, multisampling and the flame's glow layer, and renders at the screen's native pixels — for phones and older machines.
+          </p>
         </section>
       </div>
     </aside>

@@ -5,6 +5,7 @@
  */
 import { useMemo, type Ref } from 'react'
 import * as THREE from 'three'
+import { SKY_LOGDEPTH_PARS, SKY_LOGDEPTH_VERTEX } from './atmosphere'
 
 export function skyMaterial(horizon: string, zenith: string): THREE.ShaderMaterial {
   const h = new THREE.Color(horizon)
@@ -17,19 +18,17 @@ export function skyMaterial(horizon: string, zenith: string): THREE.ShaderMateri
     fog: false,
     vertexShader: `
       #include <common>
-      #include <logdepthbuf_pars_vertex>
+      ${SKY_LOGDEPTH_PARS}
       varying vec3 vDir;
       void main(){
         vDir = normalize(position);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        #include <logdepthbuf_vertex>
+        ${SKY_LOGDEPTH_VERTEX}
       }`,
     fragmentShader: `
       #include <common>
-      #include <logdepthbuf_pars_fragment>
       uniform float haze; uniform vec3 horizon; uniform vec3 zenith; varying vec3 vDir;
       void main(){
-        #include <logdepthbuf_fragment>
         float up = clamp(vDir.y, -0.2, 1.0);
         // horizon colour held for the first degrees, then up to the zenith; below the horizontal
         // the dome keeps the horizon colour, so the fogged ground meets it without a seam

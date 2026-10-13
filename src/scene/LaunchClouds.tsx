@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import { useAppStore } from '../state/store'
 import { cloudPuffTexture, dustTexture } from './impact'
 import { hash2 } from './noise'
+import { useQuality } from './useQuality'
 
 const N = 30
 const WHITE = new THREE.Color('#f1efe9')
@@ -132,17 +133,19 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
   const group = useRef<THREE.Group>(null)
   const light = useRef<THREE.PointLight>(null)
   const tex = useMemo(() => cloudPuffTexture(), [])
+  // fewer, larger puffs on the low tier: the sprites overlap many times over the pad
+  const n = Math.max(12, Math.round(N * useQuality().sprites))
   const puffs = useMemo<Puff[]>(() => {
     const out: Puff[] = []
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < n; i++) {
       const lobe = i < 22
       const side = i % 2 ? 1 : -1
       const axis = trenchAxis === 'z' ? Math.PI / 2 : 0
       const dir = lobe ? axis * side + (side < 0 ? Math.PI : 0) + (hash2(3, i) - 0.5) * 1.1 : hash2(4, i) * Math.PI * 2
-      out.push({ dir, rate: lobe ? 0.7 + hash2(5, i) * 0.8 : 0.2 + hash2(5, i) * 0.3, rise: 0.3 + hash2(6, i) * 0.9, size: 0.7 + hash2(7, i) * 0.7, delay: hash2(8, i) * 1.5, lobe })
+      out.push({ dir, rate: lobe ? 0.7 + hash2(5, i) * 0.8 : 0.2 + hash2(5, i) * 0.3, rise: 0.3 + hash2(6, i) * 0.9, size: (0.7 + hash2(7, i) * 0.7) * Math.pow(N / n, 0.25), delay: hash2(8, i) * 1.5, lobe })
     }
     return out
-  }, [trenchAxis])
+  }, [trenchAxis, n])
   const col = useMemo(() => new THREE.Color(), [])
 
   useFrame(() => {
@@ -170,7 +173,7 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
       const size = (14 + 26 * grow) * p.size
       s.scale.set(size, size * 0.85, 1)
       const m = s.material as THREE.SpriteMaterial
-      m.opacity = (tt > 0 ? 0.9 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))
+      m.opacity = (tt > 0 ? 0.72 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))
       // the puff texture is lit from above, so the sprites stay upright; the low ones sit in the
       // shadow of the heap
       col.copy(WHITE).lerp(GREY, Math.min(1, tau / 40)).multiplyScalar(0.8 + 0.2 * p.rise)
@@ -185,7 +188,7 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
     <group position={[0, deck, 0]}>
       <pointLight ref={light} position={[0, 6, 0]} color="#ffb070" distance={600} decay={2} intensity={0} />
       <group ref={group} visible={false}>
-        {Array.from({ length: N }, (_, i) => (
+        {puffs.map((_, i) => (
           <sprite key={i}>
             <spriteMaterial map={tex} color="#f1efe9" transparent opacity={0} depthWrite={false} />
           </sprite>

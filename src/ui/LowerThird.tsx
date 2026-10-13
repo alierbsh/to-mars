@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import type { MissionResult, Phase, Stage as StageDef, Vehicle } from '../sim/types'
-import { useAppStore } from '../state/store'
+import { useAppStore, useThrottledT } from '../state/store'
 import { fmtT } from './format'
 import { burningAt, dialsAt, hudAt, marksAt, momentAt, momentsAt, propFractionAt, type Dial as DialData } from './hud'
 import { chapterForMark } from '../wiki/chapters'
@@ -207,7 +207,7 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
 
 export default function LowerThird() {
   const result = useAppStore((s) => s.result)
-  const t = useAppStore((s) => s.t)
+  const t = useThrottledT(12)
   const playing = useAppStore((s) => s.playing)
   const speed = useAppStore((s) => s.speed)
   const setT = useAppStore((s) => s.setT)

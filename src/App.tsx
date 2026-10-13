@@ -25,8 +25,9 @@ export default function App() {
 
   const intro = useAppStore((s) => s.intro)
   const wiki = useAppStore((s) => s.wiki)
+  const quality = useAppStore((s) => s.quality)
   return (
-    <div className={`app ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''} ${wiki ? 'app--wiki' : ''}`}>
+    <div className={`app app--q-${quality} ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''} ${wiki ? 'app--wiki' : ''}`}>
       <Stage />
       <TopBar />
       <VerdictCard />

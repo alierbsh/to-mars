@@ -14,7 +14,7 @@
  * horizon and the limb glows seen from above.
  */
 import { useFrame, useLoader } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { useAppStore } from '../state/store'
@@ -22,6 +22,8 @@ import { ascentAt } from '../ui/hud'
 import { ATMO, R_EARTH_M, applyAerialPerspective, skyScatterMaterial } from './atmosphere'
 import { PAD_SITE, padLatLon } from './capeSite'
 import { capGeometry } from './terrain'
+import { texName } from './quality'
+import { useQuality } from './useQuality'
 
 const BASE_URL = import.meta.env.BASE_URL
 const KM = 1000
@@ -108,13 +110,17 @@ export function applyEdgeFade<T extends THREE.Material>(material: T, width: numb
  * level at `groundY`).
  */
 export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
-  const [day, rough, region, regionRough, clouds] = useLoader(THREE.TextureLoader, [
-    `${BASE_URL}assets/earth/earth-day-4k.jpg`,
-    `${BASE_URL}assets/earth/earth-rough-4k.jpg`,
-    `${BASE_URL}assets/cape/region.jpg`,
-    `${BASE_URL}assets/cape/region-rough.jpg`,
-    `${BASE_URL}assets/cape/region-clouds.webp`,
+  const q = useQuality()
+  // the globe only shows beyond the regional tile, a thousand kilometres out: the 2k map does
+  const textures = useLoader(THREE.TextureLoader, [
+    `${BASE_URL}assets/earth/earth-day-4k-half.jpg`,
+    `${BASE_URL}assets/earth/earth-rough-4k-half.jpg`,
+    `${BASE_URL}assets/cape/${texName('region.jpg', q.textures)}`,
+    `${BASE_URL}assets/cape/${texName('region-rough.jpg', q.textures)}`,
+    `${BASE_URL}assets/cape/${texName('region-clouds.webp', q.textures)}`,
   ])
+  const [day, rough, region, regionRough, clouds] = textures
+  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])
   const origin = PAD_SITE[pad]
   useMemo(() => {
     day.colorSpace = THREE.SRGBColorSpace
@@ -127,26 +133,26 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
   }, [day, rough, region, regionRough, clouds, origin])
 
   const globe = useMemo(() => {
-    const geo = new THREE.SphereGeometry(R_EARTH_M, 256, 128)
-    const mat = new THREE.MeshStandardMaterial({ map: day, roughnessMap: rough, roughness: 1, metalness: 0, envMapIntensity: 0.25 })
+    const geo = new THREE.SphereGeometry(R_EARTH_M, Math.round(256 * q.mesh), Math.round(128 * q.mesh))
+    const mat = new THREE.MeshStandardMaterial({ map: day, roughnessMap: rough, roughness: 1, metalness: 0, envMapIntensity: 0.25, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 })
     applyAerialPerspective(mat)
     const [lat, lon] = padLatLon(pad)
     return { geo, mat, q: globeQuaternion(lat, lon) }
-  }, [day, rough, pad])
+  }, [day, rough, pad, q.mesh])
 
   const tile = useMemo(() => {
     const b = { x0: -origin[0] - REGION_HALF, x1: -origin[0] + REGION_HALF, z0: -origin[1] - REGION_HALF, z1: -origin[1] + REGION_HALF }
-    const geo = capGeometry(R_EARTH_M, b, 200)
-    const mat = new THREE.MeshStandardMaterial({ map: region, roughnessMap: regionRough, roughness: 1, metalness: 0, envMapIntensity: 0.25, transparent: true, depthWrite: true })
+    const geo = capGeometry(R_EARTH_M, b, Math.round(200 * q.mesh))
+    const mat = new THREE.MeshStandardMaterial({ map: region, roughnessMap: regionRough, roughness: 1, metalness: 0, envMapIntensity: 0.25, transparent: true, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 6 })
     applyAerialPerspective(mat)
     applyCloudShadow(mat)
     applyEdgeFade(mat, 0.04)
-    const deck = capGeometry(R_EARTH_M + CLOUD_HEIGHT, b, 160)
+    const deck = capGeometry(R_EARTH_M + CLOUD_HEIGHT, b, Math.round(160 * q.mesh))
     const deckMat = new THREE.MeshBasicMaterial({ map: clouds, transparent: true, depthWrite: false, color: '#ffffff' })
     applyAerialPerspective(deckMat)
     applyEdgeFade(deckMat, 0.03)
     return { geo, mat, deck, deckMat }
-  }, [origin, region, regionRough, clouds])
+  }, [origin, region, regionRough, clouds, q.mesh])
 
   return (
     <group position={[0, groundY, 0]}>
@@ -161,7 +167,8 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
 export function AscentSky() {
   const sky = useRef<THREE.Mesh>(null)
   const starPts = useRef<THREE.Points>(null)
-  const skyMat = useMemo(() => skyScatterMaterial(), [])
+  const q = useQuality()
+  const skyMat = useMemo(() => skyScatterMaterial(q.skySamples), [q.skySamples])
   // 5000 stars on the celestial sphere, a few bright, most faint, slightly tinted
   const stars = useMemo(() => {
     const n = 5000
