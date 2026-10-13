@@ -3,18 +3,19 @@ import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { sound } from '../audio/sound'
 
-/** Wordmark, the rocket picker as a segmented row, and the two panel toggles. */
+/** Wordmark, the ship this mission flies (changed only by starting a new mission), and the panel toggles. */
 export default function TopBar() {
   const vehicleId = useAppStore((s) => s.config.vehicleId)
-  const crew = useAppStore((s) => s.config.crew)
-  const setConfig = useAppStore((s) => s.setConfig)
   const drawer = useAppStore((s) => s.drawer)
   const setDrawer = useAppStore((s) => s.setDrawer)
+  const setIntro = useAppStore((s) => s.setIntro)
+  const setPlaying = useAppStore((s) => s.setPlaying)
   const status = useAppStore((s) => s.status)
   const [muted, setMuted] = useState(sound.muted)
   const wiki = useAppStore((s) => s.wiki)
   const openWiki = useAppStore((s) => s.openWiki)
   const closeWiki = useAppStore((s) => s.closeWiki)
+  const vehicle = VEHICLES.find((v) => v.id === vehicleId) ?? VEHICLES[0]
 
   return (
     <header className="top">
@@ -27,18 +28,24 @@ export default function TopBar() {
           Built by arbash
         </a>
       </div>
-      <nav className="picker" aria-label="Rocket">
-        {VEHICLES.map((v) => (
-          <button
-            key={v.id}
-            className={`picker__item ${v.id === vehicleId ? 'picker__item--on' : ''}`}
-            onClick={() => setConfig({ vehicleId: v.id, crew: Math.min(crew, Math.max(v.spacecraft.crewCapacity, 0)) || crew })}
-            title={v.name}
-          >
-            {v.short}
-          </button>
-        ))}
-      </nav>
+      <div className="craft" aria-label="This mission's ship">
+        <span className="craft__name" title={vehicle.name}>
+          {vehicle.short}
+        </span>
+        <button
+          className="craft__new"
+          onClick={() => {
+            // a different ship is a different mission: back to the choice, then the countdown
+            setPlaying(false)
+            closeWiki()
+            if (drawer) setDrawer(drawer)
+            setIntro('pick')
+          }}
+          title="Choose a ship and fly a new mission"
+        >
+          New mission
+        </button>
+      </div>
       <div className="top__right">
         <span className={`status status--${status}`} aria-label={status}>
           {status === 'running' ? 'computing' : status === 'error' ? 'error' : 'live'}

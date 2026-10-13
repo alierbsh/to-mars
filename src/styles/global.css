@@ -88,10 +88,11 @@ ul, ol { padding: 0; list-style: none; }
 .byline { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t3); padding-left: 20px; white-space: nowrap; text-decoration: none; transition: color 0.2s; }
 .byline:hover { color: var(--t1); text-decoration: none; }
 .wordmark__dot { width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e8926f, #c8552f 55%, #6a2514); box-shadow: 0 0 12px rgba(200, 85, 47, 0.5); }
-.picker { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
-.picker__item { padding: 6px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t2); white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s; }
-.picker__item:hover { color: var(--t1); }
-.picker__item--on { background: var(--t1); color: #000; }
+/* the ship this mission flies: a fixed badge — the rocket is chosen when a mission starts */
+.craft { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
+.craft__name { padding: 6px 14px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #000; background: var(--t1); white-space: nowrap; }
+.craft__new { padding: 6px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t2); white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s; }
+.craft__new:hover { color: var(--t1); background: rgba(255, 255, 255, 0.06); }
 .top__right { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .status { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); display: flex; align-items: center; gap: 6px; margin-right: 8px; }
 .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
@@ -270,6 +271,8 @@ ul, ol { padding: 0; list-style: none; }
 .vehicle { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; text-align: left; padding: 9px 12px; border-radius: var(--r-s); border: 1px solid transparent; transition: background 0.2s, border-color 0.2s; }
 .vehicle:hover { background: rgba(255, 255, 255, 0.05); }
 .vehicle--on { background: rgba(255, 255, 255, 0.07); border-color: var(--line-2); }
+.vehicle--fixed { cursor: default; }
+.vehicle--fixed:hover { background: rgba(255, 255, 255, 0.07); }
 .vehicle__name { font-weight: 600; font-size: 13.5px; }
 .vehicle__meta { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t3); white-space: nowrap; padding-top: 3px; }
 .vehicle__tagline { grid-column: 1 / -1; color: var(--t3); font-size: 12px; }
@@ -364,7 +367,7 @@ ul, ol { padding: 0; list-style: none; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1100px) {
-  .picker__item { padding: 6px 10px; font-size: 11px; }
+  .craft__name, .craft__new { padding: 6px 10px; font-size: 11px; }
   .verdict { width: 320px; }
 }
 @media (max-width: 820px) {
@@ -373,8 +376,7 @@ ul, ol { padding: 0; list-style: none; }
   .top__right { gap: 5px; }
   .pill { padding: 6px 10px; font-size: 11px; letter-spacing: 0.04em; }
   .pill--icon { width: 30px; height: 30px; }
-  .picker { grid-column: 1 / -1; grid-row: 2; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
-  .picker::-webkit-scrollbar { display: none; }
+  .craft { grid-column: 1 / -1; grid-row: 2; justify-self: start; max-width: 100%; }
   .status { display: none; }
   /* the verdict as a strip above the lower third; the lower third as two compact rows:
      dials · clock · controls, then the timeline */
@@ -405,7 +407,7 @@ ul, ol { padding: 0; list-style: none; }
   :root { --drawer-w: 100vw; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drawer, .verdict, .picker__item, .toggle__track::after { transition: none; }
+  .drawer, .verdict, .craft__new, .toggle__track::after { transition: none; }
   .lower, .lower--open * { animation-duration: 0.01s !important; animation-delay: 0s !important; transition: none !important; }
 }
 
@@ -452,7 +454,7 @@ ul, ol { padding: 0; list-style: none; }
 .intro--countdown { background: rgba(0, 0, 0, 0.15); pointer-events: none; }
 .app--intro .top, .app--intro .verdict, .app--intro .lower { opacity: 0; pointer-events: none; }
 .app--intro-countdown .top { opacity: 1; }
-.app--intro-countdown .top .picker, .app--intro-countdown .top .top__right { opacity: 0; pointer-events: none; }
+.app--intro-countdown .top .craft, .app--intro-countdown .top .top__right { opacity: 0; pointer-events: none; }
 .intro__panel { width: 100%; max-width: 640px; margin: auto; animation: rise 0.6s var(--ease) both; }
 .intro__panel--pick { max-width: 980px; }
 .intro__title { font-size: 44px; line-height: 1.05; font-weight: 600; letter-spacing: -0.03em; margin: 12px 0 22px; }

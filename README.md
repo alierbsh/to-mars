@@ -72,7 +72,7 @@ src/
   scene/    three.js stage: procedural vehicle models, phase scenes, the flame shader (Plume.tsx), the rig;
             Cape Canaveral (capeSite.ts, pads.tsx, CapeCanaveral.tsx), the globe and the sky under the climb
             (EarthBelow.tsx, atmosphere.ts), the Earth in orbit, the Mars site (marsSite.ts + worker), the first steps
-  ui/       top bar + rocket picker, verdict card, the lower third (dials, clock, timeline, engines), drawers, the wiki
+  ui/       intro (why Mars → choose the ship → countdown), top bar, verdict card, the lower third (dials, clock, timeline, engines), drawers, the wiki
   audio/    Web Audio synthesis and the driver that follows the sim
   wiki/     the chapters
   state/    zustand store + playback pacing

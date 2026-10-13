@@ -33,6 +33,8 @@ export default function MissionDrawer() {
   const setConfig = useAppStore((s) => s.setConfig)
   const open = useAppStore((s) => s.drawer === 'mission')
   const setDrawer = useAppStore((s) => s.setDrawer)
+  const setIntro = useAppStore((s) => s.setIntro)
+  const setPlaying = useAppStore((s) => s.setPlaying)
   const [advanced, setAdvanced] = useState(false)
   const vehicle = VEHICLES.find((v) => v.id === config.vehicleId)!
   const isShip = vehicle.refuelable
@@ -55,17 +57,22 @@ export default function MissionDrawer() {
       <div className="drawer__body">
         <section className="section">
           <p className="label">Rocket</p>
-          <ul className="vehicles">
-            {VEHICLES.map((v) => (
-              <li key={v.id}>
-                <button className={`vehicle ${v.id === config.vehicleId ? 'vehicle--on' : ''}`} onClick={() => setConfig({ vehicleId: v.id, crew: Math.min(config.crew, Math.max(v.spacecraft.crewCapacity, 0)) || config.crew })}>
-                  <span className="vehicle__name">{v.name}</span>
-                  <span className="vehicle__meta">{v.badge}</span>
-                  <span className="vehicle__tagline">{v.tagline}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="vehicle vehicle--on vehicle--fixed">
+            <span className="vehicle__name">{vehicle.name}</span>
+            <span className="vehicle__meta">{vehicle.badge}</span>
+            <span className="vehicle__tagline">{vehicle.tagline}</span>
+          </div>
+          <p className="hint">The ship is chosen when a mission starts. To fly another one, start a new mission.</p>
+          <button
+            className="chip"
+            onClick={() => {
+              setPlaying(false)
+              setDrawer('mission')
+              setIntro('pick')
+            }}
+          >
+            New mission →
+          </button>
         </section>
 
         <section className="section">
