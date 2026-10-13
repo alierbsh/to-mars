@@ -81,7 +81,7 @@ export function applyCloudShadow<T extends THREE.Material>(material: T): T {
 }
 
 /** fade a tile's alpha over its outer `width` of UV so it blends into what lies under it */
-function applyEdgeFade<T extends THREE.Material>(material: T, width: number): T {
+export function applyEdgeFade<T extends THREE.Material>(material: T, width: number): T {
   const prev = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     prev?.(shader, renderer)
@@ -113,7 +113,7 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
     `${BASE_URL}assets/earth/earth-rough-4k.jpg`,
     `${BASE_URL}assets/cape/region.jpg`,
     `${BASE_URL}assets/cape/region-rough.jpg`,
-    `${BASE_URL}assets/cape/region-clouds.png`,
+    `${BASE_URL}assets/cape/region-clouds.webp`,
   ])
   const origin = PAD_SITE[pad]
   useMemo(() => {

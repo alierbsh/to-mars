@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
+import { sound } from '../audio/sound'
 
 /** Wordmark, the rocket picker as a segmented row, and the two panel toggles. */
 export default function TopBar() {
@@ -9,6 +11,7 @@ export default function TopBar() {
   const drawer = useAppStore((s) => s.drawer)
   const setDrawer = useAppStore((s) => s.setDrawer)
   const status = useAppStore((s) => s.status)
+  const [muted, setMuted] = useState(sound.muted)
 
   return (
     <header className="top">
@@ -37,6 +40,22 @@ export default function TopBar() {
         <span className={`status status--${status}`} aria-label={status}>
           {status === 'running' ? 'computing' : status === 'error' ? 'error' : 'live'}
         </span>
+        <button
+          className={`pill pill--icon ${muted ? 'pill--muted' : ''}`}
+          onClick={() => {
+            sound.enable()
+            sound.setMuted(!muted)
+            setMuted(!muted)
+          }}
+          aria-label={muted ? 'Unmute' : 'Mute'}
+          title={muted ? 'Sound off' : 'Sound on'}
+        >
+          {muted ? (
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" /><path d="M11 6l3 4M14 6l-3 4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+          ) : (
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" /><path d="M11 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9" stroke="currentColor" strokeWidth="1.4" fill="none" /></svg>
+          )}
+        </button>
         <button className={`pill ${drawer === 'mission' ? 'pill--on' : ''}`} onClick={() => setDrawer('mission')}>
           Mission
         </button>

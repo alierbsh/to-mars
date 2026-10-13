@@ -8,13 +8,13 @@
  * shadows. The selected pad is the local origin; the ascent scene swings this group about the
  * Earth's centre as the vehicle flies downrange.
  */
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useLoader } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
-import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
+import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, ll, padHeight, waveNormalTexture } from './capeSite'
 import { applyAerialPerspective } from './atmosphere'
-import { EarthBelow, applyCloudShadow } from './EarthBelow'
+import { EarthBelow, applyCloudShadow, applyEdgeFade } from './EarthBelow'
 import { Birds, Hangar, PadSign, Vab } from './CapeDetail'
 import { dustTexture } from './impact'
 import { LaunchClouds, LaunchDetail } from './LaunchClouds'
@@ -24,7 +24,49 @@ import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 
 const KM = 1000
-const cache: { cape: Partial<Record<PadId, THREE.CanvasTexture>>; pad: Partial<Record<PadId, THREE.CanvasTexture>> } = { cape: {}, pad: {} }
+const BASE_URL = import.meta.env.BASE_URL
+
+/** the offline tiles (scripts/cape-assets.py): the ±24 km Cape tile each pad sits in, and the site of its ±4 km / ±1 km tiles */
+const CAPE_TILE_CENTRE: Record<'39' | 'ccsfs', [number, number]> = { '39': ll(-80.6041, 28.6083), ccsfs: ll(-80.554, 28.501) }
+const TILES: Record<PadId, { cape: '39' | 'ccsfs'; site: string }> = {
+  'lc39a-starship': { cape: '39', site: 'lc39a' },
+  'lc39a-fss': { cape: '39', site: 'lc39a' },
+  'lc39a-lut': { cape: '39', site: 'lc39a' },
+  'lc39b-ml': { cape: '39', site: 'lc39b' },
+  slc37: { cape: 'ccsfs', site: 'slc37' },
+  lc36: { cape: 'ccsfs', site: 'lc36' },
+}
+
+/** is (x, z) in pad-local metres water on a tile's alpha image (±half)? */
+function waterAt(alpha: THREE.Texture, half: number, x: number, z: number): boolean {
+  const img = alpha.image as HTMLImageElement & { __alpha?: Uint8ClampedArray; __n?: number }
+  if (!img.__alpha) {
+    const c = document.createElement('canvas')
+    c.width = img.width
+    c.height = img.height
+    const ctx = c.getContext('2d')!
+    ctx.drawImage(img, 0, 0)
+    img.__alpha = ctx.getImageData(0, 0, img.width, img.height).data
+    img.__n = img.width
+  }
+  const n = img.__n!
+  const i = Math.round(((x + half) / (2 * half)) * (n - 1))
+  const j = Math.round(((z + half) / (2 * half)) * (n - 1))
+  if (i < 0 || j < 0 || i >= n || j >= n) return false
+  return img.__alpha[(j * n + i) * 4 + 1] < 200
+}
+
+function groundMaterial(map: THREE.Texture, alpha: THREE.Texture | null, edgeFade = 0): THREE.MeshStandardMaterial {
+  map.colorSpace = THREE.SRGBColorSpace
+  map.anisotropy = 16
+  map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping
+  if (alpha) alpha.wrapS = alpha.wrapT = THREE.ClampToEdgeWrapping
+  const m = new THREE.MeshStandardMaterial({ map, alphaMap: alpha ?? undefined, transparent: true, roughness: 1, envMapIntensity: 0.15 })
+  applyAerialPerspective(m)
+  applyCloudShadow(m)
+  if (edgeFade > 0) applyEdgeFade(m, edgeFade)
+  return m
+}
 
 function Landmark({ at, origin, children }: { at: [number, number]; origin: [number, number]; children: React.ReactNode }) {
   return <group position={[at[0] - origin[0], 0, at[1] - origin[1]]}>{children}</group>
@@ -35,22 +77,24 @@ const vabMat = new THREE.MeshStandardMaterial({ color: '#d8d8d3', roughness: 0.8
 const steelGrey = new THREE.MeshStandardMaterial({ color: '#6f7479', roughness: 0.65, metalness: 0.5 })
 
 /**
- * The sea: a spherical cap under the Cape map with drifting normal-mapped waves and a specular
- * sun glint; 1 km cells, so its chords sit within centimetres of the sphere like the land tile
- * above it, and it shows only through the holes in the map.
+ * The sea: a spherical cap under the land tiles with drifting normal-mapped waves and a specular
+ * sun glint, wearing the water colour painted with the Cape tile (turbid lagoons, the shelf
+ * deepening offshore); it shows wherever the land tiles are transparent. Its chords sit within
+ * centimetres of the sphere, like the tiles above it.
  */
-function Water({ y, half, segments, tile }: { y: number; half: number; segments: number; tile: number }) {
-  const geo = useMemo(() => capGeometry(R_EARTH, half, segments), [half, segments])
+function Water({ y, bounds, map, segments, tile }: { y: number; bounds: { x0: number; x1: number; z0: number; z1: number }; map: THREE.Texture; segments: number; tile: number }) {
+  const geo = useMemo(() => capGeometry(R_EARTH, bounds, segments), [bounds, segments])
   const mat = useMemo(() => {
     const normalMap = waveNormalTexture().clone()
-    normalMap.repeat.set((2 * half) / tile, (2 * half) / tile)
+    normalMap.repeat.set((bounds.x1 - bounds.x0) / tile, (bounds.z1 - bounds.z0) / tile)
     normalMap.needsUpdate = true
-    // the colour of the regional tile's coastal sea, so the cap blends into it at its edge
-    const m = new THREE.MeshStandardMaterial({ color: '#143f66', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
+    map.colorSpace = THREE.SRGBColorSpace
+    map.anisotropy = 8
+    const m = new THREE.MeshStandardMaterial({ map, color: '#ffffff', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
     applyAerialPerspective(m)
     applyCloudShadow(m)
     return m
-  }, [half, tile])
+  }, [bounds, tile, map])
   useFrame((_, dt) => {
     const m = mat.normalMap!
     m.offset.x = (m.offset.x + dt * 0.012) % 1
@@ -60,7 +104,7 @@ function Water({ y, half, segments, tile }: { y: number; half: number; segments:
 }
 
 /** low coastal scrub around the pad: instanced flattened blobs, two greens */
-function Scrub({ pad, groundY, map }: { pad: PadId; groundY: number; map: THREE.CanvasTexture }) {
+function Scrub({ pad, groundY, alpha }: { pad: PadId; groundY: number; alpha: THREE.Texture }) {
   const mesh = useMemo(() => {
     const g = new THREE.SphereGeometry(1, 7, 5)
     const mat = applyAerialPerspective(new THREE.MeshStandardMaterial({ color: '#4a6a33', roughness: 1 }))
@@ -77,7 +121,7 @@ function Scrub({ pad, groundY, map }: { pad: PadId; groundY: number; map: THREE.
       const z = Math.sin(a) * r
       // leave the crawlerway (west) and the road ring clear; nothing grows in the sea
       if (Math.abs(z) < 40 && x < 0) continue
-      if (waterAt(map, x, z)) continue
+      if (waterAt(alpha, 4 * KM, x, z)) continue
       const s = 1.6 + hash2(i, 23) * 3.2
       o.position.set(x, groundY + s * 0.35, z)
       o.scale.set(s, s * 0.55, s * (0.8 + hash2(i, 24) * 0.5))
@@ -94,8 +138,46 @@ function Scrub({ pad, groundY, map }: { pad: PadId; groundY: number; map: THREE.
     m.castShadow = true
     m.frustumCulled = false
     return m
-  }, [pad, groundY, map])
+  }, [pad, groundY, alpha])
   return <primitive object={mesh} />
+}
+
+/** the three ground tiles around the pad (the Cape, the launch complex, the pad itself) and the scrub that reads the complex tile's water */
+function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
+  const cfg = TILES[pad]
+  const origin = PAD_SITE[pad]
+  const [capeMap, capeAlpha, waterMap, complexMap, complexAlpha, padMap, padAlpha] = useLoader(THREE.TextureLoader, [
+    `${BASE_URL}assets/cape/cape-${cfg.cape}.jpg`,
+    `${BASE_URL}assets/cape/cape-${cfg.cape}-alpha.png`,
+    `${BASE_URL}assets/cape/cape-${cfg.cape}-water.jpg`,
+    `${BASE_URL}assets/cape/complex-${cfg.site}.jpg`,
+    `${BASE_URL}assets/cape/complex-${cfg.site}-alpha.png`,
+    `${BASE_URL}assets/cape/pad-${pad}.jpg`,
+    `${BASE_URL}assets/cape/pad-${pad}-alpha.png`,
+  ])
+  const tiles = useMemo(() => {
+    const c = CAPE_TILE_CENTRE[cfg.cape]
+    const cx = c[0] - origin[0]
+    const cz = c[1] - origin[1]
+    const bounds = { x0: cx - 24 * KM, x1: cx + 24 * KM, z0: cz - 24 * KM, z1: cz + 24 * KM }
+    const capeGeo = capGeometry(R_EARTH, bounds, 96)
+    const complexGeo = capGeometry(R_EARTH, 4 * KM, 64)
+    const padGeo = capGeometry(R_EARTH, 1000, 160, (x, z) => padHeight(pad, x, z))
+    // the finer tiles fade out at their edges into the coarser one beneath
+    return { bounds, capeGeo, complexGeo, padGeo, capeMat: groundMaterial(capeMap, capeAlpha, 0.03), complexMat: groundMaterial(complexMap, complexAlpha, 0.06), padMat: groundMaterial(padMap, padAlpha, 0.08) }
+  }, [pad, cfg, origin, capeMap, capeAlpha, complexMap, complexAlpha, padMap, padAlpha])
+  return (
+    <group>
+      <group position={[0, groundY, 0]}>
+        {/* the water under the tiles' transparent open water, with the Cape tile's frame */}
+        <Water y={-2.5} bounds={tiles.bounds} map={waterMap} segments={96} tile={270} />
+        <mesh geometry={tiles.capeGeo} material={tiles.capeMat} position={[0, -1.5, 0]} receiveShadow renderOrder={3} />
+        <mesh geometry={tiles.complexGeo} material={tiles.complexMat} position={[0, -0.6, 0]} receiveShadow renderOrder={4} />
+        <mesh geometry={tiles.padGeo} material={tiles.padMat} receiveShadow renderOrder={5} />
+      </group>
+      <Scrub pad={pad} groundY={groundY} alpha={complexAlpha} />
+    </group>
+  )
 }
 
 /** fair-weather cumulus over the Cape: billboards at 1.2–2 km */
@@ -126,31 +208,15 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
   const deck = -PAD_DECK[pad]
   const groundY = deck - PAD_MOUND[pad] // grade level around the mound
 
-  const cape = useMemo(() => {
-    if (!cache.cape[pad]) cache.cape[pad] = capeMap(origin)
-    const mat = new THREE.MeshStandardMaterial({ map: cache.cape[pad]!, roughness: 1, envMapIntensity: 0.15, alphaTest: 0.5 })
-    applyAerialPerspective(mat)
-    applyCloudShadow(mat)
-    return { tex: cache.cape[pad]!, mat, geo: capGeometry(R_EARTH, 24 * KM, 96) }
-  }, [pad, origin])
-  const near = useMemo(() => {
-    if (!cache.pad[pad]) cache.pad[pad] = padMap(pad)
-    const mat = new THREE.MeshStandardMaterial({ map: cache.pad[pad]!, roughness: 1, envMapIntensity: 0.15 })
-    applyAerialPerspective(mat)
-    applyCloudShadow(mat)
-    return { tex: cache.pad[pad]!, mat, geo: capGeometry(R_EARTH, 1000, 160, (x, z) => padHeight(pad, x, z)) }
-  }, [pad])
-
   return (
     <group>
       <Suspense fallback={null}>
         <EarthBelow pad={pad} groundY={groundY} />
       </Suspense>
+      <Suspense fallback={null}>
+        <CapeTiles pad={pad} groundY={groundY} />
+      </Suspense>
       <group position={[0, groundY, 0]}>
-        {/* the water cap under the Cape map (its chords match the land cap's) */}
-        <Water y={-2.5} half={30 * KM} segments={60} tile={270} />
-        <mesh geometry={cape.geo} material={cape.mat} position={[0, -1.5, 0]} receiveShadow renderOrder={3} />
-        <mesh geometry={near.geo} material={near.mat} receiveShadow renderOrder={4} />
         {/* landmarks in the 48 km map: the VAB, the LCC, the LC-39 pads' lightning towers */}
         <Landmark at={SITES.vab} origin={origin}>
           <Vab />
@@ -190,7 +256,6 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
           )
         })}
       </group>
-      <Scrub pad={pad} groundY={groundY} map={cape.tex} />
       <Cumulus groundY={groundY} />
       <Birds groundY={groundY} />
       {/* the pad road leaves west: the number board at the perimeter, the hangar beyond it */}

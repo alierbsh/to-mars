@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
+import { sound } from '../audio/sound'
 
 const BASE_URL = import.meta.env.BASE_URL
 const SPEEDS = [0.5, 1, 2, 4, 10]
@@ -30,7 +31,13 @@ function Start() {
         <p>Mars is the only candidate within reach: a day almost the length of ours, water locked up as ice, carbon dioxide to make fuel and oxygen from, enough sunlight for crops under glass. Not a home yet. A frontier that can become one.</p>
         <p>Nobody has flown there. This is a physics simulation of whether the rockets we have today — real masses, real engines, real orbital mechanics — could carry a crew to the surface alive, and what breaks first when they can't.</p>
       </div>
-      <button className="intro__cta" onClick={() => setIntro('pick')}>
+      <button
+        className="intro__cta"
+        onClick={() => {
+          sound.enable()
+          setIntro('pick')
+        }}
+      >
         Start the physics, motors and engines
       </button>
       <p className="intro__foot">Simulation runs in your browser. Drag to look around, scroll to zoom.</p>
@@ -72,7 +79,13 @@ function Pick() {
           </div>
           <p className="hint">For the orbit and the cruise. Liftoff always plays at 1× — it deserves it — and entry, descent and landing never faster than 2×.</p>
         </div>
-        <button className="intro__cta" onClick={() => launch(vehicleId, speed)}>
+        <button
+          className="intro__cta"
+          onClick={() => {
+            sound.enable()
+            launch(vehicleId, speed)
+          }}
+        >
           Launch {v.short}
         </button>
       </div>

@@ -46,9 +46,11 @@ await page.goto(`http://localhost:${port}/${query}`)
 if (click) await page.addStyleTag({ content: '* { transition: none !important; animation: none !important; }' })
 await page.waitForTimeout(waitMs)
 if (click) {
-  // several selectors separated by '|' are clicked in turn, 1.5 s apart
+  // several selectors separated by '|' are clicked in turn, 1.5 s apart ('js:sel' clicks via the DOM)
   for (const sel of click.split('|')) {
-    await page.click(sel)
+    // 'js:' prefix: click through the DOM (no actionability checks — the GPU-less page is slow)
+    if (sel.startsWith('js:')) await page.evaluate((q) => document.querySelector(q)?.click(), sel.slice(3))
+    else await page.click(sel)
     await page.waitForTimeout(1500)
   }
 }

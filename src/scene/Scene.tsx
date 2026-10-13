@@ -8,6 +8,7 @@ import EntryScene from './EntryScene'
 import OrbitScene from './OrbitScene'
 import { prewarmMars } from './MarsSurface'
 import { ViewControls } from './viewControl'
+import { AudioDriver } from '../audio/AudioDriver'
 
 export default function Scene() {
   const vehicleId = useAppStore((s) => s.config.vehicleId)
@@ -34,6 +35,7 @@ export default function Scene() {
         </Environment>
       </Suspense>
       <ViewControls />
+      <AudioDriver />
       {view !== 'ascent' && <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />}
       {view === 'ascent' && <AscentScene vehicleId={vehicleId} />}
       {view === 'orbit' && <OrbitScene vehicleId={vehicleId} />}

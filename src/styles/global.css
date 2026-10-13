@@ -100,6 +100,8 @@ ul, ol { padding: 0; list-style: none; }
 .pill { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--t1); background: var(--glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transition: background 0.2s, border-color 0.2s; }
 .pill:hover { border-color: var(--t3); }
 .pill--on { background: var(--t1); color: #000; border-color: var(--t1); }
+.pill--icon { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
+.pill--muted { color: var(--t3); }
 
 /* ---------- verdict card ---------- */
 .verdict {
