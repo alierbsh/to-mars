@@ -10,6 +10,7 @@ import { VEHICLES } from '../data/vehicles'
 import type { MissionResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { ascentAt, entryAt } from '../ui/hud'
+import { PAD_DECK } from './capeSite'
 import { MAT } from './parts'
 import { Plume, plumeKindFor, type PlumeKind } from './Plume'
 import { SPACECRAFT_GROUP, VehicleModel } from './vehicles'
@@ -28,6 +29,8 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   const [anchors, setAnchors] = useState<Anchor[]>([])
   const throttles = useRef<Record<string, number>>({})
   const expansion = useRef(1)
+  /** distance from the vehicle base to the pad deck (ascent only; Infinity elsewhere) */
+  const floor = useRef(Infinity)
   const bells = useRef<Array<{ mesh: THREE.Mesh; stage: string; cold: THREE.Material }> | null>(null)
   const vehicle = VEHICLES.find((v) => v.id === id)!
 
@@ -80,7 +83,9 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
         else offsets['fairing'] = { dy: Math.min(3000, 2 * dt * dt), rz: Math.min(0.6, 0.03 * dt) }
       }
       expansion.current = s ? 1 + Math.min(3, s.alt / 40_000) : 1
+      floor.current = (s?.alt ?? 0) + PAD_DECK[vehicle.launchSite.pad]
     } else if (result && mode === 'orbit') {
+      floor.current = Infinity
       for (const st of result.ascent.stageTimes) {
         hidden.add(st.id)
         hidden.add(`${st.id}-lvsa`)
@@ -102,6 +107,7 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       const e = entryAt(result, t)
       if (e?.burning) burning.add(scGroup)
       expansion.current = 1.2
+      floor.current = e ? e.alt : Infinity
     }
 
     // frost: full on the pad, shed over the first 20 s of flight (the ascent phase starts at ignition)
@@ -152,23 +158,26 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
     <group ref={root} scale={scale}>
       <VehicleModel id={id} />
       {anchors.map((a, i) => (
-        <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} />
+        <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} floor={floor} />
       ))}
     </group>
   )
 }
 
 /** Renders a plume as a child of the anchor object, so it moves with its stage. */
-function PlumeAt({ anchor, throttles, expansion }: { anchor: Anchor; throttles: React.MutableRefObject<Record<string, number>>; expansion: React.MutableRefObject<number> }) {
+function PlumeAt({ anchor, throttles, expansion, floor }: { anchor: Anchor; throttles: React.MutableRefObject<Record<string, number>>; expansion: React.MutableRefObject<number>; floor: React.MutableRefObject<number> }) {
   const [thr, setThr] = useState(0)
   const [exp, setExp] = useState(1)
+  const fl = useRef(Infinity)
   useFrame(() => {
     const v = throttles.current[anchor.stage] ?? 0
     if (v !== thr) setThr(v)
     const e = expansion.current
     if (Math.abs(e - exp) > 0.05) setExp(e)
+    // the deck below the nozzle (only the first stage ever gets near it)
+    fl.current = floor.current + anchor.obj.position.y
   })
-  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 18} throttle={thr} expansion={exp} />, anchor.obj)
+  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 18} throttle={thr} expansion={exp} floor={fl} />, anchor.obj)
 }
 
 export function useResultAndT(): { result: MissionResult | null; t: number } {

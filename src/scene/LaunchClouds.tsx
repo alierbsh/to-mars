@@ -14,6 +14,7 @@ import { hash2 } from './noise'
 const N = 30
 const WHITE = new THREE.Color('#f1efe9')
 const GREY = new THREE.Color('#b9b5ad')
+const FIRE = new THREE.Color('#ffa24a')
 
 interface Puff {
   /** azimuth of the lobe (±z along the trench) plus spread */
@@ -172,6 +173,9 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
       m.opacity = (tt > 0 ? 0.92 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))
       m.rotation = p.dir + grow * 0.15
       col.copy(WHITE).lerp(GREY, Math.min(1, tau / 40))
+      // lit from inside by the flame for the first seconds: the nearer the pad, the more orange
+      const lit = Math.max(0, 1 - tau / 9) * Math.max(0, 1 - r / 90) * (0.7 + 0.3 * Math.sin(tau * 23 + i))
+      col.lerp(FIRE, Math.min(1, lit * 1.1))
       m.color.copy(col)
     })
   })
