@@ -14,7 +14,7 @@ import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { entryAt } from '../ui/hud'
 import { FirstSteps } from './FirstSteps'
-import { dustTexture, fragmentAt, makeFragments, makePuffs } from './impact'
+import { cloudPuffTexture, dustTexture, fragmentAt, makeFragments, makePuffs } from './impact'
 import { MarsSurface } from './MarsSurface'
 import { Plume } from './Plume'
 import { SkyDome, setSky } from './SkyDome'
@@ -28,8 +28,8 @@ const SKY_STORM = new THREE.Color('#9c6236')
 const SKY_ZENITH = new THREE.Color('#5c4029')
 const SKY_STORM_ZENITH = new THREE.Color('#6a3f22')
 const R_MARS = 3_389_500
-const DUST = '#b8865a'
-const DUST_DARK = '#5a3a26'
+const DUST = '#c69a6c'
+const DUST_DARK = '#8a6244'
 const N_PUFFS = 24
 const N_FRAGMENTS = 56
 const N_SPARKS = 320
@@ -73,7 +73,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const plasmaTex = useMemo(() => plasmaTexture(), [])
   const sunTex = useMemo(() => dustTexture(), [])
   const legs = useRef<THREE.Object3D[] | null>(null)
-  const dustTex = useMemo(() => dustTexture(), [])
+  const dustTex = useMemo(() => cloudPuffTexture(), [])
   const ground = useRef<THREE.Group>(null)
   const flash = useRef<THREE.Mesh>(null)
   const scorch = useRef<THREE.Group>(null)
@@ -272,7 +272,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
           s.scale.set(size, size * (column ? 1.3 : 0.85), 1)
           const fade = impact && tt < p.delay ? 0 : 1
           ;(s.material as THREE.SpriteMaterial).opacity = (impact ? 0.95 : 0.75) * k * fade * (impact ? Math.min(1, 2.2 / (0.8 + grow)) : 1)
-          ;(s.material as THREE.SpriteMaterial).rotation = p.dir * 3 + grow * 0.3
+          // the puff texture is lit from above: keep it upright, only a little lean
+          ;(s.material as THREE.SpriteMaterial).rotation = (p.dir % 1) * 0.5 - 0.25
         })
       }
     }
