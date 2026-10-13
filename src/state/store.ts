@@ -29,6 +29,8 @@ export interface AppState {
   intro: Intro
   /** seconds left in the opening countdown (5 → 0), for the pad effects */
   countdown: number
+  /** bumps at ignition and on restart: the lower third replays its opening */
+  openSeq: number
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -91,6 +93,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   config: initialConfig(),
   intro: hasParams ? null : 'start',
   countdown: 5,
+  openSeq: 0,
   result: null,
   status: 'idle',
   error: null,
@@ -135,21 +138,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null })
     if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
   },
-  ignite: () => set({ intro: null, t: 0, playing: true }),
-  reset: () => set({ t: 0, playing: true }),
+  ignite: () => set((s) => ({ intro: null, t: 0, playing: true, openSeq: s.openSeq + 1 })),
+  reset: () => set((s) => ({ t: 0, playing: true, openSeq: s.openSeq + 1 })),
 }))
 
 /**
  * The clock's multiplier for a moment of the mission, given the viewer's chosen speed. Liftoff
- * always plays at 1× (the first 50 s: ignition, tower clear, max-Q), ramping to the chosen speed
- * by T+90 s; the in-between phases run at the chosen speed; entry, descent and landing never
- * faster than 2×; the aftermath at 1×.
+ * always plays in real time (the first 25 s: ignition, tower clear, the roll), ramping to the
+ * chosen speed by T+85 s; the in-between phases run at the chosen speed; entry, descent and
+ * landing never faster than 2×; the aftermath at 1×.
  */
 export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number): number {
   if (phase === 'ascent') {
-    if (tInPhase < 50) return Math.min(chosen, 1)
-    const f = Math.min(1, (tInPhase - 50) / 40)
-    return Math.min(chosen, 1) + (chosen - Math.min(chosen, 1)) * f
+    // liftoff in real time (the natural rate is 4×, so 0.25 of it), ramping to the chosen speed by T+85
+    const real = 1 / PHASE_RATE.ascent
+    if (tInPhase < 25) return real
+    const f = Math.min(1, (tInPhase - 25) / 60)
+    const e = f * f * (3 - 2 * f)
+    return real + (chosen - real) * e
   }
   if (phase === 'entry') return Math.min(chosen, 2)
   if (phase === 'landing' || phase === 'done') return Math.min(chosen, 1)

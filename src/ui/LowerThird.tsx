@@ -1,0 +1,274 @@
+/**
+ * The lower third, in the register of a launch webcast: two round gauges on the left (speed and
+ * altitude in flight; the campaign in orbit; the distances in cruise), the T+ clock and the
+ * mission timeline in the middle (one line, the phases along it, the major events as marks, the
+ * present as a moving dot), the vehicle's engine status and the propellant bars on the right,
+ * and the playback controls tucked under them. It opens the way a broadcast overlay does: the
+ * rings draw themselves, the arcs sweep round to the live values, the timeline draws from the
+ * left, the engines light one after another.
+ */
+import { useEffect, useMemo, useState } from 'react'
+import { VEHICLES } from '../data/vehicles'
+import type { MissionResult, Phase, Stage as StageDef, Vehicle } from '../sim/types'
+import { useAppStore } from '../state/store'
+import { fmtT } from './format'
+import { burningAt, dialsAt, hudAt, marksAt, propFractionAt, type Dial as DialData } from './hud'
+
+const SPEEDS = [0.5, 1, 2, 4, 10]
+const STILL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('still') === '1'
+const SHORT: Record<Phase, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Done' }
+
+const R = 36
+const C = 2 * Math.PI * R
+
+function Dial({ d, open }: { d: DialData; open: boolean }) {
+  const frac = open ? d.frac : 0
+  return (
+    <div className="dial">
+      <svg className="dial__svg" viewBox="0 0 84 84" aria-hidden="true">
+        <circle className="dial__ring" cx="42" cy="42" r={R} style={{ strokeDasharray: C }} />
+        <circle className="dial__arc" cx="42" cy="42" r={R} style={{ strokeDasharray: C, strokeDashoffset: C * (1 - frac) }} />
+      </svg>
+      <div className="dial__inner">
+        <span className="dial__value">{d.text}</span>
+        <span className="dial__unit">{d.unit}</span>
+      </div>
+      <span className="dial__label">{d.label}</span>
+    </div>
+  )
+}
+
+/** ring layouts for n engines, as unit-circle positions */
+function engineLayout(n: number): Array<[number, number]> {
+  const ring = (count: number, r: number, phase = 0) => Array.from({ length: count }, (_, i) => [Math.cos(phase + (i / count) * Math.PI * 2) * r, Math.sin(phase + (i / count) * Math.PI * 2) * r] as [number, number])
+  if (n === 1) return [[0, 0]]
+  if (n === 2) return [[-0.45, 0], [0.45, 0]]
+  if (n === 3) return ring(3, 0.5, -Math.PI / 2)
+  if (n === 4) return ring(4, 0.55, Math.PI / 4)
+  if (n === 5) return [[0, 0], ...ring(4, 0.65, Math.PI / 4)]
+  if (n === 6) return [...ring(3, 0.32, -Math.PI / 2), ...ring(3, 0.78, Math.PI / 6)]
+  if (n === 7) return [[0, 0], ...ring(6, 0.68)]
+  if (n === 9) return [[0, 0], ...ring(8, 0.7, Math.PI / 8)]
+  if (n === 33) return [...ring(3, 0.2, -Math.PI / 2), ...ring(10, 0.55), ...ring(20, 0.9, Math.PI / 20)]
+  // anything else: concentric rings of ~6 per unit radius
+  const out: Array<[number, number]> = [[0, 0]]
+  let left = n - 1
+  let r = 0.45
+  while (left > 0) {
+    const k = Math.min(left, Math.round(r * 14))
+    out.push(...ring(k, r))
+    left -= k
+    r += 0.32
+  }
+  return out
+}
+
+interface EngineUnit {
+  key: string
+  stageId: string
+  label: string
+  n: number
+  pts: Array<[number, number]>
+}
+
+function unitsFor(vehicle: Vehicle): EngineUnit[] {
+  const out: EngineUnit[] = []
+  const name = (s: StageDef, i: number, copies: number) => {
+    if (vehicle.id === 'starship-v3') return s.id === 'ship' ? 'Ship' : 'Booster'
+    if (s.role === 'booster') return copies > 1 ? `Booster ${i + 1}` : 'Booster'
+    if (s.role === 'upper') return vehicle.stages.filter((x) => x.role !== 'booster').indexOf(s) === 1 ? 'Stage 2' : 'Stage 3'
+    return 'Core'
+  }
+  for (const s of vehicle.stages) {
+    const n = s.engines.reduce((a, e) => a + e.count, 0)
+    const copies = s.count ?? 1
+    for (let i = 0; i < copies; i++) out.push({ key: `${s.id}-${i}`, stageId: s.id, label: name(s, i, copies), n, pts: engineLayout(n) })
+  }
+  // boosters flank the core in the row
+  const boosters = out.filter((u) => vehicle.stages.find((s) => s.id === u.stageId)?.role === 'booster')
+  const rest = out.filter((u) => !boosters.includes(u))
+  if (boosters.length === 2) return [boosters[0], ...rest, boosters[1]]
+  return [...boosters, ...rest]
+}
+
+function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle: Vehicle; t: number; open: boolean }) {
+  const units = useMemo(() => unitsFor(vehicle), [vehicle])
+  const preIgnition = useAppStore((s) => s.intro) !== null
+  const burning = useMemo(() => burningAt(result, vehicle, t, preIgnition), [result, vehicle, t, preIgnition])
+  const ascent = result.phases[0]
+  const inAscent = t < ascent.end
+  let k = 0
+  return (
+    <div className="eng">
+      {units.map((u) => {
+        const on = burning.has(u.stageId)
+        const prop = inAscent ? propFractionAt(result, vehicle, u.stageId, t) : 0
+        const sep = result.ascent.stageTimes.find((x) => x.id === u.stageId)
+        const gone = sep !== undefined && t - ascent.start > sep.sep
+        const size = u.n > 20 ? 54 : u.n > 6 ? 46 : 38
+        const dot = u.n > 20 ? 5 : u.n > 6 ? 7 : 9
+        return (
+          <div key={u.key} className={`eng__unit ${gone ? 'eng__unit--gone' : ''}`}>
+            <div className="eng__grid" style={{ width: size, height: size }}>
+              {u.pts.map(([x, y], i) => {
+                const delay = open ? 0.6 + 0.02 * k++ : 0
+                return <span key={i} className={`eng__dot ${on ? 'eng__dot--on' : ''}`} style={{ width: dot, height: dot, left: `calc(50% + ${(x * (size - dot)) / 2}px - ${dot / 2}px)`, top: `calc(50% + ${(y * (size - dot)) / 2}px - ${dot / 2}px)`, animationDelay: `${delay}s` }} />
+              })}
+            </div>
+            <span className="eng__label">{u.label}</span>
+            <span className="eng__prop" title="Propellant">
+              <span className="eng__propfill" style={{ width: `${(gone ? 0 : prop) * 100}%` }} />
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onSeek: (t: number) => void }) {
+  const marks = useMemo(() => marksAt(result), [result])
+  const phases = result.phases
+  const n = phases.length
+  // the phase under way opens wide (like a webcast's flight timeline); the others share the rest
+  const activeIdx = Math.max(0, phases.findIndex((p) => t >= p.start && t < p.end) === -1 ? n - 1 : phases.findIndex((p) => t >= p.start && t < p.end))
+  const WIDE = 0.46
+  const layout = useMemo(() => {
+    const w = phases.map((_, i) => (i === activeIdx ? WIDE : (1 - WIDE) / (n - 1)))
+    const left: number[] = []
+    let x = 0
+    for (const wi of w) {
+      left.push(x)
+      x += wi
+    }
+    return { w, left }
+  }, [phases, n, activeIdx])
+  const fracOf = (time: number) => {
+    let i = phases.findIndex((p) => time >= p.start && time < p.end)
+    if (i < 0) i = n - 1
+    const p = phases[i]
+    const f = Math.max(0, Math.min(1, (time - p.start) / Math.max(p.end - p.start, 1)))
+    return layout.left[i] + f * layout.w[i]
+  }
+  const now = fracOf(t)
+  return (
+    <div className="tl">
+      <div className="tl__line" />
+      <div className="tl__fill" style={{ width: `${now * 100}%` }} />
+      <div className="tl__phases">
+        {phases.map((p, i) => {
+          const active = i === activeIdx
+          const done = t >= p.end
+          return (
+            <button
+              key={p.phase}
+              className={`tl__phase ${active ? 'tl__phase--active' : ''} ${done ? 'tl__phase--done' : ''}`}
+              style={{ left: `${layout.left[i] * 100}%`, width: `${layout.w[i] * 100}%` }}
+              onClick={(e) => {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                const f = (e.clientX - rect.left) / rect.width
+                onSeek(p.start + f * (p.end - p.start))
+              }}
+              title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
+            >
+              <span className="tl__tick" />
+              <span className="tl__phaselabel">{SHORT[p.phase] ?? p.label}</span>
+            </button>
+          )
+        })}
+      </div>
+      {marks.map((m, i) => {
+        const f = fracOf(m.t)
+        const past = t >= m.t
+        const inActive = phases[activeIdx].phase === m.phase
+        const idxInPhase = marks.filter((x) => x.phase === m.phase).indexOf(m)
+        return (
+          <span key={`${m.label}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${idxInPhase % 2 ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
+            <span className="tl__dot" />
+            <span className="tl__name">{m.label}</span>
+          </span>
+        )
+      })}
+      <span className="tl__now" style={{ left: `${now * 100}%` }} />
+    </div>
+  )
+}
+
+export default function LowerThird() {
+  const result = useAppStore((s) => s.result)
+  const t = useAppStore((s) => s.t)
+  const playing = useAppStore((s) => s.playing)
+  const speed = useAppStore((s) => s.speed)
+  const setT = useAppStore((s) => s.setT)
+  const setPlaying = useAppStore((s) => s.setPlaying)
+  const setSpeed = useAppStore((s) => s.setSpeed)
+  const reset = useAppStore((s) => s.reset)
+  const vehicleId = useAppStore((s) => s.config.vehicleId)
+  const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
+  // the opening: one frame closed, then everything animates in
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const id = window.setTimeout(() => setOpen(true), 30)
+    return () => window.clearTimeout(id)
+  }, [])
+  if (!result) return null
+  const hud = hudAt(result, t)
+  const [d1, d2] = dialsAt(result, t)
+  const third = hud.lines[2]
+  const end = result.phases[result.phases.length - 1].end
+  // the clock: T+ through the launch, the mission day in between, E+ from the entry interface
+  const phase = hud.phase
+  const entry = result.phases.find((p) => p.phase === 'entry')
+  const mmss = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = Math.floor(s - m * 60)
+    return `${m}:${sec.toString().padStart(2, '0')}`
+  }
+  const main = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? `E+${mmss(Math.max(0, t - entry.start))}` : fmtT(t)
+  const sub = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? fmtT(t) : `of ${fmtT(end)}`
+
+  return (
+    <div className={`lower ${open ? 'lower--open' : ''} ${STILL ? 'lower--still' : ''}`}>
+      <div className="lower__dials">
+        <Dial d={d1} open={open} />
+        <Dial d={d2} open={open} />
+        {third && (
+          <div className={`lower__third ${third.tone ? `lower__third--${third.tone}` : ''}`}>
+            <span className="lower__thirdvalue">{third.value}</span>
+            <span className="lower__thirdlabel">{third.label}</span>
+          </div>
+        )}
+      </div>
+      <div className="lower__centre">
+        <div className="lower__clock">
+          <span className="lower__phase">{hud.phaseLabel}</span>
+          <span className="lower__t">{main}</span>
+          <span className="lower__end">{sub}</span>
+        </div>
+        <Timeline result={result} t={t} onSeek={setT} />
+      </div>
+      <div className="lower__right">
+        <Engines result={result} vehicle={vehicle} t={t} open={open} />
+        <div className="lower__controls">
+          <button className="ctl ctl--main" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
+            {playing ? (
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" fill="currentColor" /><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor" /></svg>
+            ) : (
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+            )}
+          </button>
+          <button className="ctl" onClick={reset} aria-label="Restart">
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3a5 5 0 1 1-4.5 2.8" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M3 2v4h4" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+          </button>
+          <div className="speeds" role="group" aria-label="Playback speed">
+            {SPEEDS.map((s) => (
+              <button key={s} className={`speed ${speed === s ? 'speed--on' : ''}`} onClick={() => setSpeed(s)}>
+                {s}×
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

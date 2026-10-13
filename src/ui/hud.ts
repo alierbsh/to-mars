@@ -1,4 +1,4 @@
-import type { AscentSample, EntrySample, MissionResult, Phase } from '../sim/types'
+import type { AscentSample, EntrySample, MissionResult, Phase, Vehicle } from '../sim/types'
 import { PHASE_RATE, phaseAt } from '../state/store'
 import { norm, sub } from '../sim/vec'
 import { DAY_S } from '../sim/constants'
@@ -116,4 +116,212 @@ export function hudAt(r: MissionResult, t: number): HudState {
     }
   }
   return out
+}
+
+// ---------------------------------------------------------------- webcast overlay helpers
+
+export interface Dial {
+  label: string
+  /** the number as shown */
+  text: string
+  unit: string
+  /** 0–1 fill of the arc */
+  frac: number
+}
+
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
+const fmtInt = (v: number) => Math.round(v).toLocaleString('en-US')
+
+/** the two round gauges of the lower third, per phase (speed/altitude in flight, the campaign in orbit, the distances in cruise) */
+export function dialsAt(r: MissionResult, t: number): [Dial, Dial] {
+  const p = phaseAt(r, t)
+  if (p.phase === 'ascent') {
+    const a = ascentAt(r, t)
+    const v = a ? a.velRel * 3.6 : 0
+    const alt = a ? a.alt / 1000 : 0
+    return [
+      { label: 'Speed', text: fmtInt(v), unit: 'km/h', frac: clamp01(v / 28_000) },
+      { label: 'Altitude', text: alt < 10 ? alt.toFixed(1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 250) },
+    ]
+  }
+  if (p.phase === 'leo') {
+    const days = (t - p.start) / DAY_S
+    const total = Math.max(1, (p.end - p.start) / DAY_S)
+    const propEv = [...(r.leo?.events ?? [])].reverse().find((e) => e.t <= t && /→ (\d+) t aboard/.test(e.detail))
+    const m = propEv?.detail.match(/→ (\d+) t aboard/)
+    const aboard = m ? Number(m[1]) : r.ascent.residualProp / 1000
+    const need = Math.max(aboard, r.leo ? r.leo.propAtDeparture / 1000 : aboard)
+    return [
+      { label: 'Propellant', text: fmtInt(aboard), unit: 't aboard', frac: clamp01(aboard / Math.max(need, 1)) },
+      { label: 'In orbit', text: fmtInt(days), unit: 'days', frac: clamp01(days / total) },
+    ]
+  }
+  if (p.phase === 'tmi' && r.transfer) {
+    const f = clamp01((t - p.start) / Math.max(p.end - p.start, 1))
+    return [
+      { label: 'Burn', text: (r.transfer.dvTmi * f).toFixed(2), unit: 'km/s of ' + r.transfer.dvTmi.toFixed(2), frac: f },
+      { label: 'C3', text: r.transfer.c3.toFixed(1), unit: 'km²/s²', frac: clamp01(r.transfer.c3 / 20) },
+    ]
+  }
+  if (p.phase === 'cruise' && r.transfer) {
+    const days = (t - p.start) / DAY_S
+    const n = r.transfer.samples.length
+    const idx = Math.min(n - 1, Math.max(0, Math.floor((days / r.transfer.transitDays) * (n - 1))))
+    const s = r.transfer.samples[idx]
+    const s0 = r.transfer.samples[0]
+    const toMars = norm(sub(s.ship, s.mars)) / 1e6
+    const toMars0 = norm(sub(s0.ship, s0.mars)) / 1e6
+    const fromEarth = norm(sub(s.ship, s.earth)) / 1e6
+    return [
+      { label: 'To Mars', text: toMars < 10 ? toMars.toFixed(2) : toMars.toFixed(1), unit: 'million km', frac: clamp01(1 - toMars / Math.max(toMars0, 1)) },
+      { label: 'From Earth', text: fromEarth < 10 ? fromEarth.toFixed(2) : fromEarth.toFixed(1), unit: 'million km', frac: clamp01(days / r.transfer.transitDays) },
+    ]
+  }
+  if (p.phase === 'entry' || p.phase === 'landing' || p.phase === 'done') {
+    const e = entryAt(r, t)
+    const v = e ? e.vel * 3.6 : 0
+    const v0 = r.entry ? r.entry.telemetry[0].vel * 3.6 : 25_000
+    const alt = e ? e.alt / 1000 : 0
+    return [
+      { label: 'Speed', text: fmtInt(v), unit: 'km/h', frac: clamp01(v / Math.max(v0, 1)) },
+      { label: 'Altitude', text: alt < 10 ? alt.toFixed(1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 125) },
+    ]
+  }
+  return [
+    { label: 'Speed', text: '0', unit: 'km/h', frac: 0 },
+    { label: 'Altitude', text: '0', unit: 'km', frac: 0 },
+  ]
+}
+
+/** which stages are firing at mission time t (the same rules the 3D rig uses) */
+export function burningAt(r: MissionResult, vehicle: Vehicle, t: number, preIgnition = false): Set<string> {
+  const burning = new Set<string>()
+  const p = phaseAt(r, t)
+  if (p.phase === 'ascent') {
+    const ta = t - p.start
+    const s = ascentAt(r, t)
+    if (s && s.thrust > 0 && t < p.end && !preIgnition) {
+      burning.add(s.stage)
+      for (const b of vehicle.stages) if (b.role === 'booster' && !r.ascent.stageTimes.some((st) => st.id === b.id && ta >= st.sep)) burning.add(b.id)
+    }
+  } else if (p.phase === 'tmi') {
+    burning.add(vehicle.stages[vehicle.stages.length - 1].id)
+  } else if (p.phase === 'entry') {
+    const e = entryAt(r, t)
+    if (e?.burning) burning.add(vehicle.refuelable ? vehicle.stages[vehicle.stages.length - 1].id : SPACECRAFT_STAGE)
+  }
+  return burning
+}
+
+/** stage id used for the spacecraft's own engines in the burning set */
+export const SPACECRAFT_STAGE = 'spacecraft'
+
+/** propellant left in a stage as a fraction of its load, from the ascent mass history (ascent only; 1 before its burn, 0 after) */
+export function propFractionAt(r: MissionResult, vehicle: Vehicle, stageId: string, t: number): number {
+  const p = r.phases.find((x) => x.phase === 'ascent')
+  if (!p) return 1
+  const tel = r.ascent.telemetry
+  if (!tel.length) return 1
+  const ta = t - p.start
+  const order = vehicle.stages.filter((s) => s.role !== 'booster').map((s) => s.id)
+  const sep = (id: string) => r.ascent.stageTimes.find((x) => x.id === id)?.sep
+  let t0 = 0
+  let t1 = tel[tel.length - 1].t
+  const st = vehicle.stages.find((s) => s.id === stageId)
+  if (!st) return 1
+  if (st.role === 'booster') {
+    t1 = sep(stageId) ?? t1
+  } else {
+    const k = order.indexOf(stageId)
+    if (k > 0) t0 = sep(order[k - 1]) ?? 0
+    t1 = sep(stageId) ?? t1
+  }
+  if (ta <= t0) return 1
+  if (ta >= t1) return 0
+  const massAt = (x: number) => ascentAt(r, p.start + x)?.mass ?? 0
+  const m0 = massAt(t0 + 0.05)
+  const m1 = massAt(Math.max(t0 + 0.1, t1 - 0.05))
+  const m = ascentAt(r, t)?.mass ?? m1
+  if (m0 <= m1) return 1
+  return clamp01((m - m1) / (m0 - m1))
+}
+
+export interface Mark {
+  t: number
+  phase: Phase
+  label: string
+  tone: 'info' | 'ok' | 'warn' | 'fail'
+}
+
+const SHORT: Array<[RegExp, string]> = [
+  [/^Liftoff/i, 'LIFTOFF'],
+  [/^Mach 1\b/i, 'MACH 1'],
+  [/cutoff & separation/i, 'STAGE SEP'],
+  [/ignition: T\+/i, 'IGNITION'],
+  [/^Fairing/i, 'FAIRING'],
+  [/^SECO/i, 'SECO'],
+  [/^Circularisation/i, 'CIRC BURN'],
+  [/^Parking orbit|parking orbit/i, 'ORBIT'],
+  [/^Tanker (\d+)/i, 'TANKER $1'],
+  [/campaign complete/i, 'FUELLED'],
+  [/window missed|Departure window/i, 'WINDOW MISSED'],
+  [/injection burn/i, 'TMI BURN'],
+  [/injection complete/i, 'TMI'],
+  [/Leaving Earth/i, 'EARTH SOI'],
+  [/^Halfway/i, 'HALFWAY'],
+  [/^Radiation/i, 'RADIATION'],
+  [/Entering Mars/i, 'MARS SOI'],
+  [/flyby/i, 'FLYBY'],
+  [/^Entry interface/i, 'ENTRY'],
+  [/^Peak heating/i, 'PEAK HEAT'],
+  [/^Peak deceleration/i, 'PEAK G'],
+  [/^Pull-out/i, 'PULL-OUT'],
+  [/^Landing burn/i, 'LANDING BURN'],
+  [/^Touchdown/i, 'TOUCHDOWN'],
+  [/^Impact/i, 'IMPACT'],
+  [/exhausted/i, 'PROP OUT'],
+  [/^Life support/i, 'LIFE SUPPORT'],
+]
+
+function shortLabel(label: string): string | null {
+  for (const [re, s] of SHORT) {
+    const m = label.match(re)
+    if (m) return s.replace('$1', m[1] ?? '')
+  }
+  return null
+}
+
+/** the timeline's event marks: the major moments of each phase, short webcast-style names, at most 4 per phase */
+export function marksAt(r: MissionResult): Mark[] {
+  const out: Mark[] = []
+  // max-Q is not an event in the log; derive it from the telemetry
+  const asc = r.phases.find((p) => p.phase === 'ascent')
+  if (asc && r.ascent.telemetry.length) {
+    let best = r.ascent.telemetry[0]
+    for (const s of r.ascent.telemetry) if (s.q > best.q) best = s
+    if (best.q > 1000) out.push({ t: asc.start + best.t, phase: 'ascent', label: 'MAX-Q', tone: 'info' })
+  }
+  for (const e of r.events) {
+    const s = shortLabel(e.label)
+    if (!s) continue
+    out.push({ t: e.t, phase: e.phase as Phase, label: s, tone: e.severity as Mark['tone'] })
+  }
+  // keep ≤ 4 per phase: failures and warnings first, then the rest in time order
+  const byPhase = new Map<Phase, Mark[]>()
+  for (const m of out) byPhase.set(m.phase, [...(byPhase.get(m.phase) ?? []), m])
+  const keep: Mark[] = []
+  const rank = (m: Mark) => (m.tone === 'fail' ? 0 : m.tone === 'warn' ? 1 : m.label === 'LIFTOFF' ? 3 : 2)
+  for (const [phase, list] of byPhase) {
+    const p = r.phases.find((x) => x.phase === phase)
+    const span = p ? Math.max(p.end - p.start, 1) : 1
+    const chosen: Mark[] = []
+    // by priority, skipping any mark that would sit on top of one already chosen (within 4 % of the phase)
+    for (const m of [...list].sort((a, b) => rank(a) - rank(b) || a.t - b.t)) {
+      if (chosen.length >= 4) break
+      if (chosen.some((c) => Math.abs(c.t - m.t) < 0.04 * span)) continue
+      chosen.push(m)
+    }
+    keep.push(...chosen)
+  }
+  return keep.sort((a, b) => a.t - b.t)
 }
