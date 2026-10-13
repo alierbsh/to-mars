@@ -4,7 +4,7 @@
 
 Pick a real launch vehicle, give it a crew and a departure window, and let a physics simulation run the whole chain — launch, orbital refuelling, trans-Mars injection, the cruise, and entry, descent and landing at Mars — then tell you whether the crew arrives alive, and if not, what broke first.
 
-Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question. The screen is the stage: a full-screen 3D mission with webcast-style live numbers, one verdict card, and two drawers — *Mission* (rocket, window, crew, assumptions; everything else under *Advanced*) and *Data* (timeline, telemetry, trajectory, vehicle).
+Live: deployed on Vercel from `main`. Layout inspired by [Robots in Space](https://robots-in-space.vercel.app/); different question. The screen is the stage: a full-screen 3D mission with a webcast-style lower third (dials, the T+ clock, the timeline with its event marks, engine status), one verdict card, two drawers — *Mission* (rocket, window, crew, assumptions; everything else under *Advanced*) and *Data* (timeline, telemetry, trajectory, vehicle) — and a *Wiki* that explains every stage in plain language.
 
 ## What it simulates
 
@@ -26,11 +26,23 @@ The 3D models are procedural (cylinders, ogives, fins, decals) built to the dime
 
 ## The places
 
-Every mission launches from Cape Canaveral (the site's premise; notional for Long March 10): LC-39A with the Starship tower and orbital launch mount, LC-39B with NASA's Mobile Launcher (the real model from [NASA-3D-Resources](https://github.com/nasa/NASA-3D-Resources), public domain), the FSS and transporter-erector for Falcon Heavy, the Apollo-era red LUT for Saturn V, LC-36 for New Glenn, a generic umbilical tower at SLC-37. The Cape itself is drawn at three scales — the pad mound, the lagoons/VAB/crawlerway/SLF within 24 km, and the Florida peninsula from altitude — on a spherical patch, so the coast curves away as the vehicle climbs.
+Every mission launches from Cape Canaveral (the site's premise; notional for Long March 10): LC-39A with the Starship tower and orbital launch mount, LC-39B with NASA's Mobile Launcher (the real model from [NASA-3D-Resources](https://github.com/nasa/NASA-3D-Resources), public domain), the FSS and transporter-erector for Falcon Heavy, the Apollo-era red LUT for Saturn V, LC-36 for New Glenn, a generic umbilical tower at SLC-37.
+
+The ground is painted offline (`scripts/cape-assets.py`) in the azimuthal-equidistant projection the terrain patches use, so the textures land on the spherical caps without distortion, at four scales: the pad (2048², 0.5 m/px: aprons, flame trenches, roads, tank farms), the launch complex (2048²), the Cape (4096², 6 m/px: Merritt Island's scrub, pine flatwoods and marsh, the mosquito-control impoundments, citrus rows, dunes and surf, the lagoons in their turbid teal with shallows and sandbars, the SLF, the crawlerway, the parkways and causeways, the industrial area, Port Canaveral, the Cocoa Beach grid), and a 2000 km regional tile for the view from altitude (NASA Blue Marble sharpened with Natural Earth coastlines, lakes, rivers, the 200 m shelf and urban areas, with a cloud deck that casts shadows). The geography is traced by hand from maps, not from imagery, so positions are good to a few hundred metres. Under it all is the real globe, so from 100 km the coast curves away to the Gulf and the Bahamas.
+
+The air is a physically based atmosphere (Rayleigh + Mie single scattering, `src/scene/atmosphere.ts`, injected into every ground material and the sky): blue sky and a pale horizon band at the pad, aerial perspective on distant ground, the thin blue limb and black sky above 100 km, the stars fading in on the way. The chase camera knows where the horizon is and frames the limb as the rocket pitches over.
 
 In orbit the Earth is NASA's relief map reworked into a day map (deep sea, muted land, the ice sheets), with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py`).
 
-The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker.
+The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker. The weather at arrival (season, dust storm, surface wind) is drawn from the storm record, seeded by the date.
+
+## What you see and hear
+
+- **Flames.** Every plume is a shaped hull with a volumetric flame shader (`src/scene/Plume.tsx`): turbulent noise, axial streaks, shock diamonds, a white-hot core fading through yellow to orange, soot per propellant (methalox, kerolox, hydrolox, solids, hypergolics). The sea-level column lengthens into a translucent vacuum bell as the air thins; at liftoff the fireball on the deck lights the deluge steam orange.
+- **The lower third** (`src/ui/LowerThird.tsx`) opens the way a SpaceX webcast does: dials sweeping round, the timeline drawing itself, the engine grids lighting at ignition, the clock. Playback pacing is per phase — the first seconds of a launch at real time, the entry slowed by altitude so the heating and the flip play at a film's pace.
+- **Sound** is synthesised with Web Audio (`src/audio/`), no samples: a filtered-noise roar and sub rumble scaled by thrust and air density, crackle, the hiss of entry plasma, thuds at ignition and touchdown. It starts with the Start click and the top bar has a mute.
+- **Entry, descent and landing** at Mars as a film: tiles glowing on the windward side, a plasma sheath and ionised wake, sparks, shake, scripted camera shots for the glide, the flip and the touchdown. After a crewed Starship landing there is a closing sequence — the hatch, the elevator, the first steps, the flag, a habitat, solar blankets.
+- **The wiki** (`src/wiki/chapters.ts`) — fourteen chapters from "why a city on Mars" to the physics behind the site, linked from the timeline's event marks and `?wiki=<chapter>`.
 
 ## What decides the Starship verdict
 
@@ -49,17 +61,22 @@ npm test           # anchor + mission tests (vitest)
 npm run build      # typecheck + production build into dist/
 ```
 
-Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125" ["button.pill:has-text('Mission')"]` screenshots the built app at a mission time (optionally after a click); `?preset=<id>&window=<id>` preselect assumptions; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer; `?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>` a terrain viewer.
+Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125&still=1" ["js:.top__right .pill:last-child|…"]` screenshots the built app at a mission time (optionally after clicks; `still=1` freezes the lower third's opening animation); `?preset=<id>&window=<id>` preselect assumptions; `?wiki=<chapter>` opens the wiki; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer; `?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>` a terrain viewer. `python3 -I scripts/cape-assets.py region|cape|complex|pad` repaints the Cape textures (`region` needs the Natural Earth 10m GeoJSON and the Blue Marble JPEG; the rest is self-contained).
 
 ## Layout
 
 ```
 src/
-  sim/      physics core (atmosphere, ephemeris, orbit/Lambert, ascent, leo, transfer, cruise, entry, mission, worker)
+  sim/      physics core (atmosphere, ephemeris, orbit/Lambert, ascent, leo, transfer, cruise, weather, entry, mission, worker)
   data/     vehicle catalogue with sources and confidence tags
-  scene/    three.js stage: procedural vehicle models, phase scenes, plumes, rig; Cape Canaveral and the Mars site (terrain.ts, capeSite.ts, pads.tsx, marsSite.ts + worker)
-  ui/       top bar + rocket picker, verdict card, live numbers + mission bar, Mission and Data drawers
-  state/    zustand store + playback
+  scene/    three.js stage: procedural vehicle models, phase scenes, the flame shader (Plume.tsx), the rig;
+            Cape Canaveral (capeSite.ts, pads.tsx, CapeCanaveral.tsx), the globe and the sky under the climb
+            (EarthBelow.tsx, atmosphere.ts), the Earth in orbit, the Mars site (marsSite.ts + worker), the first steps
+  ui/       top bar + rocket picker, verdict card, the lower third (dials, clock, timeline, engines), drawers, the wiki
+  audio/    Web Audio synthesis and the driver that follows the sim
+  wiki/     the chapters
+  state/    zustand store + playback pacing
+scripts/    checks, screenshots, and the offline asset builders (cape-assets.py, earth-assets.py, stl2height.py)
 docs/research/  the research behind the numbers
 ```
 
@@ -67,4 +84,4 @@ Stack: Vite 8, React 19, TypeScript, three.js via @react-three/fiber + drei, zus
 
 ## Not modelled (yet)
 
-Launch abort outcomes, Mars rotation and winds, dust storms as random events, ECLSS hardware failures, landing-site hazards and tip-over, the return trip.
+Launch abort outcomes, ECLSS hardware failures, tip-over on landing, the return trip.
