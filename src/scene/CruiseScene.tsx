@@ -35,7 +35,8 @@ export default function CruiseScene() {
   }, [])
   const path = useMemo(() => (tr ? tr.samples.map((s) => new THREE.Vector3(s.ship[0] * U, s.ship[2] * U, -s.ship[1] * U)) : []), [tr])
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera }, rawDt) => {
+    const dt = Math.min(rawDt, 0.1)
     scene.background = new THREE.Color('#02040a')
     if (scene.fog) (scene.fog as THREE.Fog).color.set('#02040a')
     if (!tr) return
@@ -55,7 +56,7 @@ export default function CruiseScene() {
     if (!init.current) {
       camera.position.copy(target)
       init.current = true
-    } else camera.position.lerp(target, view.dragging ? 0.35 : 0.05)
+    } else camera.position.lerp(target, 1 - Math.exp(-Math.min(dt, 0.5) * (view.dragging ? 24 : 3)))
     camera.up.set(0, 1, 0)
     camera.lookAt(0, 0, -20)
     camera.near = 0.5

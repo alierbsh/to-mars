@@ -34,7 +34,7 @@ export default function Scene() {
         </Environment>
       </Suspense>
       <ViewControls />
-      <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />
+      {view !== 'ascent' && <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />}
       {view === 'ascent' && <AscentScene vehicleId={vehicleId} />}
       {view === 'orbit' && <OrbitScene vehicleId={vehicleId} />}
       {view === 'cruise' && <CruiseScene />}

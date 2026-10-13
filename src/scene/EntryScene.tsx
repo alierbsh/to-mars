@@ -273,7 +273,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     if (!st.init) {
       camera.position.copy(target)
       st.init = true
-    } else camera.position.lerp(target, view.dragging ? 0.35 : after ? 0.2 : 0.08)
+    } else camera.position.lerp(target, 1 - Math.exp(-Math.min(dt, 0.5) * (view.dragging ? 24 : after ? 12 : 5)))
     if (impact && tau >= 0 && tau < 1.6) {
       const a = Math.max(2, L * 0.08) * (1 - tau / 1.6) ** 2
       camera.position.x += (Math.random() - 0.5) * a

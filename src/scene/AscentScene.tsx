@@ -1,43 +1,62 @@
 /**
  * Launch & ascent from Cape Canaveral: the vehicle stays at the origin, pitched by the simulated
  * pitch; the Cape falls away and slides back downrange (swung about the Earth's centre, so the
- * horizon curves and the coast drops away at true scale) and the sky goes from Florida blue to
- * black. A chase camera orbits slowly and reframes whatever is still attached after staging.
+ * horizon curves and the coast drops away at true scale). The sky is the atmosphere itself —
+ * single scattering from the camera's point of view (atmosphere.ts) — so it goes from Florida
+ * blue through the pale horizon band to the thin limb and black space, and the stars come out
+ * as the air thins. A chase camera orbits slowly, climbs with the vehicle while the Cape is the
+ * view, then drops to put the Earth's limb under the stack once it is coasting downrange.
  */
 import { useFrame, useThree } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { ascentAt } from '../ui/hud'
+import { ATMO } from './atmosphere'
 import { CapeCanaveral } from './CapeCanaveral'
 import { R_EARTH } from './capeSite'
+import { AscentSky } from './EarthBelow'
 import { dustTexture } from './impact'
-import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 import { autoOrbit, view } from './viewControl'
 
-const SKY_LOW = new THREE.Color('#79a9e0')
-const SKY_MID = new THREE.Color('#1b3a66')
-const SKY_HIGH = new THREE.Color('#02040a')
-const HORIZON_LOW = new THREE.Color('#c9dcef')
-const ZENITH_LOW = new THREE.Color('#3f7fcb')
+/** the sun: ~50° up in the south-east (a late Florida morning); shared by the lights and the sky */
+const SUN = new THREE.Vector3(180, 260, 120).normalize()
+
+/** roll about the vehicle's own axis for the climb: Starship rides with its tiled side toward +X,
+ * i.e. earthward once it has pitched over, so the chase camera sees steel, not black tiles */
+const ASCENT_ROLL: Record<string, number> = { 'starship-v3': Math.PI / 2 }
+
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
 
 export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
   const h = vehicle.height
   const rig = useRef<THREE.Group>(null)
   const ground = useRef<THREE.Group>(null)
-  const sky = useRef<THREE.Mesh>(null)
   const sun = useRef<THREE.Sprite>(null)
   const sunTex = useMemo(() => dustTexture(), [])
-  const sunDir = useMemo(() => new THREE.Vector3(180, 260, 120).normalize(), [])
   const { scene } = useThree()
   const camState = useMemo(() => ({ az: 1.0, init: false }), [])
-  const bg = useMemo(() => new THREE.Color(), [])
-  const horizon = useMemo(() => new THREE.Color(), [])
-  const zenith = useMemo(() => new THREE.Color(), [])
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
+  const tmp = useMemo(() => new THREE.Vector3(), [])
+
+  // the scene's distance fog is for the other phases: here the atmosphere does the haze
+  useEffect(() => {
+    const fog = scene.fog
+    const bg = scene.background
+    scene.fog = null
+    scene.background = new THREE.Color('#000000')
+    ATMO.sunDir.value.copy(SUN)
+    return () => {
+      scene.fog = fog
+      scene.background = bg
+    }
+  }, [scene])
 
   useFrame(({ camera }, rawDt) => {
     // a background tab hands back a huge delta on return: never let one frame jump far
@@ -55,25 +74,15 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       const d = ((s?.downrange ?? 0) * 1000) / R_EARTH
       ground.current.position.set(-R_EARTH * Math.sin(d), -alt - R_EARTH * (1 - Math.cos(d)), 0)
       ground.current.rotation.z = d
+      ground.current.updateMatrixWorld()
+      // the atmosphere is centred on the planet, wherever the ground group has swung it
+      ATMO.center.value.copy(ground.current.localToWorld(tmp.set(0, -R_EARTH, 0)))
     }
-    // sky: Florida blue at the pad → deep blue by 20 km → black above ~70 km
-    const f = Math.min(1, alt / 70_000)
-    bg.copy(f < 0.3 ? SKY_LOW.clone().lerp(SKY_MID, f / 0.3) : SKY_MID.clone().lerp(SKY_HIGH, (f - 0.3) / 0.7))
-    scene.background = bg
-    if (scene.fog) {
-      const fog = scene.fog as THREE.Fog
-      fog.color.copy(bg)
-      fog.far = 90_000 + alt * 30
-      fog.near = fog.far * 0.5
-    }
-    const haze = Math.max(0, 1 - alt / 45_000)
-    horizon.copy(HORIZON_LOW).lerp(SKY_MID, Math.min(1, alt / 30_000))
-    zenith.copy(ZENITH_LOW).lerp(SKY_HIGH, Math.min(1, alt / 25_000))
-    setSky(sky.current, camera, haze * haze, horizon, zenith)
-    // the sun: on the light's direction, far out, following the camera; a glare in the haze
+    // the sun's glare: on the sun's direction, far out, following the camera; strongest in haze
     if (sun.current) {
-      sun.current.position.copy(camera.position).addScaledVector(sunDir, 80_000)
-      ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.55 + 0.4 * haze
+      sun.current.position.copy(camera.position).addScaledVector(SUN, 80_000)
+      const haze = Math.max(0, 1 - alt / 45_000)
+      ;(sun.current.material as THREE.SpriteMaterial).opacity = 0.18 + 0.3 * haze
     }
     // camera: slow orbit; frame whatever is still attached (zoom in after staging)
     if (playing && autoOrbit()) camState.az += dt * 0.06
@@ -100,33 +109,45 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const pull = open * open
     // room for the plume below the stack: frame the stack plus ~0.6 of its length of exhaust
     const dist = (size * (2.7 - 1.3 * pull) + Math.min(size, alt / 600)) * view.zoom
-    // climb above the vehicle as it rises, so the Cape falls away in the frame behind it
-    const lift = Math.min(alt * 0.25, size * 1.4)
+    // climb above the vehicle as it rises, so the Cape falls away in the frame behind it; from
+    // ~10 km up, hold the camera a little above the stack and aim so that the horizon — which
+    // dips below the horizontal as the Earth curves away — sits in the upper half of the frame
+    const mid = smooth(6_000, 22_000, alt)
+    const dip = Math.acos(R_EARTH / (R_EARTH + alt))
+    const extra = (3.5 + 4.0 * smooth(20_000, 150_000, alt)) * (Math.PI / 180)
+    const liftLow = Math.min(alt * 0.25, size * 1.4)
+    const liftHigh = size * 0.45
+    const lift = liftLow * (1 - mid) + liftHigh * mid
     const elev = Math.sin(view.el) * dist
     const flat = Math.cos(view.el)
-    const target = new THREE.Vector3(centre.x + Math.cos(az) * dist * flat, centre.y + size * (0.05 - 0.3 * pull) + lift + elev, centre.z + Math.sin(az) * dist * flat)
+    const camUp = size * (0.05 - 0.3 * pull) + lift + elev
+    const target = new THREE.Vector3(centre.x + Math.cos(az) * dist * flat, centre.y + camUp, centre.z + Math.sin(az) * dist * flat)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
-    } else camera.position.lerp(target, view.dragging ? 0.35 : 0.06)
-    camera.lookAt(centre.x, centre.y - size * (0.22 + 0.2 * pull), centre.z)
+    } else camera.position.lerp(target, 1 - Math.exp(-Math.min(rawDt, 0.5) * (view.dragging ? 24 : 4))) // frame-rate independent
+    const lookLow = -size * (0.22 + 0.2 * pull)
+    const lookHigh = Math.max(-size * 0.3, dist * flat * Math.tan(dip + extra) - camUp)
+    camera.lookAt(centre.x, centre.y + lookLow * (1 - mid) - lookHigh * mid, centre.z)
     camera.up.set(0, 1, 0)
     camera.near = 0.5
-    camera.far = 4_000_000
+    camera.far = 8_000_000
     camera.updateProjectionMatrix()
   })
 
   return (
     <group>
       <hemisphereLight args={['#9fb9dc', '#4a4636', 0.6]} />
-      <directionalLight position={[180, 260, 120]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
-      <SkyDome ref={sky} horizon="#c9dcef" zenith="#3f7fcb" />
+      <directionalLight position={[SUN.x * 400, SUN.y * 400, SUN.z * 400]} intensity={2.4} color="#fff1dc" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-160} shadow-camera-right={160} shadow-camera-top={200} shadow-camera-bottom={-60} shadow-camera-far={900} />
+      <Suspense fallback={null}>
+        <AscentSky />
+      </Suspense>
       <sprite ref={sun} scale={[14_000, 14_000, 1]} renderOrder={-9}>
-        <spriteMaterial map={sunTex} color="#fff2d0" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />
+        <spriteMaterial map={sunTex} color="#fff2d0" transparent opacity={0.4} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />
       </sprite>
       {/* pivot at mid-height so the pitch rotates the vehicle about its centre */}
       <group ref={rig} position={[0, h * 0.5, 0]}>
-        <group position={[0, -h * 0.5, 0]}>
+        <group position={[0, -h * 0.5, 0]} rotation={[0, ASCENT_ROLL[vehicleId] ?? 0, 0]}>
           <VehicleRig id={vehicleId} mode="ascent" />
         </group>
       </group>

@@ -70,7 +70,7 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
     if (!state.init) {
       camera.position.copy(camTarget)
       state.init = true
-    } else camera.position.lerp(camTarget, view.dragging ? 0.35 : 0.1)
+    } else camera.position.lerp(camTarget, 1 - Math.exp(-Math.min(dt, 0.5) * (view.dragging ? 24 : 6)))
     camera.up.copy(upv)
     camera.lookAt(pos.clone().add(vel.clone().multiplyScalar(dist * 0.3)))
     camera.near = 0.01

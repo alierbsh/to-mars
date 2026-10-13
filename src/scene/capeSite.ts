@@ -22,6 +22,17 @@ export function ll(lon: number, lat: number): [number, number] {
   return [(lon - ORIGIN.lon) * M_PER_DEG_LON, -(lat - ORIGIN.lat) * M_PER_DEG_LAT]
 }
 
+/** local metres → lat, lon (degrees) */
+export function latLonOf(x: number, z: number): [number, number] {
+  return [ORIGIN.lat - z / M_PER_DEG_LAT, ORIGIN.lon + x / M_PER_DEG_LON]
+}
+
+/** the selected pad's latitude and longitude */
+export function padLatLon(pad: PadId): [number, number] {
+  const [x, z] = PAD_SITE[pad]
+  return latLonOf(x, z)
+}
+
 /** published pad coordinates */
 export const SITES = {
   lc39a: ll(-80.6041, 28.6083),

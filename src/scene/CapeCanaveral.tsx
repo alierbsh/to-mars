@@ -1,17 +1,20 @@
 /**
- * The launch site: Cape Canaveral at three scales (Florida from altitude, the Cape with its
- * lagoons, pads, VAB and crawlerway, and the pad mound with the concrete apron), a real water
- * surface under the land maps (the ocean, the lagoons and the ponds are holes in the maps, so the
- * sea gets sun glint and moving waves), coastal scrub around the pad, cumulus over the Cape,
- * plus the pad structures for the selected vehicle and a few landmarks. The selected pad is
- * the local origin; the ascent scene swings this group about the Earth's centre as the vehicle
- * flies downrange.
+ * The launch site: Cape Canaveral at three scales (the Earth and a 2000 km regional tile from
+ * altitude — EarthBelow —, the Cape with its lagoons, pads, VAB and crawlerway, and the pad mound
+ * with the concrete apron), a real water surface under the Cape map (the ocean, the lagoons and
+ * the ponds are holes in the map, so the sea gets sun glint and moving waves), coastal scrub
+ * around the pad, cumulus over the Cape, plus the pad structures for the selected vehicle and a
+ * few landmarks. Every ground material is seen through the atmosphere and under the cloud deck's
+ * shadows. The selected pad is the local origin; the ascent scene swings this group about the
+ * Earth's centre as the vehicle flies downrange.
  */
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
-import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, floridaMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
+import { PAD_DECK, PAD_MOUND, PAD_SITE, R_EARTH, SITES, capeMap, padHeight, padMap, waterAt, waveNormalTexture } from './capeSite'
+import { applyAerialPerspective } from './atmosphere'
+import { EarthBelow, applyCloudShadow } from './EarthBelow'
 import { Birds, Hangar, PadSign, Vab } from './CapeDetail'
 import { dustTexture } from './impact'
 import { LaunchClouds, LaunchDetail } from './LaunchClouds'
@@ -21,7 +24,7 @@ import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 
 const KM = 1000
-const cache: { florida?: THREE.CanvasTexture; cape: Partial<Record<PadId, THREE.CanvasTexture>>; pad: Partial<Record<PadId, THREE.CanvasTexture>> } = { cape: {}, pad: {} }
+const cache: { cape: Partial<Record<PadId, THREE.CanvasTexture>>; pad: Partial<Record<PadId, THREE.CanvasTexture>> } = { cape: {}, pad: {} }
 
 function Landmark({ at, origin, children }: { at: [number, number]; origin: [number, number]; children: React.ReactNode }) {
   return <group position={[at[0] - origin[0], 0, at[1] - origin[1]]}>{children}</group>
@@ -32,11 +35,9 @@ const vabMat = new THREE.MeshStandardMaterial({ color: '#d8d8d3', roughness: 0.8
 const steelGrey = new THREE.MeshStandardMaterial({ color: '#6f7479', roughness: 0.65, metalness: 0.5 })
 
 /**
- * The sea: spherical caps under the land maps with drifting normal-mapped waves and a specular
- * sun glint. Two caps: a fine one around the Cape (1 km cells, so its chords sit within
- * centimetres of the sphere like the land tiles above it) and a wide one whose tessellation
- * matches the Florida cap exactly — the two sets of chords coincide, so the water stays a metre
- * below the land everywhere and shows only through the holes in the maps.
+ * The sea: a spherical cap under the Cape map with drifting normal-mapped waves and a specular
+ * sun glint; 1 km cells, so its chords sit within centimetres of the sphere like the land tile
+ * above it, and it shows only through the holes in the map.
  */
 function Water({ y, half, segments, tile }: { y: number; half: number; segments: number; tile: number }) {
   const geo = useMemo(() => capGeometry(R_EARTH, half, segments), [half, segments])
@@ -44,8 +45,11 @@ function Water({ y, half, segments, tile }: { y: number; half: number; segments:
     const normalMap = waveNormalTexture().clone()
     normalMap.repeat.set((2 * half) / tile, (2 * half) / tile)
     normalMap.needsUpdate = true
-    // the colour of the NASA day map's sea, so the wide cap blends into it at its edge
-    return new THREE.MeshStandardMaterial({ color: '#0d2a52', roughness: 0.5, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
+    // the colour of the regional tile's coastal sea, so the cap blends into it at its edge
+    const m = new THREE.MeshStandardMaterial({ color: '#143f66', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
+    applyAerialPerspective(m)
+    applyCloudShadow(m)
+    return m
   }, [half, tile])
   useFrame((_, dt) => {
     const m = mat.normalMap!
@@ -55,81 +59,11 @@ function Water({ y, half, segments, tile }: { y: number; half: number; segments:
   return <mesh geometry={geo} material={mat} position={[0, y, 0]} receiveShadow />
 }
 
-const BASE_URL = import.meta.env.BASE_URL
-
-/**
- * The wide Earth under everything, for the view from altitude: a 4000 km cap wearing the NASA
- * day map (the Gulf, Cuba, the Bahamas, the Atlantic), a cloud deck 9 km up from the same
- * cloud map, and the atmosphere as a thin shell at 80 km whose limb glows blue when seen
- * edge-on from above.
- */
-function WideEarth({ groundY }: { groundY: number }) {
-  const [day, clouds] = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/earth-day.jpg`, `${BASE_URL}assets/earth/earth-clouds.png`])
-  day.colorSpace = THREE.SRGBColorSpace
-  const HALF = 4000 * KM
-  const uv = useMemo(() => {
-    // equirectangular lookup around LC-39A (28.608°N, 80.604°W)
-    const lat0 = (28.608 * Math.PI) / 180
-    const lon0 = (-80.604 * Math.PI) / 180
-    return (x: number, z: number): [number, number] => {
-      const lat = lat0 - z / R_EARTH
-      const lon = lon0 + x / (R_EARTH * Math.cos(lat0))
-      return [lon / (2 * Math.PI) + 0.5, lat / Math.PI + 0.5]
-    }
-  }, [])
-  const ground = useMemo(() => capGeometry(R_EARTH, HALF, 160, undefined, uv), [uv])
-  const deck = useMemo(() => capGeometry(R_EARTH + 9000, HALF, 160, undefined, uv), [uv])
-  const shell = useMemo(() => capGeometry(R_EARTH + 80_000, HALF, 96), [])
-  const limb = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: { color: { value: new THREE.Color('#79b4ff') } },
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        vertexShader: `
-          #include <common>
-          #include <logdepthbuf_pars_vertex>
-          varying vec3 vNormal; varying vec3 vView;
-          void main() {
-            vNormal = normalize(normalMatrix * normal);
-            vec4 mv = modelViewMatrix * vec4(position, 1.0);
-            vView = normalize(-mv.xyz);
-            gl_Position = projectionMatrix * mv;
-            #include <logdepthbuf_vertex>
-          }`,
-        fragmentShader: `
-          #include <common>
-          #include <logdepthbuf_pars_fragment>
-          uniform vec3 color; varying vec3 vNormal; varying vec3 vView;
-          void main() {
-            #include <logdepthbuf_fragment>
-            float rim = 1.0 - abs(dot(normalize(vNormal), normalize(vView)));
-            float glow = pow(rim, 3.0) * 1.1 + pow(rim, 14.0) * 0.9;
-            gl_FragColor = vec4(color * glow, glow);
-          }`,
-      }),
-    [],
-  )
-  return (
-    <group position={[0, groundY, 0]}>
-      <mesh geometry={ground} position={[0, -9, 0]}>
-        <meshStandardMaterial map={day} roughness={0.9} envMapIntensity={0.1} />
-      </mesh>
-      <mesh geometry={deck} position={[0, -9, 0]}>
-        <meshStandardMaterial map={clouds} transparent depthWrite={false} roughness={1} envMapIntensity={0.1} />
-      </mesh>
-      <mesh geometry={shell} material={limb} position={[0, -9, 0]} renderOrder={-5} />
-    </group>
-  )
-}
-
 /** low coastal scrub around the pad: instanced flattened blobs, two greens */
 function Scrub({ pad, groundY, map }: { pad: PadId; groundY: number; map: THREE.CanvasTexture }) {
   const mesh = useMemo(() => {
     const g = new THREE.SphereGeometry(1, 7, 5)
-    const mat = new THREE.MeshStandardMaterial({ color: '#4a6a33', roughness: 1 })
+    const mat = applyAerialPerspective(new THREE.MeshStandardMaterial({ color: '#4a6a33', roughness: 1 }))
     const n = 1600
     const m = new THREE.InstancedMesh(g, mat, n)
     const o = new THREE.Object3D()
@@ -192,37 +126,31 @@ export function CapeCanaveral({ pad }: { pad: PadId }) {
   const deck = -PAD_DECK[pad]
   const groundY = deck - PAD_MOUND[pad] // grade level around the mound
 
-  const florida = useMemo(() => {
-    if (!cache.florida) cache.florida = floridaMap(origin)
-    return { tex: cache.florida, geo: capGeometry(R_EARTH, 1200 * KM, 96) }
-  }, [origin])
   const cape = useMemo(() => {
     if (!cache.cape[pad]) cache.cape[pad] = capeMap(origin)
-    return { tex: cache.cape[pad]!, geo: capGeometry(R_EARTH, 24 * KM, 48) }
+    const mat = new THREE.MeshStandardMaterial({ map: cache.cape[pad]!, roughness: 1, envMapIntensity: 0.15, alphaTest: 0.5 })
+    applyAerialPerspective(mat)
+    applyCloudShadow(mat)
+    return { tex: cache.cape[pad]!, mat, geo: capGeometry(R_EARTH, 24 * KM, 96) }
   }, [pad, origin])
   const near = useMemo(() => {
     if (!cache.pad[pad]) cache.pad[pad] = padMap(pad)
-    return { tex: cache.pad[pad]!, geo: capGeometry(R_EARTH, 1000, 160, (x, z) => padHeight(pad, x, z)) }
+    const mat = new THREE.MeshStandardMaterial({ map: cache.pad[pad]!, roughness: 1, envMapIntensity: 0.15 })
+    applyAerialPerspective(mat)
+    applyCloudShadow(mat)
+    return { tex: cache.pad[pad]!, mat, geo: capGeometry(R_EARTH, 1000, 160, (x, z) => padHeight(pad, x, z)) }
   }, [pad])
 
   return (
     <group>
       <Suspense fallback={null}>
-        <WideEarth groundY={groundY} />
+        <EarthBelow pad={pad} groundY={groundY} />
       </Suspense>
       <group position={[0, groundY, 0]}>
-        {/* the fine water cap under the Cape map, the wide one under Florida (its chords match the land cap's) */}
+        {/* the water cap under the Cape map (its chords match the land cap's) */}
         <Water y={-2.5} half={30 * KM} segments={60} tile={270} />
-        <Water y={-7} half={1200 * KM} segments={96} tile={900} />
-        <mesh geometry={florida.geo} position={[0, -6, 0]} receiveShadow>
-          <meshStandardMaterial map={florida.tex} roughness={1} envMapIntensity={0.15} alphaTest={0.5} />
-        </mesh>
-        <mesh geometry={cape.geo} position={[0, -1.5, 0]} receiveShadow>
-          <meshStandardMaterial map={cape.tex} roughness={1} envMapIntensity={0.15} alphaTest={0.5} />
-        </mesh>
-        <mesh geometry={near.geo} receiveShadow>
-          <meshStandardMaterial map={near.tex} roughness={1} envMapIntensity={0.15} />
-        </mesh>
+        <mesh geometry={cape.geo} material={cape.mat} position={[0, -1.5, 0]} receiveShadow renderOrder={3} />
+        <mesh geometry={near.geo} material={near.mat} receiveShadow renderOrder={4} />
         {/* landmarks in the 48 km map: the VAB, the LCC, the LC-39 pads' lightning towers */}
         <Landmark at={SITES.vab} origin={origin}>
           <Vab />
