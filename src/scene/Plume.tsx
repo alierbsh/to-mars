@@ -46,9 +46,9 @@ interface Look {
 
 const LOOK: Record<PlumeKind, Look> = {
   methalox: { core: new THREE.Color(1.0, 0.97, 0.9), mid: new THREE.Color(1.0, 0.64, 0.22), outer: new THREE.Color(1.0, 0.36, 0.08), vac: new THREE.Color(0.55, 0.62, 1.0), gain: 1.0, alpha: 0.92, soot: 0.0, length: 1.35, light: '#ffb070' },
-  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, length: 1.3, light: '#ff9a40' },
-  hydrolox: { core: new THREE.Color(0.92, 0.96, 1.0), mid: new THREE.Color(0.75, 0.86, 1.0), outer: new THREE.Color(0.6, 0.75, 1.0), vac: new THREE.Color(0.5, 0.62, 1.0), gain: 0.75, alpha: 0.4, soot: 0.0, length: 1.3, light: '#bcd2ff' },
-  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.4, alpha: 1.0, soot: 0.35, length: 2.0, light: '#ffc080' },
+  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, length: 1.7, light: '#ff9a40' },
+  hydrolox: { core: new THREE.Color(0.92, 0.96, 1.0), mid: new THREE.Color(0.75, 0.86, 1.0), outer: new THREE.Color(0.6, 0.75, 1.0), vac: new THREE.Color(0.5, 0.62, 1.0), gain: 0.75, alpha: 0.32, soot: 0.0, length: 0.9, light: '#bcd2ff' },
+  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.15, alpha: 1.0, soot: 0.35, length: 2.6, light: '#ffc080' },
   hypergolic: { core: new THREE.Color(1.0, 0.92, 0.82), mid: new THREE.Color(1.0, 0.8, 0.6), outer: new THREE.Color(0.95, 0.68, 0.5), vac: new THREE.Color(0.9, 0.8, 0.9), gain: 0.8, alpha: 0.6, soot: 0.0, length: 1.0, light: '#ffd0b0' },
   // the ionised wake of an entry: white-pink at the body, magenta and violet trailing off
   plasma: { core: new THREE.Color(1.0, 0.93, 0.96), mid: new THREE.Color(1.0, 0.62, 0.8), outer: new THREE.Color(0.85, 0.32, 0.62), vac: new THREE.Color(0.7, 0.35, 0.9), gain: 0.9, alpha: 0.55, soot: 0.0, length: 1.0, light: '#ff8ab0' },
