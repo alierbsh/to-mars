@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import Scene from '../scene/Scene'
 import { PHASE_RATE, effectiveSpeed, useAppStore } from '../state/store'
 import LowerThird from './LowerThird'
-import { entryAt } from './hud'
+import { entryAt, momentsAt, playbackRate } from './hud'
 
 /** The stage is the whole screen: the 3D scene and the webcast-style lower third (gauges, clock, timeline, engines, controls). */
 export default function Stage() {
@@ -19,13 +19,16 @@ export default function Stage() {
   useEffect(() => {
     if (!result || !playing) return
     const end = result.phases[result.phases.length - 1].end
+    const moments = momentsAt(result)
     const step = (now: number) => {
       const dt = last.current ? Math.min(0.1, (now - last.current) / 1000) : 0
       last.current = now
       const cur = useAppStore.getState().t
       const phase = result.phases.find((p) => cur >= p.start && cur < p.end) ?? result.phases[result.phases.length - 1]
       const alt = phase.phase === 'entry' ? entryAt(result, cur)?.alt : undefined
-      let next = cur + dt * PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt })
+      // the phase's pace at the chosen speed, dropped to real time around the moments that matter
+      const base = PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt })
+      let next = cur + dt * playbackRate(base, cur, moments, speed, phase).rate
       // never skip the end of a phase in one frame
       if (next > phase.end && cur < phase.end) next = phase.end + 1e-3
       if (next >= end) {

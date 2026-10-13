@@ -257,9 +257,9 @@ const SHORT: Array<[RegExp, string]> = [
   [/^Liftoff/i, 'LIFTOFF'],
   [/^Mach 1\b/i, 'MACH 1'],
   [/cutoff & separation/i, 'STAGE SEP'],
-  [/ignition: T\+/i, 'IGNITION'],
+  [/ ignition$/i, 'IGNITION'],
   [/^Fairing/i, 'FAIRING'],
-  [/^SECO/i, 'SECO'],
+  [/^SECO\b/, 'SECO'],
   [/^Circularisation/i, 'CIRC BURN'],
   [/^Parking orbit|parking orbit/i, 'ORBIT'],
   [/^Tanker (\d+)/i, 'TANKER $1'],
@@ -329,4 +329,67 @@ export function marksAt(r: MissionResult): Mark[] {
     keep.push(...chosen)
   }
   return keep.sort((a, b) => a.t - b.t)
+}
+
+/**
+ * A moment worth witnessing. Playback drops to `rate` mission seconds per real second over
+ * [t − before, t + after] — real time for the staging events, orbit insertion, the departure
+ * burn and peak heating; a slow crawl for the tanker dockings, whose approach spans days — and
+ * ramps in and out of it over about a second of real time, whatever speed the viewer chose.
+ */
+export interface Moment {
+  t: number
+  label: string
+  before: number
+  after: number
+  rate: number
+}
+
+export function momentsAt(r: MissionResult): Moment[] {
+  const out: Moment[] = []
+  for (const e of r.events) {
+    const l = e.label
+    if (/cutoff & separation$/i.test(l)) out.push({ t: e.t, label: 'Stage separation', before: 3, after: 7, rate: 1 })
+    else if (/ separation$/i.test(l)) out.push({ t: e.t, label: 'Booster separation', before: 3, after: 6, rate: 1 })
+    else if (/^Fairing jettison/i.test(l)) out.push({ t: e.t, label: 'Fairing jettison', before: 1.5, after: 3, rate: 1 })
+    else if (/^SECO\b/.test(l)) out.push({ t: e.t, label: 'Engine cutoff — orbit', before: 3, after: 2.5, rate: 1 })
+    else if (/^Circularisation burn/i.test(l)) out.push({ t: e.t, label: 'Circularisation burn', before: 2, after: 3, rate: 1 })
+    else if (/^Tanker \d+ docks/i.test(l)) out.push({ t: e.t, label: l.replace(' docks', ' docking'), before: 1.5 * DAY_S, after: 0.8 * DAY_S, rate: 0.35 * DAY_S })
+    else if (/^Trans-Mars injection burn/i.test(l)) out.push({ t: e.t, label: 'Trans-Mars injection', before: 2, after: 7, rate: 1 })
+    else if (/^Peak heating/i.test(l)) out.push({ t: e.t, label: 'Peak heating', before: 3, after: 4, rate: 1 })
+    else if (e.severity === 'fail' && e.phase === 'ascent') out.push({ t: e.t, label: l, before: 3, after: 4, rate: 1 })
+  }
+  return out.sort((a, b) => a.t - b.t)
+}
+
+/** real seconds taken to slow into a moment and to speed out of it */
+const MOMENT_RAMP_S = 1.2
+
+/**
+ * Mission seconds per real second at t: the phase's base rate, pulled down to the rate of any
+ * moment near t. Outside a moment's window the rate rises linearly with the distance to it,
+ * which makes the deceleration exponential in real time and MOMENT_RAMP_S long.
+ */
+export function playbackRate(base: number, t: number, moments: Moment[], chosen: number, phase?: { start: number; end: number }): { rate: number; moment: Moment | null } {
+  let rate = base
+  let moment: Moment | null = null
+  for (const m of moments) {
+    // a moment reaches only into the phases its window touches: the ramp is sized to the phase's
+    // pace, and a docking's ramp at the orbit's pace would be days long in the cruise
+    if (phase && (m.t - m.before >= phase.end || m.t + m.after <= phase.start)) continue
+    const hold = Math.min(base, m.rate * Math.min(1, chosen))
+    if (hold >= base) continue
+    const d = t < m.t - m.before ? m.t - m.before - t : t > m.t + m.after ? t - m.t - m.after : 0
+    const r = Math.min(base, hold + (d * Math.log(base / hold)) / MOMENT_RAMP_S)
+    if (r < rate) {
+      rate = r
+      moment = m
+    }
+  }
+  return { rate, moment }
+}
+
+/** the moment whose window holds t, if any */
+export function momentAt(moments: Moment[], t: number): Moment | null {
+  return moments.find((m) => t >= m.t - m.before && t <= m.t + m.after) ?? null
 }

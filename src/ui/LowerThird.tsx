@@ -12,7 +12,7 @@ import { VEHICLES } from '../data/vehicles'
 import type { MissionResult, Phase, Stage as StageDef, Vehicle } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { fmtT } from './format'
-import { burningAt, dialsAt, hudAt, marksAt, propFractionAt, type Dial as DialData } from './hud'
+import { burningAt, dialsAt, hudAt, marksAt, momentAt, momentsAt, propFractionAt, type Dial as DialData } from './hud'
 import { chapterForMark } from '../wiki/chapters'
 
 const SPEEDS = [0.5, 1, 2, 4, 10]
@@ -224,6 +224,8 @@ export default function LowerThird() {
   }, [])
   if (!result) return null
   const hud = hudAt(result, t)
+  const moments = useMemo(() => momentsAt(result), [result])
+  const moment = momentAt(moments, t)
   const [d1, d2] = dialsAt(result, t)
   const third = hud.lines[2]
   const end = result.phases[result.phases.length - 1].end
@@ -252,7 +254,7 @@ export default function LowerThird() {
       </div>
       <div className="lower__centre">
         <div className="lower__clock">
-          <span className="lower__phase">{hud.phaseLabel}</span>
+          {moment ? <span className="lower__phase lower__phase--moment">{moment.label}</span> : <span className="lower__phase">{hud.phaseLabel}</span>}
           <span className="lower__t">{main}</span>
           <span className="lower__end">{sub}</span>
         </div>

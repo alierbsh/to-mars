@@ -77,7 +77,7 @@ function Pick() {
               </button>
             ))}
           </div>
-          <p className="hint">For the orbit and the cruise. Liftoff always plays at 1× — it deserves it — and entry, descent and landing never faster than 2×.</p>
+          <p className="hint">For the orbit and the cruise. Liftoff always plays at 1×, and the clock drops back to real time for the moments that matter — staging, orbit insertion, the dockings, the departure burn, peak heating — then speeds up again. Entry, descent and landing never faster than 2×.</p>
         </div>
         <button
           className="intro__cta"
