@@ -33,12 +33,17 @@ export interface QualitySettings {
   mesh: number
   /** texture set: the full-resolution maps or the half-size variants */
   textures: 'full' | 'half'
+  /** anisotropic filtering on the ground maps */
+  anisotropy: number
+  /** frame-rate cap while the mission plays, and while the opening screens are up */
+  fps: number
+  fpsIdle: number
 }
 
 export const QUALITY: Record<Quality, QualitySettings> = {
-  high: { dpr: 1.5, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, sprites: 1, mesh: 1, textures: 'full' },
-  medium: { dpr: 1.25, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, sprites: 0.7, mesh: 0.75, textures: 'full' },
-  low: { dpr: 1, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, sprites: 0.5, mesh: 0.5, textures: 'half' },
+  high: { dpr: 1.5, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, sprites: 1, mesh: 1, textures: 'full', anisotropy: 16, fps: 60, fpsIdle: 30 },
+  medium: { dpr: 1.25, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, sprites: 0.7, mesh: 0.75, textures: 'full', anisotropy: 8, fps: 60, fpsIdle: 24 },
+  low: { dpr: 1, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, sprites: 0.5, mesh: 0.5, textures: 'half', anisotropy: 4, fps: 30, fpsIdle: 15 },
 }
 
 const KEY = 'occupy-mars:quality'

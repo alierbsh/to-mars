@@ -23,7 +23,7 @@ import { hash2 } from './noise'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 import { texName } from './quality'
-import { useQuality } from './useQuality'
+import { qualityNow, useQuality } from './useQuality'
 
 const KM = 1000
 const BASE_URL = import.meta.env.BASE_URL
@@ -65,7 +65,7 @@ function waterAt(alpha: THREE.Texture, half: number, x: number, z: number): bool
  */
 function groundMaterial(map: THREE.Texture, alpha: THREE.Texture | null, edgeFade = 0, depthPush = 0): THREE.MeshStandardMaterial {
   map.colorSpace = THREE.SRGBColorSpace
-  map.anisotropy = 16
+  map.anisotropy = qualityNow().anisotropy
   map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping
   if (alpha) alpha.wrapS = alpha.wrapT = THREE.ClampToEdgeWrapping
   const m = new THREE.MeshStandardMaterial({ map, alphaMap: alpha ?? undefined, transparent: true, roughness: 1, envMapIntensity: 0.15, polygonOffset: depthPush > 0, polygonOffsetFactor: depthPush, polygonOffsetUnits: depthPush * 2 })

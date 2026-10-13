@@ -125,12 +125,12 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
   useMemo(() => {
     day.colorSpace = THREE.SRGBColorSpace
     region.colorSpace = THREE.SRGBColorSpace
-    region.anisotropy = 16
-    clouds.anisotropy = 8
+    region.anisotropy = q.anisotropy
+    clouds.anisotropy = Math.min(8, q.anisotropy)
     for (const t of [day, rough, region, regionRough, clouds]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
     CLOUD.map.value = clouds
     CLOUD.centre.value.set(-origin[0], -origin[1])
-  }, [day, rough, region, regionRough, clouds, origin])
+  }, [day, rough, region, regionRough, clouds, origin, q.anisotropy])
 
   const globe = useMemo(() => {
     const geo = new THREE.SphereGeometry(R_EARTH_M, Math.round(256 * q.mesh), Math.round(128 * q.mesh))

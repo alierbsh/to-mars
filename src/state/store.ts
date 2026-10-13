@@ -99,8 +99,8 @@ function initialConfig(): MissionConfig {
   return cfg
 }
 
-/** deep links (?vehicle=, ?t=, …) skip the opening flow */
-const hasParams = new URLSearchParams(location.search).toString().length > 0
+/** deep links (?vehicle=, ?t=, …) skip the opening flow; settings like ?quality= do not */
+const hasParams = ['vehicle', 'preset', 'window', 't', 'wiki'].some((k) => new URLSearchParams(location.search).has(k))
 /** ?wiki=<chapter id> opens the wiki on that chapter */
 const wikiParam = new URLSearchParams(location.search).get('wiki')
 const initialWiki = wikiParam && CHAPTERS.some((c) => c.id === wikiParam) ? wikiParam : null

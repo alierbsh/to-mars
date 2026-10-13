@@ -52,6 +52,10 @@ Four numbers nobody has measured yet: propellant delivered per tanker, daily boi
 
 The numbers come from a sourced research pass made in October 2026 — the state of every heavy launcher, crewed-Mars delta-v and mass budgets, atmosphere and EDL models, expert failure-mode analyses, visual geometry. Report (Turkish) and raw notes (English): [`docs/research/`](./docs/research/README.md).
 
+## Performance
+
+The scene runs on three graphics tiers — high, medium, low — chosen for the device (phones start on low) and stepped down automatically if the opening screens or the first seconds of the climb cannot hold 30 fps; *Mission → Graphics* pins a choice. The tiers trade pixel ratio, multisampling, shadows, the logarithmic depth buffer, the sky's ray-march samples, the flame's layers, sprite and mesh density, texture resolution (half-size maps on low, ~120 MB of GPU memory instead of ~320) and the frame-rate cap (30 fps on low, lower on the opening screens). `?quality=high|medium|low` forces a tier; `?debug=1` logs draw calls, triangles and texture bytes to the console.
+
 ## Develop
 
 ```bash
@@ -61,7 +65,7 @@ npm test           # anchor + mission tests (vitest)
 npm run build      # typecheck + production build into dist/
 ```
 
-Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125&still=1" ["js:.top__right .pill:last-child|…"]` screenshots the built app at a mission time (optionally after clicks; `still=1` freezes the lower third's opening animation); `?preset=<id>&window=<id>` preselect assumptions; `?wiki=<chapter>` opens the wiki; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer; `?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>` a terrain viewer. `python3 -I scripts/cape-assets.py region|cape|complex|pad` repaints the Cape textures (`region` needs the Natural Earth 10m GeoJSON and the Blue Marble JPEG; the rest is self-contained).
+Useful scripts: `npx tsx scripts/mission-check.ts [vehicleId] [presetId] [windowId]` prints a full mission timeline; `scripts/ascent-check.ts` the ascent only; `scripts/entry-calibration.ts` the Earth/Mars entry anchors; `node scripts/shot.mjs out.png 1440 900 6000 "?vehicle=sls-orion&t=125&still=1" ["js:.top__right .pill:last-child|…"]` screenshots the built app at a mission time (optionally after clicks; `still=1` freezes the lower third's opening animation); `?preset=<id>&window=<id>` preselect assumptions; `?wiki=<chapter>` opens the wiki; `?model=<id>&view=side|nose|engines|mid&az=<deg>` opens a model viewer; `?terrain=mars|cape&pad=<padId>&alt=<m>&az=<deg>&pitch=<deg>` a terrain viewer. `python3 -I scripts/cape-assets.py region|cape|complex|pad` repaints the Cape textures (`region` needs the Natural Earth 10m GeoJSON and the Blue Marble JPEG; the rest is self-contained), then `python3 -I scripts/texture-variants.py` makes the half-size variants for the low graphics tier.
 
 ## Layout
 
