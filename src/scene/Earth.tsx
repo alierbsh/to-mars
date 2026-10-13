@@ -17,12 +17,13 @@ const BASE_URL = import.meta.env.BASE_URL
 export const SUN_DIR = new THREE.Vector3(0.72, 0.3, 0.62).normalize()
 
 function atmosphereMaterial(halo: boolean): THREE.ShaderMaterial {
+  if (halo) return limbMaterial()
   return new THREE.ShaderMaterial({
-    uniforms: { sunDir: { value: SUN_DIR.clone() }, color: { value: new THREE.Color(halo ? '#6fb1ff' : '#4f8fe0') }, halo: { value: halo ? 1 : 0 } },
+    uniforms: { sunDir: { value: SUN_DIR.clone() }, color: { value: new THREE.Color('#4f8fe0') } },
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    side: halo ? THREE.BackSide : THREE.FrontSide,
+    side: THREE.FrontSide,
     vertexShader: `
       #include <common>
       #include <logdepthbuf_pars_vertex>
@@ -38,15 +39,60 @@ function atmosphereMaterial(halo: boolean): THREE.ShaderMaterial {
     fragmentShader: `
       #include <common>
       #include <logdepthbuf_pars_fragment>
-      uniform vec3 sunDir; uniform vec3 color; uniform float halo; varying vec3 vNormal; varying vec3 vView; varying vec3 vWorldN;
+      uniform vec3 sunDir; uniform vec3 color; varying vec3 vNormal; varying vec3 vView; varying vec3 vWorldN;
       void main() {
         #include <logdepthbuf_fragment>
+        // a faint blue veil over the disc, thickening toward the horizon
         float rim = 1.0 - abs(dot(vNormal, vView));
         float day = smoothstep(-0.3, 0.3, dot(vWorldN, sunDir));
-        // halo: back faces beyond the planet's silhouette, brightest right at the limb
-        // haze: a faint blue veil over the disc, thickening toward the horizon
-        float glow = halo > 0.5 ? pow(rim, 2.2) * 1.6 + pow(rim, 9.0) * 0.9 : pow(rim, 1.6) * 0.22;
+        float glow = pow(rim, 1.6) * 0.22;
         gl_FragColor = vec4(color * glow * (0.12 + 0.88 * day), glow * (0.15 + 0.85 * day));
+      }`,
+  })
+}
+
+/**
+ * The limb: for each sight line that misses the planet, the height of its closest approach to
+ * the surface decides the glow — bright and pale where it grazes the ground, deep blue and
+ * fading over a few scale heights above (the air thins exponentially), dark where the closest
+ * point is in the planet's night. Drawn on the back faces of a shell 89 km up (scene unit 1 km;
+ * the planet at the origin).
+ */
+function limbMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { sunDir: { value: SUN_DIR.clone() }, radius: { value: EARTH_R } },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide,
+    vertexShader: `
+      #include <common>
+      #include <logdepthbuf_pars_vertex>
+      varying vec3 vWorld;
+      void main() {
+        vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        #include <logdepthbuf_vertex>
+      }`,
+    fragmentShader: `
+      #include <common>
+      #include <logdepthbuf_pars_fragment>
+      uniform vec3 sunDir; uniform float radius; varying vec3 vWorld;
+      void main() {
+        #include <logdepthbuf_fragment>
+        vec3 d = normalize(vWorld - cameraPosition);
+        float tc = max(0.0, -dot(cameraPosition, d));      // along the ray to its closest approach
+        vec3 pc = cameraPosition + d * tc;
+        float h = length(pc) - radius;                      // km above the ground there
+        if (h < 0.0) discard;                               // the ray meets the planet
+        float day = smoothstep(-0.18, 0.22, dot(normalize(pc), sunDir));
+        // two scale heights: a bright layer hugging the ground, a fainter blue above it
+        float low = exp(-h / 7.0);
+        float high = exp(-h / 22.0);
+        vec3 col = vec3(0.78, 0.88, 1.0) * low * 1.1 + vec3(0.22, 0.45, 1.0) * high * 0.55;
+        // the night limb keeps a trace of airglow
+        col *= 0.04 + 0.96 * day;
+        gl_FragColor = vec4(col, 1.0);
       }`,
   })
 }
