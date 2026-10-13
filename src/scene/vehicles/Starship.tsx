@@ -94,20 +94,21 @@ export function Ship({ y = BOOSTER_H }: { y?: number }) {
     const t = getHexTiles().clone()
     t.needsUpdate = true
     t.repeat.set(3, 6)
-    return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.9 })
+    return Object.assign(new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.9 }), { userData: { heat: true } })
   }, [])
   const tiles = useMemo(() => {
     const t = getHexTiles().clone()
     t.needsUpdate = true
     t.repeat.set(16, 24)
-    return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.95 })
+    return Object.assign(new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.95 }), { userData: { heat: true } })
   }, [])
   const tilesNose = useMemo(() => {
     const t = getHexTiles().clone()
     t.needsUpdate = true
     t.repeat.set(8, 8)
-    return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.95 })
+    return Object.assign(new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', metalness: 0.05, roughness: 0.95 }), { userData: { heat: true } })
   }, [])
+  const tipTiles = useMemo(() => Object.assign(MAT.tiles.clone(), { userData: { heat: true } }), [])
   const welds = useMemo(() => Array.from({ length: 20 }, (_, i) => (i + 1) * RING), [])
   const aftFlap: Array<[number, number]> = [
     [0, 0],
@@ -149,7 +150,7 @@ export function Ship({ y = BOOSTER_H }: { y?: number }) {
       {/* heat shield: windward half of the body, nose and a full tip cap */}
       <Tube r={R + 0.06} h={SHIP_CYL + 0.1} y={-0.05} material={tiles} segments={64} thetaStart={-Math.PI / 2} thetaLength={Math.PI} open />
       <OgiveShell r={R} L={NOSE_L} y={SHIP_CYL} material={tilesNose} thetaStart={-Math.PI / 2} thetaLength={Math.PI} scale={1.013} />
-      <OgiveTip r={R} L={NOSE_L} y={SHIP_CYL} tipLength={2.2} material={MAT.tiles} />
+      <OgiveTip r={R} L={NOSE_L} y={SHIP_CYL} tipLength={2.2} material={tipTiles} />
       {/* engines: 3 sea-level centre + 3 vacuum outer, hanging in the skirt */}
       {[0, 1, 2].map((i) => (
         <Bell key={`sl${i}`} rt={BELL_SL.rt} re={BELL_SL.re} h={BELL_SL.h} y={0.4} x={1.0 * Math.cos((i / 3) * 2 * Math.PI + Math.PI / 6)} z={1.0 * Math.sin((i / 3) * 2 * Math.PI + Math.PI / 6)} />

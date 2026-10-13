@@ -146,9 +146,9 @@ export const useAppStore = create<AppState>((set, get) => ({
  * The clock's multiplier for a moment of the mission, given the viewer's chosen speed. Liftoff
  * always plays in real time (the first 25 s: ignition, tower clear, the roll), ramping to the
  * chosen speed by T+85 s; the in-between phases run at the chosen speed; entry, descent and
- * landing never faster than 2×; the aftermath at 1×.
+ * landing follow their own profile down to real time for the landing burn; the aftermath at 1×.
  */
-export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number): number {
+export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number, ctx?: { alt?: number }): number {
   if (phase === 'ascent') {
     // liftoff in real time (the natural rate is 4×, so 0.25 of it), ramping to the chosen speed by T+85
     const real = 1 / PHASE_RATE.ascent
@@ -157,7 +157,14 @@ export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number): 
     const e = f * f * (3 - 2 * f)
     return real + (chosen - real) * e
   }
-  if (phase === 'entry') return Math.min(chosen, 2)
+  if (phase === 'entry') {
+    // entry, descent and landing as a film: the fall through the upper atmosphere at 8× real
+    // time, the heating at 3×, the glide at 5×, and from 8 km down — the landing burn, the flip,
+    // the touchdown — in real time. The chosen speed only slows it (0.5×).
+    const alt = ctx?.alt ?? 1e6
+    const real = alt > 70_000 ? 8 : alt > 55_000 ? 8 - 5 * ((70_000 - alt) / 15_000) : alt > 25_000 ? 3 : alt > 18_000 ? 3 + 2 * ((25_000 - alt) / 7_000) : alt > 9_000 ? 5 : alt > 8_000 ? 5 - 4 * ((9_000 - alt) / 1_000) : 1
+    return (real / PHASE_RATE.entry) * Math.min(1, chosen)
+  }
   if (phase === 'landing' || phase === 'done') return Math.min(chosen, 1)
   return chosen
 }

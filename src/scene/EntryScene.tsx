@@ -1,18 +1,21 @@
 /**
  * Mars entry, descent and landing: the spacecraft's centre at the origin (belly-first or
- * heat-shield-first), plasma scaled by heat flux, a smooth flip to vertical for the landing burn,
- * the NASA-DEM Mars surface (MarsSurface) sliding under the vehicle and rising to meet it, dust
+ * heat-shield-first), the heating as a glowing sheath, a plasma wake streaming behind, sparks of
+ * ablating material, the windward tiles glowing cherry-orange, a camera that shakes with the
+ * g-load; a smooth flip to vertical for the landing burn, shot low and wide like a film; the
+ * NASA-DEM Mars surface (MarsSurface) sliding under the vehicle and rising to meet it, dust
  * kicked up by the landing burn. A crash is an impact: flash, debris on ballistic arcs, a dust
  * curtain, a scorch on the ground and a camera shake. A break-up throws fragments down-track.
  */
 import { useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { entryAt } from '../ui/hud'
 import { dustTexture, fragmentAt, makeFragments, makePuffs } from './impact'
 import { MarsSurface } from './MarsSurface'
+import { Plume } from './Plume'
 import { SkyDome, setSky } from './SkyDome'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
@@ -20,15 +23,16 @@ import { autoOrbit, view } from './viewControl'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
-const SKY_STORM = new THREE.Color('#7a4a24')
+const SKY_STORM = new THREE.Color('#9c6236')
 const SKY_HORIZON = new THREE.Color('#dba366')
 const SKY_ZENITH = new THREE.Color('#5c4029')
-const SKY_STORM_ZENITH = new THREE.Color('#4a2c16')
+const SKY_STORM_ZENITH = new THREE.Color('#6a3f22')
 const R_MARS = 3_389_500
 const DUST = '#b8865a'
 const DUST_DARK = '#5a3a26'
 const N_PUFFS = 24
 const N_FRAGMENTS = 56
+const N_SPARKS = 320
 
 let plasmaCache: THREE.CanvasTexture | null = null
 /** soft radial gradient, white-hot core to transparent */
@@ -62,6 +66,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const wake = useRef<THREE.Sprite>(null)
   const sky = useRef<THREE.Mesh>(null)
   const sun = useRef<THREE.Sprite>(null)
+  const dirLight = useRef<THREE.DirectionalLight>(null)
+  const hemi = useRef<THREE.HemisphereLight>(null)
   const sunDir = useMemo(() => new THREE.Vector3(300, 400, 200).normalize(), [])
   const plasmaTex = useMemo(() => plasmaTexture(), [])
   const sunTex = useMemo(() => dustTexture(), [])
@@ -74,7 +80,17 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const dust = useRef<THREE.Group>(null)
   const debris = useRef<THREE.InstancedMesh>(null)
   const { scene } = useThree()
-  const st = useMemo(() => ({ az: 0.4, flip: 0, init: false }), [])
+  const st = useMemo(() => ({ az: 0.4, flip: 0, init: false, heat: 0, dist: 0, el: 0, azHold: 0, shot: '' }), [])
+  const heatMats = useRef<THREE.MeshStandardMaterial[] | null>(null)
+  const sparks = useRef<THREE.Points>(null)
+  const sparkState = useMemo(() => ({ pos: new Float32Array(N_SPARKS * 3), vel: new Float32Array(N_SPARKS * 3), life: new Float32Array(N_SPARKS), col: new Float32Array(N_SPARKS * 3) }), [])
+  const sparkGeo = useMemo(() => {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(sparkState.pos, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(sparkState.col, 3))
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6)
+    return g
+  }, [sparkState])
   const bg = useMemo(() => new THREE.Color(), [])
   const skyLow = useMemo(() => new THREE.Color(), [])
   const skyHorizon = useMemo(() => new THREE.Color(), [])
@@ -85,6 +101,11 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     return new THREE.Quaternion().setFromRotationMatrix(m)
   }, [])
   const upright = useMemo(() => new THREE.Quaternion(), [])
+  // a ship flips nose-up about its lateral axis: the tiles end up facing downrange (+X)
+  const uprightShip = useMemo(() => {
+    const m = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0))
+    return new THREE.Quaternion().setFromRotationMatrix(m)
+  }, [])
   const capsuleTilt = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.35)), [])
   const puffs = useMemo(() => makePuffs(5, N_PUFFS), [])
   const fragments = useMemo(() => makeFragments(9, N_FRAGMENTS, isShip ? 45 : 75, isShip ? 6 : 1.7), [isShip])
@@ -114,8 +135,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
         const tel = result?.entry?.telemetry
         const ign = tel?.find((x) => x.burning)
         const ignitionT = phase && ign ? phase.start + ign.t : Infinity
-        st.flip = Number.isFinite(ignitionT) ? smooth((t - ignitionT) / 2.5) : 0
-        rig.current.quaternion.copy(bellyFirst).slerp(upright, st.flip)
+        st.flip = Number.isFinite(ignitionT) ? smooth((t - ignitionT) / 3.5) : 0
+        rig.current.quaternion.copy(bellyFirst).slerp(uprightShip, st.flip)
       } else {
         rig.current.quaternion.copy(capsuleTilt).slerp(upright, ended ? 1 : 0.2)
       }
@@ -146,21 +167,76 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       ground.current.position.set(R_MARS * Math.sin(d), groundY - R_MARS * (1 - Math.cos(d)), 0)
       ground.current.rotation.z = -d
     }
-    // plasma from heating: a sheath on the windward side and a wake behind
+    // heating: a sheath on the windward side, the tiles glowing, a plasma wake streaming behind,
+    // sparks of ablating material — all scaled by the heat flux
+    const limitQ = vehicle.spacecraft.entry?.tpsLimit ?? 50
+    const heat = ended ? 0 : Math.min(1.3, (e?.heatFlux ?? 0) / (0.5 * limitQ))
+    st.heat += (heat - st.heat) * (1 - Math.exp(-dt * 4))
+    const k = st.heat
     if (glow.current && wake.current && result?.entry) {
-      const q = e?.heatFlux ?? 0
-      const limit = vehicle.spacecraft.entry?.tpsLimit ?? 50
-      const k = Math.min(1.3, q / (0.5 * limit))
       const on = k > 0.04 && !ended
       glow.current.visible = on
       wake.current.visible = on
-      ;(glow.current.material as THREE.SpriteMaterial).opacity = Math.min(1, 0.85 * k)
-      ;(wake.current.material as THREE.SpriteMaterial).opacity = Math.min(1, 0.5 * k)
+      const pulse = 0.85 + 0.15 * Math.sin(t * 23) * Math.sin(t * 7.1)
+      ;(glow.current.material as THREE.SpriteMaterial).opacity = Math.min(1, 0.9 * k * pulse)
+      ;(wake.current.material as THREE.SpriteMaterial).opacity = Math.min(1, 0.35 * k)
       const belly = isShip ? 1 - st.flip : 1
-      glow.current.scale.set(L * (isShip ? 1.25 : 2.2), L * (isShip ? 0.55 : 1.6), 1)
+      glow.current.scale.set(L * (isShip ? 1.3 : 2.2) * (0.9 + 0.1 * pulse), L * (isShip ? 0.6 : 1.6), 1)
       glow.current.position.set(0, -(isShip ? L * 0.12 * belly : L * 0.3), 0)
       wake.current.scale.set(L * (isShip ? 2.6 : 4), L * (isShip ? 0.5 : 1.2), 1)
       wake.current.position.set(-L * (isShip ? 1.2 : 2.2), -(isShip ? L * 0.05 : L * 0.1), 0)
+    }
+    // the windward tiles glow with the heat (the ship's materials carry userData.heat)
+    if (rig.current && isShip) {
+      if (!heatMats.current) {
+        const list: THREE.MeshStandardMaterial[] = []
+        rig.current.traverse((o) => {
+          const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined
+          if (m && m.userData?.heat && !list.includes(m)) list.push(m)
+        })
+        heatMats.current = list
+      }
+      const g = Math.min(1, Math.max(0, k - 0.1) / 0.9)
+      for (const m of heatMats.current) {
+        m.emissive.setRGB(1.0, 0.32 + 0.3 * g, 0.06 + 0.2 * g)
+        m.emissiveIntensity = 2.4 * g * g
+      }
+    }
+    // sparks: bright specks shed from the belly, streaming back into the wake
+    if (sparks.current) {
+      const on = k > 0.08 && !ended
+      sparks.current.visible = on
+      if (on) {
+        const sp = sparkState
+        const R = L * 0.075
+        for (let i = 0; i < N_SPARKS; i++) {
+          sp.life[i] -= dt
+          if (sp.life[i] <= 0) {
+            if (Math.random() < k * 0.6) {
+              sp.life[i] = 0.4 + Math.random() * 0.8
+              sp.pos[i * 3] = (Math.random() - 0.5) * L * 0.9
+              sp.pos[i * 3 + 1] = -R * (1.0 + Math.random() * 0.4) * (isShip ? 1 - st.flip : 1)
+              sp.pos[i * 3 + 2] = (Math.random() - 0.5) * R * 2.2
+              sp.vel[i * 3] = -L * (1.2 + Math.random() * 1.6)
+              sp.vel[i * 3 + 1] = -L * (0.05 + Math.random() * 0.25)
+              sp.vel[i * 3 + 2] = (Math.random() - 0.5) * L * 0.3
+            } else {
+              sp.life[i] = -1
+              sp.pos[i * 3 + 1] = 1e5
+            }
+          } else {
+            sp.pos[i * 3] += sp.vel[i * 3] * dt
+            sp.pos[i * 3 + 1] += sp.vel[i * 3 + 1] * dt
+            sp.pos[i * 3 + 2] += sp.vel[i * 3 + 2] * dt
+          }
+          const f = Math.max(0, Math.min(1, sp.life[i]))
+          sp.col[i * 3] = 1.0 * f
+          sp.col[i * 3 + 1] = (0.55 + 0.4 * f) * f
+          sp.col[i * 3 + 2] = (0.2 + 0.5 * f * f) * f
+        }
+        sparks.current.geometry.attributes.position.needsUpdate = true
+        sparks.current.geometry.attributes.color.needsUpdate = true
+      }
     }
     // landing dust: the burn blasting the surface in the last 150 m, then settling after touchdown
     if (dust.current) {
@@ -258,29 +334,87 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     }
     // gradient dome: butterscotch horizon, darker zenith; fades out with altitude
     setSky(sky.current, camera, Math.min(1, f * f * (1 + 0.8 * storm)), skyHorizon.copy(SKY_HORIZON).lerp(SKY_STORM, storm), skyZenith.copy(SKY_ZENITH).lerp(SKY_STORM_ZENITH, storm))
+    // light: a storm takes the sun's edge off and fills the scene with diffuse dust-light
+    if (dirLight.current) dirLight.current.intensity = 2.0 * (1 - 0.4 * storm * f)
+    if (hemi.current) hemi.current.intensity = 0.6 + 0.9 * storm * f
     // the sun's glare: a cool bluish halo in the dust (Mars sunsets are blue around the sun); dimmed by a storm
     if (sun.current) {
       sun.current.position.copy(camera.position).addScaledVector(sunDir, 60_000)
       ;(sun.current.material as THREE.SpriteMaterial).opacity = (0.25 + 0.5 * f * f) * (1 - 0.7 * storm * f)
     }
-    // camera: slow orbit about the vehicle's centre; a shake at impact
-    if (playing && autoOrbit()) st.az += dt * 0.08
-    const az = st.az + view.az
+    // camera: the film's shots. A slow orbit through the fall and the heating (shaking with the
+    // g-load); for the landing burn and the flip a low, wide profile shot that dollies in; the
+    // descent and touchdown from near the ground; the aftermath wide. Dragging overrides.
+    const tel = result?.entry?.telemetry
+    const ignTel = tel?.find((x) => x.burning)
+    const tIgn = phase && ignTel ? phase.start + ignTel.t : Infinity
+    const tTd = phase ? phase.end : Infinity
     const after = impact && tau >= 0
-    const dist = (after ? Math.max(L * 4.5, 70) : Math.max(L * 3.2, 26)) * view.zoom
-    const flat = Math.cos(view.el)
-    const target = new THREE.Vector3(Math.cos(az) * dist * flat, (after ? Math.max(14, L * 0.6) : L * 0.25) + Math.sin(view.el) * dist, Math.sin(az) * dist * flat)
+    let dist: number
+    let elev: number
+    let shot: string
+    if (after) {
+      shot = 'wreck'
+      dist = Math.max(L * 4.5, 70)
+      elev = 0.25
+    } else if (isShip && t >= tIgn - 6 && t < tIgn + 14) {
+      // the flip: a low, wide profile shot, dollying in
+      shot = 'flip'
+      const f = smooth((t - (tIgn - 6)) / 20)
+      dist = L * (2.9 - 0.9 * f)
+      elev = -0.32 + 0.12 * f
+    } else if (isShip && t >= tIgn + 14 && t < tTd + 6) {
+      shot = 'descent'
+      dist = L * 2.3
+      elev = 0.06
+    } else if (isShip && t >= tIgn - 70 && t < tIgn - 6) {
+      shot = 'glide'
+      dist = L * 2.7
+      elev = -0.15
+    } else if (ended) {
+      shot = 'landed'
+      dist = L * 3.0
+      elev = 0.18
+    } else {
+      shot = 'fall'
+      dist = Math.max(L * 3.2, 26) * (1 - 0.15 * k)
+      elev = 0.12 + 0.2 * k
+    }
+    // hold the azimuth through the flip so the profile stays; otherwise the slow orbit
+    if (shot !== st.shot) {
+      if (shot === 'flip') st.azHold = Math.PI / 2 // from +z: the flip in profile, the sunlit side
+      st.shot = shot
+    }
+    if (playing && autoOrbit() && shot !== 'flip') st.az += dt * (shot === 'descent' ? 0.05 : 0.08)
+    if (shot === 'flip') {
+      // come round the short way
+      let d = st.azHold - st.az
+      d = Math.atan2(Math.sin(d), Math.cos(d))
+      st.az += d * (1 - Math.exp(-dt * 1.5))
+    }
+    const az = st.az + view.az
+    st.dist += ((dist * view.zoom) - st.dist) * (1 - Math.exp(-dt * (st.dist === 0 ? 1e9 : 1.6)))
+    st.el += ((elev + view.el) - st.el) * (1 - Math.exp(-dt * 1.6))
+    const flat = Math.cos(st.el)
+    const lookY = after ? groundY + L * 0.4 : shot === 'descent' || shot === 'landed' ? -L * 0.15 : 0
+    const target = new THREE.Vector3(Math.cos(az) * st.dist * flat, lookY + Math.sin(st.el) * st.dist, Math.sin(az) * st.dist * flat)
     if (!st.init) {
       camera.position.copy(target)
       st.init = true
     } else camera.position.lerp(target, 1 - Math.exp(-Math.min(dt, 0.5) * (view.dragging ? 24 : after ? 12 : 5)))
-    if (impact && tau >= 0 && tau < 1.6) {
-      const a = Math.max(2, L * 0.08) * (1 - tau / 1.6) ** 2
-      camera.position.x += (Math.random() - 0.5) * a
-      camera.position.y += (Math.random() - 0.5) * a
-      camera.position.z += (Math.random() - 0.5) * a
+    // shake: the g-load through the heating, the engines lighting, the touchdown, an impact
+    let shake = 0
+    const gl = e?.gLoad ?? 0
+    if (!ended) shake += Math.max(0, gl - 0.5) * 0.012 * L * (0.5 + 0.5 * k)
+    if (t >= tIgn && t < tIgn + 1.2) shake += L * 0.03 * (1 - (t - tIgn) / 1.2)
+    if (ended && tau < 0.8 && !impact) shake += L * 0.02 * (1 - tau / 0.8)
+    if (impact && tau >= 0 && tau < 1.6) shake += Math.max(2, L * 0.08) * (1 - tau / 1.6) ** 2
+    if (shake > 0) {
+      camera.position.x += (Math.random() - 0.5) * shake
+      camera.position.y += (Math.random() - 0.5) * shake
+      camera.position.z += (Math.random() - 0.5) * shake
     }
-    camera.lookAt(0, impact && ended ? groundY + L * 0.4 : 0, 0)
+    camera.lookAt(0, lookY, 0)
     camera.up.set(0, 1, 0)
     camera.near = 0.5
     camera.far = 6_000_000
@@ -304,6 +438,13 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       <sprite ref={wake} visible={false}>
         <spriteMaterial map={plasmaTex} color="#ff9a60" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
       </sprite>
+      {/* the ionised wake: a plume pointing back along the velocity, throttled by the heat */}
+      <group rotation={[0, 0, -Math.PI / 2]} position={[-L * 0.1, -L * 0.08, 0]}>
+        <PlasmaWake L={L} heatRef={st} />
+      </group>
+      <points ref={sparks} geometry={sparkGeo} visible={false} frustumCulled={false}>
+        <pointsMaterial size={isShip ? 0.9 : 0.5} sizeAttenuation vertexColors transparent opacity={0.95} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </points>
       <mesh ref={flash} visible={false}>
         <sphereGeometry args={[1, 16, 12]} />
         <meshBasicMaterial color="#ffd9a0" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
@@ -340,13 +481,23 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
         </Suspense>
       </group>
       {/* the sun: low in the west; its shadow map follows the ship (always at the origin) */}
-      <directionalLight position={[300, 400, 200]} intensity={1.7} color="#ffe2c4" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
-      <hemisphereLight args={['#c9a27a', '#3b2418', 0.45]} />
+      <directionalLight ref={dirLight} position={[300, 400, 200]} intensity={2.0} color="#ffe2c4" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-140} shadow-camera-right={140} shadow-camera-top={140} shadow-camera-bottom={-140} shadow-camera-near={100} shadow-camera-far={1100} shadow-bias={-0.0004} />
+      <hemisphereLight ref={hemi} args={['#d8a877', '#4a2c1a', 0.6]} />
       <sprite ref={sun} scale={[9000, 9000, 1]} renderOrder={-9}>
         <spriteMaterial map={sunTex} color="#dfe8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} fog={false} />
       </sprite>
     </group>
   )
+}
+
+/** the wake as a plume: its throttle follows the smoothed heat every frame */
+function PlasmaWake({ L, heatRef }: { L: number; heatRef: { heat: number; flip: number } }) {
+  const [thr, setThr] = useState(0)
+  useFrame(() => {
+    const v = Math.round(Math.min(1, heatRef.heat * (1 - heatRef.flip)) * 20) / 20
+    if (v !== thr) setThr(v)
+  })
+  return <Plume kind="plasma" radius={L * 0.16} length={L * 1.6} throttle={thr} expansion={2.6} />
 }
 
 /** sets per-instance colours once the instanced mesh exists */
