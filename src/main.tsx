@@ -13,7 +13,7 @@ const num = (k: string, d: number) => Number(params.get(k) ?? d)
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {model ? (
-      <ModelViewer id={model} view={params.get('view') ?? 'side'} az={num('az', 35)} />
+      <ModelViewer id={model} view={params.get('view') ?? 'side'} az={num('az', 35)} fire={params.get('fire') === '1'} expansion={num('exp', 1)} floor={params.has('floor') ? num('floor', 0) : Infinity} />
     ) : terrain ? (
       <TerrainViewer kind={terrain} alt={num('alt', 300)} az={num('az', 0)} pitch={num('pitch', 10)} x={num('x', 0)} z={num('z', 0)} pad={params.get('pad') ?? 'lc39a-starship'} />
     ) : (

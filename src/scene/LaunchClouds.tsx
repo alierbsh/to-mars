@@ -8,7 +8,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useAppStore } from '../state/store'
-import { dustTexture } from './impact'
+import { cloudPuffTexture, dustTexture } from './impact'
 import { hash2 } from './noise'
 
 const N = 30
@@ -131,7 +131,7 @@ export function LaunchDetail({ deck, height }: { deck: number; height: number })
 export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchAxis?: 'x' | 'z' }) {
   const group = useRef<THREE.Group>(null)
   const light = useRef<THREE.PointLight>(null)
-  const tex = useMemo(() => dustTexture(), [])
+  const tex = useMemo(() => cloudPuffTexture(), [])
   const puffs = useMemo<Puff[]>(() => {
     const out: Puff[] = []
     for (let i = 0; i < N; i++) {
@@ -170,9 +170,10 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
       const size = (14 + 26 * grow) * p.size
       s.scale.set(size, size * 0.85, 1)
       const m = s.material as THREE.SpriteMaterial
-      m.opacity = (tt > 0 ? 0.92 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))
-      m.rotation = p.dir + grow * 0.15
-      col.copy(WHITE).lerp(GREY, Math.min(1, tau / 40))
+      m.opacity = (tt > 0 ? 0.9 : 0) * fade * Math.min(1, 3 / (1 + grow * 0.6))
+      // the puff texture is lit from above, so the sprites stay upright; the low ones sit in the
+      // shadow of the heap
+      col.copy(WHITE).lerp(GREY, Math.min(1, tau / 40)).multiplyScalar(0.8 + 0.2 * p.rise)
       // lit from inside by the flame for the first seconds: the nearer the pad, the more orange
       const lit = Math.max(0, 1 - tau / 9) * Math.max(0, 1 - r / 90) * (0.7 + 0.3 * Math.sin(tau * 23 + i))
       col.lerp(FIRE, Math.min(1, lit * 1.1))

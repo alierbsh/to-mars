@@ -4,7 +4,7 @@
  * event (sim seconds), so scrubbing the playback replays it exactly.
  */
 import * as THREE from 'three'
-import { hash2 } from './noise'
+import { hash2, fbm } from './noise'
 
 export const G_MARS = 3.71
 
@@ -71,6 +71,46 @@ export function dustTexture(): THREE.CanvasTexture {
   ctx.putImageData(img, 0, 0)
   dustCache = new THREE.CanvasTexture(c)
   return dustCache
+}
+
+let puffCache: THREE.CanvasTexture | null = null
+/**
+ * A billowing cloud puff for steam and smoke sprites: cauliflower lobes from fbm with a soft
+ * edge, lit from above (bright crown, shadowed underside) so a heap of them reads as cumulus
+ * rather than a flat veil. White in RGB with the shading baked into the brightness; the sprite's
+ * colour tints it.
+ */
+export function cloudPuffTexture(): THREE.CanvasTexture {
+  if (puffCache) return puffCache
+  const n = 256
+  const c = document.createElement('canvas')
+  c.width = c.height = n
+  const ctx = c.getContext('2d')!
+  const img = ctx.createImageData(n, n)
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const dx = (i - n / 2) / (n / 2)
+      const dy = (j - n / 2) / (n / 2)
+      const r = Math.hypot(dx, dy)
+      // lobed outline: the radius wanders with low-frequency noise around the rim
+      const ang = Math.atan2(dy, dx)
+      const lobes = 0.78 + 0.2 * fbm(Math.cos(ang) * 1.6 + 5, Math.sin(ang) * 1.6 + 9, 3)
+      const edge = Math.max(0, Math.min(1, (lobes - r) / 0.22))
+      // inner structure: cauliflower lumps
+      const lump = fbm(dx * 3.2 + 11, dy * 3.2 + 3, 4)
+      const dens = edge * edge * (0.55 + 0.45 * lump)
+      // lit from above: bright crown, grey base
+      const light = 0.62 + 0.38 * Math.max(0, Math.min(1, 0.5 - dy * 0.6 + (lump - 0.5) * 0.5))
+      const k = (j * n + i) * 4
+      const v = Math.round(255 * light)
+      img.data[k] = v
+      img.data[k + 1] = v
+      img.data[k + 2] = v
+      img.data[k + 3] = Math.round(255 * Math.min(1, dens * 1.25))
+    }
+  ctx.putImageData(img, 0, 0)
+  puffCache = new THREE.CanvasTexture(c)
+  return puffCache
 }
 
 export interface Puff {

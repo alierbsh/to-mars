@@ -116,10 +116,14 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const dip = Math.acos(R_EARTH / (R_EARTH + alt))
     const extra = (3.5 + 4.0 * smooth(20_000, 150_000, alt)) * (Math.PI / 180)
     const liftLow = Math.min(alt * 0.25, size * 1.4)
-    const liftHigh = size * 0.45
-    const lift = liftLow * (1 - mid) + liftHigh * mid
     const elev = Math.sin(view.el) * dist
     const flat = Math.cos(view.el)
+    // the view axis points dip+extra below the horizontal (horizon in the upper third); lift the
+    // camera so the vehicle sits a fixed angle above that axis — the dip grows with altitude and
+    // would otherwise push the vehicle out of the top of the frame
+    const shipAbove = Math.min(11 * (Math.PI / 180), 0.6 * (dip + extra))
+    const liftHigh = Math.max(size * 0.3, dist * flat * Math.tan(dip + extra - shipAbove) - size * 0.05)
+    const lift = liftLow * (1 - mid) + liftHigh * mid
     const camUp = size * (0.05 - 0.3 * pull) + lift + elev
     const target = new THREE.Vector3(centre.x + Math.cos(az) * dist * flat, centre.y + camUp, centre.z + Math.sin(az) * dist * flat)
     if (!camState.init) {

@@ -14,7 +14,6 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { dustTexture } from './impact'
 import { hash2 } from './noise'
 
 export type PlumeKind = 'methalox' | 'kerolox' | 'hydrolox' | 'solid' | 'hypergolic' | 'plasma'
@@ -46,10 +45,10 @@ interface Look {
 }
 
 const LOOK: Record<PlumeKind, Look> = {
-  methalox: { core: new THREE.Color(1.0, 0.97, 0.9), mid: new THREE.Color(1.0, 0.7, 0.3), outer: new THREE.Color(1.0, 0.4, 0.1), vac: new THREE.Color(0.55, 0.62, 1.0), gain: 1.0, alpha: 0.9, soot: 0.0, length: 1.9, light: '#ffb070' },
-  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, length: 1.7, light: '#ff9a40' },
+  methalox: { core: new THREE.Color(1.0, 0.97, 0.9), mid: new THREE.Color(1.0, 0.64, 0.22), outer: new THREE.Color(1.0, 0.36, 0.08), vac: new THREE.Color(0.55, 0.62, 1.0), gain: 1.0, alpha: 0.92, soot: 0.0, length: 1.35, light: '#ffb070' },
+  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, length: 1.3, light: '#ff9a40' },
   hydrolox: { core: new THREE.Color(0.92, 0.96, 1.0), mid: new THREE.Color(0.75, 0.86, 1.0), outer: new THREE.Color(0.6, 0.75, 1.0), vac: new THREE.Color(0.5, 0.62, 1.0), gain: 0.75, alpha: 0.4, soot: 0.0, length: 1.3, light: '#bcd2ff' },
-  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.4, alpha: 1.0, soot: 0.35, length: 1.8, light: '#ffc080' },
+  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.4, alpha: 1.0, soot: 0.35, length: 2.0, light: '#ffc080' },
   hypergolic: { core: new THREE.Color(1.0, 0.92, 0.82), mid: new THREE.Color(1.0, 0.8, 0.6), outer: new THREE.Color(0.95, 0.68, 0.5), vac: new THREE.Color(0.9, 0.8, 0.9), gain: 0.8, alpha: 0.6, soot: 0.0, length: 1.0, light: '#ffd0b0' },
   // the ionised wake of an entry: white-pink at the body, magenta and violet trailing off
   plasma: { core: new THREE.Color(1.0, 0.93, 0.96), mid: new THREE.Color(1.0, 0.62, 0.8), outer: new THREE.Color(0.85, 0.32, 0.62), vac: new THREE.Color(0.7, 0.35, 0.9), gain: 0.9, alpha: 0.55, soot: 0.0, length: 1.0, light: '#ff8ab0' },
@@ -93,8 +92,8 @@ varying vec3 vP;
 float profile(float s, float k) {
   // sea level: a slight neck behind the nozzle, then a slow widening and a tapered tail;
   // vacuum: a bell that opens fast behind the nozzle and keeps widening
-  float sl = (0.92 + 0.55 * s) * sqrt(max(0.0, 1.0 - pow(s, 2.6)));
-  float vac = (0.9 + 2.3 * pow(s, 0.55)) * sqrt(max(0.0, 1.0 - pow(s, 3.5)));
+  float sl = (1.05 + 0.6 * s) * sqrt(max(0.0, 1.0 - pow(s, 2.6)));
+  float vac = (0.9 + 2.8 * pow(s, 0.5)) * sqrt(max(0.0, 1.0 - pow(s, 3.0)));
   return mix(sl, vac, k);
 }
 
@@ -102,8 +101,8 @@ void main() {
   float s = uv.y;
   float a = uv.x * 6.2831853;
   float k = clamp((uExp - 1.0) / 3.0, 0.0, 1.0);
-  // the silhouette flickers: slow lumps near the nozzle, fast ragged motion toward the tail
-  float wob = 1.0 + (fbm3(vec3(cos(a) * 1.2, sin(a) * 1.2, s * 5.0 - uTime * 2.2)) - 0.5) * (0.12 + 0.5 * s * s) * (1.0 - 0.6 * k);
+  // the silhouette boils: slow lumps near the nozzle, big ragged motion toward the tail
+  float wob = 1.0 + (fbm3(vec3(cos(a) * 1.2, sin(a) * 1.2, s * 3.5 - uTime * 2.2)) - 0.5) * (0.16 + 0.7 * s * s) * (1.0 - 0.6 * k);
   float r = uRadius * profile(s, k) * wob;
   vec3 p = vec3(cos(a) * r, -s * uLength, sin(a) * r);
   vec3 n = normalize(vec3(cos(a), 0.25 * s, sin(a)));
@@ -131,6 +130,7 @@ uniform float uRadius;
 uniform float uExp;
 uniform float uThrottle;
 uniform float uLayer;
+uniform float uSeed;
 uniform float uGain;
 uniform float uAlpha;
 uniform float uSoot;
@@ -149,33 +149,39 @@ void main() {
   float k = clamp((uExp - 1.0) / 3.0, 0.0, 1.0);
   // turbulence scrolling down the plume (seamless around the axis through cos/sin): lumps, and
   // streaks drawn out along the axis by the exhaust
-  vec3 q = vec3(cos(vA) * 1.6, sin(vA) * 1.6, vS * (6.0 - 3.0 * k) - uTime * 2.6);
+  vec3 q = vec3(cos(vA) * 2.0, sin(vA) * 2.0, vS * (7.0 - 3.5 * k) - uTime * 3.0 + uSeed);
   float n = fbm3(q);
-  float streak = fbm3(vec3(cos(vA) * 4.5, sin(vA) * 4.5, vS * 2.2 - uTime * 4.0) + 7.0);
+  float streak = fbm3(vec3(cos(vA) * 4.5, sin(vA) * 4.5, vS * 2.2 - uTime * 5.0 + uSeed) + 7.0);
   float n2 = vnoise(q * 3.1 + vec3(0.0, 0.0, uTime * 2.0));
+  // high-contrast lumps and axial streaks: these show in the brightness as well as the density,
+  // so the flame reads as fire rather than a tinted tube even where it is opaque
+  float lumps = smoothstep(0.3, 0.75, n);
+  float st = smoothstep(0.35, 0.8, streak);
   // ragged tongues at the tail; thinner, longer in vacuum
-  float tail = smoothstep(1.0, 0.6 + 0.2 * k, vS + (n - 0.5) * 0.5 + (streak - 0.5) * 0.25);
+  float tail = smoothstep(1.0, 0.6 - 0.2 * k, vS + (n - 0.5) * 0.5 + (streak - 0.5) * 0.25);
   // a volume: dense where the hull faces the eye, nothing at the silhouette
   float facing = abs(dot(normalize(vN), normalize(vV)));
   float rim = pow(facing, uLayer < 0.5 ? 3.0 : uLayer < 1.5 ? 1.3 : 1.0);
   // shock diamonds: bright knots along the first lengths, strongest at sea level
   float period = max(2.4 * uRadius, 1.0);
   float dia = 1.0 + (0.7 - 0.55 * k) * exp(-vS * 4.5) * pow(0.5 + 0.5 * cos(vS * uLength / period * 6.2831853), 2.0) * (uLayer > 1.5 ? 1.6 : 0.7);
-  float turb = (0.3 + 2.4 * pow(n, 2.0)) * (0.6 + 0.9 * pow(streak, 1.5)) * (0.75 + 0.5 * n2);
+  float turb = 0.45 + 0.95 * lumps + 0.6 * st * lumps + 0.3 * n2;
   float d = tail * rim * turb;
+  float lit = 0.5 + 0.75 * lumps + 0.25 * st;
   // colour: core → yellow → orange along the plume and outward; cooler and thinner in vacuum
   vec3 col = mix(uCore, uMid, smoothstep(0.0, 0.25, vS + 0.25 * (1.0 - facing)));
   col = mix(col, uOuter, smoothstep(0.2, 0.8, vS + 0.35 * (1.0 - facing)));
   col = mix(col, uVac, k * (0.5 + 0.5 * smoothstep(0.0, 0.4, vS)));
-  // soot: kerosene tails darken in streaks
+  // cooler gas between the lumps toward the tail; kerosene tails darken in sooty streaks
+  col *= 1.0 - 0.35 * smoothstep(0.45, 1.0, vS) * (1.0 - lumps) * (1.0 - k);
   col *= 1.0 - uSoot * smoothstep(0.35, 0.95, vS) * smoothstep(0.4, 0.8, streak);
   float I;
   if (uLayer < 0.5) {
-    I = 0.14 * (1.0 - 0.92 * k);                          // glow: faint halo
+    I = 0.16 * (1.0 - 0.85 * k) * (0.7 + 0.6 * lumps);              // glow: faint halo
   } else if (uLayer < 1.5) {
-    I = (1.4 * exp(-vS * 2.0) + 0.5) * (1.0 - 0.8 * k);   // body: yellow-orange, turbulent
+    I = (1.5 * exp(-vS * 2.6) + 0.38) * (1.0 - 0.65 * k) * lit;      // body: yellow-orange, turbulent
   } else {
-    I = (3.0 * exp(-vS * 3.0) + 0.35) * (1.0 - 0.75 * k); // core: overexposes near the nozzle
+    I = (3.0 * exp(-vS * 3.0) + 0.35) * (1.0 - 0.6 * k) * (0.8 + 0.3 * lumps); // core: overexposes near the nozzle
   }
   I *= uGain * uThrottle * dia;
   float fogK = 0.0;
@@ -186,10 +192,10 @@ void main() {
     gl_FragColor = vec4(col * I * d * (1.0 - fogK), 1.0);                  // additive glow
   } else if (uLayer < 1.5) {
     // the body: solid behind the nozzle, opening into tongues down the tail
-    float a = clamp(d * (1.5 + 2.0 * exp(-vS * 5.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.65 * k) * (1.0 - fogK);
+    float a = clamp(d * (1.5 + 1.4 * exp(-vS * 4.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.55 * k) * (1.0 - fogK);
     gl_FragColor = vec4(col * I, a);
   } else {
-    float a = clamp(d * (1.2 + 1.5 * exp(-vS * 5.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.6 * k) * (1.0 - fogK);
+    float a = clamp(d * (1.1 + 1.3 * exp(-vS * 5.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.6 * k) * (1.0 - fogK);
     gl_FragColor = vec4(col * I, a);                                         // the core
   }
   #include <tonemapping_fragment>
@@ -197,7 +203,7 @@ void main() {
 }
 `
 
-function plumeMaterial(look: Look, layer: number): THREE.ShaderMaterial {
+function plumeMaterial(look: Look, layer: number, seed = 0): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
@@ -206,6 +212,7 @@ function plumeMaterial(look: Look, layer: number): THREE.ShaderMaterial {
       uExp: { value: 1 },
       uThrottle: { value: 1 },
       uLayer: { value: layer },
+      uSeed: { value: seed },
       uGain: { value: look.gain },
       uAlpha: { value: look.alpha },
       uSoot: { value: look.soot },
@@ -263,12 +270,13 @@ function hull(): THREE.BufferGeometry {
   return g
 }
 
-const N_SPLASH = 14
+const N_TONGUES = 14
 
 /**
  * Engine plume hanging below y (pointing −y). `throttle` 0–1; `expansion` 1 (sea level) → 4
  * (vacuum). `floorDist` is the distance from the nozzle to the pad deck below it (Infinity in
- * flight): the flame is cut there and splashes sideways as a fireball while the vehicle is low.
+ * flight): the flame is cut there and bursts out sideways as a ring of tongues while the vehicle
+ * is low — the fireball under the launch mount.
  */
 export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1, expansion = 1, floor }: { kind: PlumeKind; radius: number; length: number; y?: number; x?: number; z?: number; throttle?: number; expansion?: number; floor?: { current: number } }) {
   const look = LOOK[kind]
@@ -278,8 +286,18 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   const splashLight = useRef<THREE.PointLight>(null)
   const mats = useMemo(() => [plumeMaterial(look, 0), plumeMaterial(look, 1), plumeMaterial(look, 2)], [look])
   const geo = useMemo(() => hull(), [])
-  const tex = useMemo(() => dustTexture(), [])
-  const splashes = useMemo(() => Array.from({ length: N_SPLASH }, (_, i) => ({ a: (i / N_SPLASH) * Math.PI * 2 + hash2(i, 61) * 0.4, r: 0.6 + hash2(i, 62) * 0.9, s: 0.8 + hash2(i, 63) * 0.8, ph: hash2(i, 64) * 6.28, up: 0.3 + hash2(i, 65) * 0.7 })), [])
+  // the tongues: around the impact point, pointing outward and a little up, each its own size
+  const tongues = useMemo(
+    () =>
+      Array.from({ length: N_TONGUES }, (_, i) => {
+        const a = (i / N_TONGUES) * Math.PI * 2 + hash2(i, 71) * 0.5
+        const up = 0.12 + hash2(i, 72) * 0.4 // radians above the deck
+        const dir = new THREE.Vector3(Math.cos(a) * Math.cos(up), Math.sin(up), Math.sin(a) * Math.cos(up))
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir)
+        return { a, q, size: 0.7 + hash2(i, 73) * 0.6, len: 0.7 + hash2(i, 74) * 0.7, ph: hash2(i, 75) * 6.28, mats: [plumeMaterial(look, 1, i * 3.7), plumeMaterial(look, 2, i * 3.7)] }
+      }),
+    [look],
+  )
   useFrame(({ clock }) => {
     const T = clock.elapsedTime
     // 20–40 Hz flicker of the length and brightness, plus a slow breathing
@@ -310,19 +328,23 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
       splash.current.visible = hit > 0.01
       if (hit > 0.01) {
         splash.current.position.y = -floorDist
-        const spread = radius * (3 + 11 * Math.sqrt(hit))
         splash.current.children.forEach((c, i) => {
-          const sp = c as THREE.Sprite
-          const p = splashes[i]
-          const roll = (T * 1.3 + p.ph) % 1
-          const rr = spread * p.r * (0.5 + 0.6 * roll)
-          sp.position.set(Math.cos(p.a) * rr, radius * (0.4 + p.up * 2.5 * roll), Math.sin(p.a) * rr)
-          const sz = radius * p.s * (3.0 + 4.5 * roll) * (0.6 + 0.6 * hit)
-          sp.scale.set(sz, sz * 0.75, 1)
-          const m = sp.material as THREE.SpriteMaterial
-          const flicker = 0.75 + 0.25 * Math.sin(T * 31 + p.ph * 7) * Math.sin(T * 17 + p.ph)
-          m.opacity = hit * (1 - roll) * flicker * throttle
-          m.rotation = p.ph + roll * 1.5
+          const tg = tongues[i]
+          const g = c as THREE.Group
+          // each tongue breathes on its own; roots just outside the column's footprint
+          const pulse = 0.8 + 0.2 * Math.sin(T * 9 + tg.ph) * Math.sin(T * 5.3 + tg.ph * 2)
+          const tl = radius * (3 + 7 * hit) * tg.len * pulse * f
+          const tr = radius * (0.6 + 0.4 * hit) * tg.size
+          g.position.set(Math.cos(tg.a) * radius * 0.7, radius * 0.35, Math.sin(tg.a) * radius * 0.7)
+          g.quaternion.copy(tg.q)
+          tg.mats.forEach((m, j) => {
+            const u = m.uniforms
+            u.uTime.value = T + tg.ph
+            u.uLength.value = tl * (j === 1 ? 0.55 : 1)
+            u.uRadius.value = tr * (j === 1 ? 0.5 : 1)
+            u.uExp.value = 1
+            u.uThrottle.value = throttle * Math.min(1, 0.5 + hit)
+          })
         })
       }
     }
@@ -341,10 +363,11 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
         <mesh geometry={geo} material={mats[2]} renderOrder={8} frustumCulled={false} />
       </group>
       <group ref={splash} visible={false}>
-        {splashes.map((_, i) => (
-          <sprite key={i} renderOrder={7}>
-            <spriteMaterial map={tex} color={i % 3 === 0 ? look.core : i % 3 === 1 ? look.mid : look.outer} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
-          </sprite>
+        {tongues.map((tg, i) => (
+          <group key={i}>
+            <mesh geometry={geo} material={tg.mats[0]} renderOrder={7} frustumCulled={false} />
+            <mesh geometry={geo} material={tg.mats[1]} renderOrder={8} frustumCulled={false} />
+          </group>
         ))}
       </group>
       <pointLight ref={light} color={look.light} distance={radius * 60} decay={2} position={[0, -radius * 1.5, 0]} />

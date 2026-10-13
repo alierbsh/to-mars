@@ -1,21 +1,56 @@
 /**
- * Debug/showcase viewer: ?model=<vehicleId>&view=side|front|engines|nose&az=<deg>
+ * Debug/showcase viewer: ?model=<vehicleId>&view=side|front|engines|nose|plume&az=<deg>
  * Renders just the vehicle on a pad with a fixed camera — used for screenshot checks.
+ * `&fire=1` lights every stage's plume (`&exp=` 1 sea level → 4 vacuum, `&floor=` metres from
+ * the nozzles to a deck below, default none) for flame work.
  */
-import { Canvas } from '@react-three/fiber'
+import { Canvas, createPortal } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
+import { Plume, plumeKindFor } from './Plume'
 import { VehicleModel } from './vehicles'
 
-export default function ModelViewer({ id, view, az }: { id: string; view: string; az: number }) {
+/** the plumes of a model standing still, at full throttle */
+function StaticFire({ id, expansion, floor }: { id: string; expansion: number; floor: number }) {
+  const root = useRef<THREE.Group>(null)
+  const [anchors, setAnchors] = useState<THREE.Object3D[]>([])
+  const fl = useRef(floor)
+  useEffect(() => {
+    if (!root.current) return
+    const list: THREE.Object3D[] = []
+    root.current.traverse((o) => {
+      if (o.name.startsWith('plume:')) list.push(o)
+    })
+    setAnchors(list)
+  }, [id])
+  return (
+    <group ref={root}>
+      <VehicleModel id={id} />
+      {anchors.map((o) => {
+        const radius = Number(o.userData.radius ?? 2)
+        return createPortal(<Plume key={o.name} kind={plumeKindFor(String(o.userData.engines ?? ''))} radius={radius} length={radius * 18} throttle={1} expansion={expansion} floor={fl} />, o)
+      })}
+    </group>
+  )
+}
+
+export default function ModelViewer({ id, view, az, fire, expansion, floor }: { id: string; view: string; az: number; fire?: boolean; expansion?: number; floor?: number }) {
   const v = VEHICLES.find((x) => x.id === id) ?? VEHICLES[0]
   const h = v.height
   const a = (az * Math.PI) / 180
   let pos: [number, number, number] = [Math.cos(a) * h * 2.0, h * 0.55, Math.sin(a) * h * 2.0]
   let target: [number, number, number] = [0, h * 0.5, 0]
   let fov = 32
-  if (view === 'engines') {
+  // in fire mode the vehicle hangs `lift` metres over the ground so the flame has room
+  const lift = fire ? (Number.isFinite(floor ?? Infinity) ? (floor as number) : h * 0.9) : 0
+  if (view === 'plume') {
+    // the booster's base and the flame below it, from a few lengths off
+    pos = [Math.cos(a) * h * 1.4, lift * 0.6, Math.sin(a) * h * 1.4]
+    target = [0, lift * 0.4, 0]
+    fov = 40
+  } else if (view === 'engines') {
     pos = [Math.cos(a) * h * 0.4, 1.5, Math.sin(a) * h * 0.4]
     target = [0, 4, 0]
     fov = 40
@@ -45,7 +80,7 @@ export default function ModelViewer({ id, view, az }: { id: string; view: string
           <circleGeometry args={[400, 64]} />
           <meshStandardMaterial color="#3b3a36" roughness={1} />
         </mesh>
-        <VehicleModel id={v.id} />
+        <group position={[0, lift, 0]}>{fire ? <StaticFire id={v.id} expansion={expansion ?? 1} floor={floor ?? Infinity} /> : <VehicleModel id={v.id} />}</group>
       </Canvas>
     </div>
   )

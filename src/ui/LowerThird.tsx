@@ -17,7 +17,7 @@ import { chapterForMark } from '../wiki/chapters'
 
 const SPEEDS = [0.5, 1, 2, 4, 10]
 const STILL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('still') === '1'
-const SHORT: Record<Phase, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Done' }
+const SHORT: Record<Phase, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Surface' }
 
 const R = 36
 const C = 2 * Math.PI * R
@@ -174,7 +174,7 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
               title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
             >
               <span className="tl__tick" />
-              <span className="tl__phaselabel">{p.phase === 'done' ? p.label : SHORT[p.phase] ?? p.label}</span>
+              <span className="tl__phaselabel">{SHORT[p.phase] ?? p.label}</span>
             </button>
           )
         })}
