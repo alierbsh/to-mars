@@ -43,9 +43,10 @@ export const UI: UiCatalog = {
     soundOn: '声音：开',
     soundOff: '声音：关',
     settings: '任务设置',
+    settingsShort: '设置',
     data: '数据',
     board: '总览表',
-    wiki: '百科',
+    wiki: '看懂！',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -120,7 +121,7 @@ export const UI: UiCatalog = {
     propellant: '推进剂',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => zh`至${p.end}`,
-    wikiTitle: (p: { title: string }) => zh`百科：${p.title}`,
+    wikiTitle: (p: { title: string }) => zh`看懂：${p.title}`,
     pause: '暂停',
     play: '播放',
     restart: '从头播放',
@@ -380,11 +381,11 @@ export const UI: UiCatalog = {
       zh`飞船能载人时，乘组按 ${p.crew} 人计（太空舱座位更少时按其座位数）。火星天气按每个到达日期从沙尘暴历史记录中抽取。计算日期：${p.date}。点击任一任务即可飞行。`,
   },
   wiki: {
-    aria: '百科',
-    nav: '百科 · 火星任务如何进行',
+    aria: '看懂！',
+    nav: '看懂！· 火星任务如何进行',
     chapter: (p: { i: number; n: number }) => zh`第 ${p.i} 章，共 ${p.n} 章`,
     back: '返回任务 →',
-    close: '关闭百科',
+    close: '关闭',
   },
   /** labels in the 3D scenes */
   scene: {

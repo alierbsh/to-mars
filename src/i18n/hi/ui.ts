@@ -26,9 +26,10 @@ export const UI: UiCatalog = {
     soundOn: 'ध्वनि चालू',
     soundOff: 'ध्वनि बंद',
     settings: 'सेटिंग्स',
+    settingsShort: 'सेटिंग्स',
     data: 'डेटा',
     board: 'स्कोरबोर्ड',
-    wiki: 'विकी',
+    wiki: 'समझें!',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -103,7 +104,7 @@ export const UI: UiCatalog = {
     propellant: 'प्रणोदक',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `${p.end} में से`,
-    wikiTitle: (p: { title: string }) => `विकी: ${p.title}`,
+    wikiTitle: (p: { title: string }) => `समझें: ${p.title}`,
     pause: 'रोकें',
     play: 'चलाएं',
     restart: 'शुरू से चलाएं',
@@ -363,11 +364,11 @@ export const UI: UiCatalog = {
       `जहां यान चालक दल ले जाता है, वहां ${p.crew} सदस्यीय चालक दल (अगर कैप्सूल में कम सीटें हों तो कम)। मंगल का मौसम हर आगमन तिथि के लिए आंधियों के रिकॉर्ड से तय होता है। गणना: ${p.date}। किसी मिशन को उड़ाने के लिए उस पर क्लिक करें।`,
   },
   wiki: {
-    aria: 'विकी',
-    nav: 'विकी · मंगल मिशन कैसे काम करता है',
+    aria: 'समझें!',
+    nav: 'समझें! · मंगल मिशन कैसे काम करता है',
     chapter: (p: { i: number; n: number }) => `${p.n} में से अध्याय ${p.i}`,
     back: 'मिशन पर लौटें →',
-    close: 'विकी बंद करें',
+    close: 'बंद करें',
   },
   /** labels in the 3D scenes */
   scene: {

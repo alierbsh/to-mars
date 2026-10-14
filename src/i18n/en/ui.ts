@@ -33,9 +33,11 @@ export const UI = {
     soundOn: 'Sound on',
     soundOff: 'Sound off',
     settings: 'Mission settings',
+    /** the same on phones, where the bar is narrow */
+    settingsShort: 'Settings',
     data: 'Data',
     board: 'Scoreboard',
-    wiki: 'Wiki',
+    wiki: 'Understand!',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -110,7 +112,7 @@ export const UI = {
     propellant: 'Propellant',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `of ${p.end}`,
-    wikiTitle: (p: { title: string }) => `Wiki: ${p.title}`,
+    wikiTitle: (p: { title: string }) => `Understand: ${p.title}`,
     pause: 'Pause',
     play: 'Play',
     restart: 'Restart',
@@ -370,11 +372,11 @@ export const UI = {
       `Crew of ${p.crew} where the ship carries one (fewer if its capsule seats fewer). The weather at Mars is drawn from the storm record for each arrival date. Computed ${p.date}. Click a mission to fly it.`,
   },
   wiki: {
-    aria: 'Wiki',
-    nav: 'Wiki · how a Mars mission works',
+    aria: 'Understand!',
+    nav: 'Understand! · how a Mars mission works',
     chapter: (p: { i: number; n: number }) => `Chapter ${p.i} of ${p.n}`,
     back: 'Back to the mission →',
-    close: 'Close the wiki',
+    close: 'Close',
   },
   /** labels in the 3D scenes */
   scene: {

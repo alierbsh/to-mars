@@ -26,9 +26,10 @@ export const UI: UiCatalog = {
     soundOn: 'Ses açık',
     soundOff: 'Ses kapalı',
     settings: 'Ayarlar',
+    settingsShort: 'Ayarlar',
     data: 'Veriler',
     board: 'Skor tablosu',
-    wiki: 'Wiki',
+    wiki: 'Anla!',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -103,7 +104,7 @@ export const UI: UiCatalog = {
     propellant: 'Yakıt',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `/ ${p.end}`,
-    wikiTitle: (p: { title: string }) => `Wiki'de oku: ${p.title}`,
+    wikiTitle: (p: { title: string }) => `Anla: ${p.title}`,
     pause: 'Duraklat',
     play: 'Oynat',
     restart: 'Baştan başlat',
@@ -363,11 +364,11 @@ export const UI: UiCatalog = {
       `Mürettebat taşıyabilen araçlarda ${p.crew} kişilik mürettebat (kapsülün koltuğu daha azsa daha az). Mars'taki hava, her varış tarihi için fırtına kayıtlarından çekilir. Hesaplama tarihi: ${p.date}. Başlatmak için bir göreve tıkla.`,
   },
   wiki: {
-    aria: 'Wiki',
-    nav: 'Wiki · bir Mars görevi nasıl işler',
+    aria: 'Anla!',
+    nav: 'Anla! · bir Mars görevi nasıl işler',
     chapter: (p: { i: number; n: number }) => `Bölüm ${p.i} / ${p.n}`,
     back: 'Göreve dön →',
-    close: "Wiki'yi kapat",
+    close: 'Kapat',
   },
   /** labels in the 3D scenes */
   scene: {

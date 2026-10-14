@@ -26,9 +26,10 @@ export const UI: UiCatalog = {
     soundOn: 'Sonido activado',
     soundOff: 'Sonido desactivado',
     settings: 'Ajustes',
+    settingsShort: 'Ajustes',
     data: 'Datos',
     board: 'Marcador',
-    wiki: 'Wiki',
+    wiki: '¡Entiende!',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -103,7 +104,7 @@ export const UI: UiCatalog = {
     propellant: 'Propelente',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `de ${p.end}`,
-    wikiTitle: (p: { title: string }) => `Wiki: ${p.title}`,
+    wikiTitle: (p: { title: string }) => `Entiende: ${p.title}`,
     pause: 'Pausar',
     play: 'Reproducir',
     restart: 'Reiniciar',
@@ -363,11 +364,11 @@ export const UI: UiCatalog = {
       `Tripulación de ${p.crew} cuando la nave puede llevarla (menos si su cápsula tiene menos plazas). La meteorología en Marte se sortea a partir del registro histórico de tormentas para cada fecha de llegada. Calculado el ${p.date}. Haz clic en una misión para lanzarla.`,
   },
   wiki: {
-    aria: 'Wiki',
-    nav: 'Wiki · cómo funciona una misión a Marte',
+    aria: '¡Entiende!',
+    nav: '¡Entiende! · cómo funciona una misión a Marte',
     chapter: (p: { i: number; n: number }) => `Capítulo ${p.i} de ${p.n}`,
     back: 'Vuelve a la misión →',
-    close: 'Cerrar la wiki',
+    close: 'Cerrar',
   },
   /** labels in the 3D scenes */
   scene: {

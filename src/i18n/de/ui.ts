@@ -26,9 +26,10 @@ export const UI: UiCatalog = {
     soundOn: 'Ton an',
     soundOff: 'Ton aus',
     settings: 'Einstellungen',
+    settingsShort: 'Einstellungen',
     data: 'Daten',
     board: 'Übersicht',
-    wiki: 'Wiki',
+    wiki: 'Verstehen!',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -103,7 +104,7 @@ export const UI: UiCatalog = {
     propellant: 'Treibstoff',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `von ${p.end}`,
-    wikiTitle: (p: { title: string }) => `Wiki: ${p.title}`,
+    wikiTitle: (p: { title: string }) => `Verstehen: ${p.title}`,
     pause: 'Pause',
     play: 'Abspielen',
     restart: 'Neu starten',
@@ -363,11 +364,11 @@ export const UI: UiCatalog = {
       `Crew von ${p.crew} Personen bei jedem Fahrzeug, das eine Crew befördert (weniger, wenn die Kapsel weniger Plätze hat). Das Wetter auf dem Mars wird für jedes Ankunftsdatum anhand der Sturmaufzeichnungen ausgelost. Berechnet am ${p.date}. Klicke auf eine Mission, um sie zu fliegen.`,
   },
   wiki: {
-    aria: 'Wiki',
-    nav: 'Wiki · so funktioniert eine Marsmission',
+    aria: 'Verstehen!',
+    nav: 'Verstehen! · so funktioniert eine Marsmission',
     chapter: (p: { i: number; n: number }) => `Kapitel ${p.i} von ${p.n}`,
     back: 'Zurück zur Mission →',
-    close: 'Wiki schließen',
+    close: 'Schließen',
   },
   /** labels in the 3D scenes */
   scene: {

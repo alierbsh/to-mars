@@ -26,9 +26,10 @@ export const UI: UiCatalog = {
     soundOn: 'Son activé',
     soundOff: 'Son coupé',
     settings: 'Réglages',
+    settingsShort: 'Réglages',
     data: 'Données',
     board: 'Scores',
-    wiki: 'Wiki',
+    wiki: 'Comprendre !',
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
@@ -103,7 +104,7 @@ export const UI: UiCatalog = {
     propellant: 'Ergols',
     /** under the clock: "of T+day 432" */
     of: (p: { end: string }) => `sur ${p.end}`,
-    wikiTitle: (p: { title: string }) => `Wiki : ${p.title}`,
+    wikiTitle: (p: { title: string }) => `Comprendre : ${p.title}`,
     pause: 'Pause',
     play: 'Lecture',
     restart: 'Recommencer',
@@ -363,11 +364,11 @@ export const UI: UiCatalog = {
       `Équipage de ${p.crew} quand le véhicule en emporte un (moins si sa capsule a moins de places). La météo martienne est tirée des archives des tempêtes pour chaque date d'arrivée. Calculé le ${p.date}. Cliquez sur une mission pour la lancer.`,
   },
   wiki: {
-    aria: 'Wiki',
-    nav: 'Wiki · comment fonctionne une mission vers Mars',
+    aria: 'Comprendre !',
+    nav: 'Comprendre ! · comment fonctionne une mission vers Mars',
     chapter: (p: { i: number; n: number }) => `Chapitre ${p.i} sur ${p.n}`,
     back: 'Retour à la mission →',
-    close: 'Fermer le wiki',
+    close: 'Fermer',
   },
   /** labels in the 3D scenes */
   scene: {

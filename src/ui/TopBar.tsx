@@ -75,7 +75,14 @@ export default function TopBar() {
         </button>
         <LangMenu />
         <button className={`pill ${drawer === 'mission' ? 'pill--on' : ''}`} onClick={() => setDrawer('mission')}>
-          {T.settings}
+          {T.settingsShort === T.settings ? (
+            T.settings
+          ) : (
+            <>
+              <span className="pill__long">{T.settings}</span>
+              <span className="pill__short">{T.settingsShort}</span>
+            </>
+          )}
         </button>
         <button className={`pill ${drawer === 'details' ? 'pill--on' : ''}`} onClick={() => setDrawer('details')}>
           {T.data}

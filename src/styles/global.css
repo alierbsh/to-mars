@@ -106,6 +106,7 @@ ul, ol { padding: 0; list-style: none; }
 .pill--on { background: var(--t1); color: #000; border-color: var(--t1); }
 .pill--icon { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
 .pill--muted { color: var(--t3); }
+.pill__short { display: none; }
 
 /* ---------- languages: the globe pill and its menu; the plain list on the opening screen and in settings ---------- */
 .langmenu { position: relative; }
@@ -435,6 +436,8 @@ ul, ol { padding: 0; list-style: none; }
   .langmenu { position: absolute; right: 48px; bottom: 13px; }
   .pill--lang { height: 30px; padding: 0 9px; gap: 5px; }
   .pill--board { display: none; }
+  .pill__long { display: none; }
+  .pill__short { display: inline; }
   .craft { grid-column: 1 / -1; grid-row: 2; justify-self: start; max-width: calc(100% - 110px); }
   .status { display: none; }
   /* the verdict as a strip above the lower third; the lower third as two compact rows:
