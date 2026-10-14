@@ -31,7 +31,7 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 ## Muhammet's list, 14 Oct — in this order
 - [x] **Sharing.** A link preview image (og:image, rendered from the site itself), a Share button on the verdict card that puts the mission's settings in the link (share sheet on phones, clipboard elsewhere), and a shared link that opens on the ship choice with that mission ready to launch.
 - [ ] **Scoreboard.** Every rocket × departure window × assumption set at a glance — 90 missions precomputed — with the number that decided each one; a cell starts that mission.
-- [ ] **Compressed textures (KTX2 / Basis Universal).** The ground and Earth maps stay compressed on the GPU: 4–8× less video memory and bandwidth, the biggest lever left for phones.
+- [x] **Compressed textures (KTX2 / Basis Universal).** The ground and Earth maps stay compressed on the GPU (ETC1S → ETC2/BC1/BC7/ASTC in the browser): the pad scene's texture memory 300 → ~90 MB on high, 99 → ~38 MB on low, at about the same download; the JPEGs remain as the fallback.
 - [ ] **Languages — last, after everything else.** The whole site in Turkish, Chinese, Hindi, Spanish, French and German besides English: the UI, the intro, the verdicts, the event texts, the scoreboard and the wiki, with a language picker.
 
 ## Parked (owner's call, 14 Oct)

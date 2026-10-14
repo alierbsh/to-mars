@@ -13,7 +13,7 @@
  * Everything that is ground gets aerial perspective, so the land fades into blue haze toward the
  * horizon and the limb glows seen from above.
  */
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
@@ -23,6 +23,7 @@ import { ATMO, R_EARTH_M, applyAerialPerspective, skyScatterMaterial } from './a
 import { PAD_SITE, padLatLon } from './capeSite'
 import { capGeometry } from './terrain'
 import { texName } from './quality'
+import { useMaps } from './maps'
 import { useQuality } from './useQuality'
 
 const BASE_URL = import.meta.env.BASE_URL
@@ -112,7 +113,7 @@ export function applyEdgeFade<T extends THREE.Material>(material: T, width: numb
 export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
   const q = useQuality()
   // the globe only shows beyond the regional tile, a thousand kilometres out: the 2k map does
-  const textures = useLoader(THREE.TextureLoader, [
+  const textures = useMaps([
     `${BASE_URL}assets/earth/earth-day-4k-half.jpg`,
     `${BASE_URL}assets/earth/earth-rough-4k-half.jpg`,
     `${BASE_URL}assets/cape/${texName('region.jpg', q.textures)}`,

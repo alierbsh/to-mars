@@ -7,6 +7,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useRef } from 'react'
 import * as THREE from 'three'
 import { useAppStore } from '../state/store'
+import { gpuBytes } from './maps'
 
 const ON = typeof location !== 'undefined' && new URLSearchParams(location.search).get('debug') === '1'
 
@@ -22,7 +23,8 @@ export function PerfProbe() {
     if (now - last.current < 1) return
     ;(window as unknown as { __gl: THREE.WebGLRenderer }).__gl = gl
     // the textures referenced by the scene's materials, with a mip-mapped RGBA8 size estimate
-    const seen = new Set<THREE.Texture>()
+    // by source: clones of a texture (the ring skin's per-material repeats) share one GPU copy
+    const seen = new Set<unknown>()
     let bytes = 0
     const names: string[] = []
     scene.traverse((o) => {
@@ -30,25 +32,24 @@ export function PerfProbe() {
       const list = Array.isArray(mats) ? mats : mats ? [mats] : []
       for (const m of list) {
         for (const v of Object.values(m as unknown as Record<string, unknown>)) {
-          if (v instanceof THREE.Texture && !seen.has(v)) {
-            seen.add(v)
+          if (v instanceof THREE.Texture && !seen.has(v.source)) {
+            seen.add(v.source)
             const img = v.image as { width?: number; height?: number } | undefined
             if (img?.width && img?.height) {
-              const b = img.width * img.height * 4 * (v.generateMipmaps ? 1.33 : 1)
-              bytes += b
-              names.push(`${img.width}x${img.height}`)
+              bytes += gpuBytes(v)
+              names.push(`${img.width}x${img.height}${(v as THREE.CompressedTexture).isCompressedTexture ? 'c' : ''}`)
             }
           }
         }
         const u = (m as THREE.ShaderMaterial).uniforms
         if (u) for (const x of Object.values(u)) {
           const v = (x as { value: unknown }).value
-          if (v instanceof THREE.Texture && !seen.has(v)) {
-            seen.add(v)
+          if (v instanceof THREE.Texture && !seen.has(v.source)) {
+            seen.add(v.source)
             const img = v.image as { width?: number; height?: number } | undefined
             if (img?.width && img?.height) {
-              bytes += img.width * img.height * 4 * (v.generateMipmaps ? 1.33 : 1)
-              names.push(`${img.width}x${img.height}`)
+              bytes += gpuBytes(v)
+              names.push(`${img.width}x${img.height}${(v as THREE.CompressedTexture).isCompressedTexture ? 'c' : ''}`)
             }
           }
         }

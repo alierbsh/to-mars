@@ -5,10 +5,11 @@
  * the Hipparcos star map as the sky, a sun glow and the Moon at its true angular size.
  * Assets: public/assets/earth (built by scripts/earth-assets.py from NASA-3D-Resources).
  */
-import { useFrame, useLoader } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { texName } from './quality'
+import { useMaps } from './maps'
 import { useQuality } from './useQuality'
 
 export const EARTH_R = 6371
@@ -156,7 +157,7 @@ function sunGlowTexture(): THREE.CanvasTexture {
 
 export function Earth() {
   const q = useQuality()
-  const textures = useLoader(THREE.TextureLoader, [`${BASE_URL}assets/earth/${texName('earth-day-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-rough-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-clouds.png', q.textures)}`, `${BASE_URL}assets/earth/stars.jpg`])
+  const textures = useMaps([`${BASE_URL}assets/earth/${texName('earth-day-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-rough-4k.jpg', q.textures)}`, `${BASE_URL}assets/earth/${texName('earth-clouds.png', q.textures)}`, `${BASE_URL}assets/earth/stars.jpg`])
   const [day, rough, clouds, stars] = textures
   // free the GPU copies when the orbit is left (the images stay cached for the next mission)
   useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])

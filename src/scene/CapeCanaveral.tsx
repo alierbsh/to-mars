@@ -23,6 +23,7 @@ import { hash2 } from './noise'
 import { PadStructures } from './pads'
 import { capGeometry } from './terrain'
 import { texName } from './quality'
+import { useMaps } from './maps'
 import { qualityNow, useQuality } from './useQuality'
 
 const KM = 1000
@@ -40,8 +41,8 @@ const TILES: Record<PadId, { cape: '39' | 'ccsfs'; site: string }> = {
 }
 
 /** is (x, z) in pad-local metres water on a tile's alpha image (±half)? */
-function waterAt(alpha: THREE.Texture, half: number, x: number, z: number): boolean {
-  const img = alpha.image as HTMLImageElement & { __alpha?: Uint8ClampedArray; __n?: number }
+function waterAt(mask: HTMLImageElement, half: number, x: number, z: number): boolean {
+  const img = mask as HTMLImageElement & { __alpha?: Uint8ClampedArray; __n?: number }
   if (!img.__alpha) {
     const c = document.createElement('canvas')
     c.width = img.width
@@ -111,7 +112,7 @@ function Water({ y, bounds, map, segments, tile }: { y: number; bounds: { x0: nu
 }
 
 /** low coastal scrub around the pad: instanced flattened blobs, two greens */
-function Scrub({ pad, groundY, alpha }: { pad: PadId; groundY: number; alpha: THREE.Texture }) {
+function Scrub({ pad, groundY, mask }: { pad: PadId; groundY: number; mask: HTMLImageElement }) {
   const mesh = useMemo(() => {
     const g = new THREE.SphereGeometry(1, 7, 5)
     const mat = applyAerialPerspective(new THREE.MeshStandardMaterial({ color: '#4a6a33', roughness: 1 }))
@@ -128,7 +129,7 @@ function Scrub({ pad, groundY, alpha }: { pad: PadId; groundY: number; alpha: TH
       const z = Math.sin(a) * r
       // leave the crawlerway (west) and the road ring clear; nothing grows in the sea
       if (Math.abs(z) < 40 && x < 0) continue
-      if (waterAt(alpha, 4 * KM, x, z)) continue
+      if (waterAt(mask, 4 * KM, x, z)) continue
       const s = 1.6 + hash2(i, 23) * 3.2
       o.position.set(x, groundY + s * 0.35, z)
       o.scale.set(s, s * 0.55, s * (0.8 + hash2(i, 24) * 0.5))
@@ -145,7 +146,7 @@ function Scrub({ pad, groundY, alpha }: { pad: PadId; groundY: number; alpha: TH
     m.castShadow = true
     m.frustumCulled = false
     return m
-  }, [pad, groundY, alpha])
+  }, [pad, groundY, mask])
   return <primitive object={mesh} />
 }
 
@@ -154,7 +155,7 @@ function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
   const cfg = TILES[pad]
   const origin = PAD_SITE[pad]
   const q = useQuality()
-  const textures = useLoader(THREE.TextureLoader, [
+  const textures = useMaps([
     `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}.jpg`, q.textures)}`,
     `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}-alpha.png`, q.textures)}`,
     `${BASE_URL}assets/cape/${texName(`cape-${cfg.cape}-water.jpg`, q.textures)}`,
@@ -164,6 +165,8 @@ function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
     `${BASE_URL}assets/cape/${texName(`pad-${pad}-alpha.png`, q.textures)}`,
   ])
   const [capeMap, capeAlpha, waterMap, complexMap, complexAlpha, padMap, padAlpha] = textures
+  // the scrub reads the complex's water mask on the CPU: the PNG itself, not the GPU texture
+  const complexMask = useLoader(THREE.ImageLoader, `${BASE_URL}assets/cape/complex-${cfg.site}-alpha.png`)
   // the GPU copies go when the Cape leaves the stage (the loader keeps the images; they are
   // re-uploaded if a new mission brings the pad back)
   useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])
@@ -188,7 +191,7 @@ function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
         <mesh geometry={tiles.complexGeo} material={tiles.complexMat} position={[0, -0.6, 0]} receiveShadow renderOrder={4} />
         <mesh geometry={tiles.padGeo} material={tiles.padMat} receiveShadow renderOrder={5} />
       </group>
-      <Scrub pad={pad} groundY={groundY} alpha={complexAlpha} />
+      <Scrub pad={pad} groundY={groundY} mask={complexMask} />
     </group>
   )
 }
