@@ -69,8 +69,8 @@ export const DATA: DataCatalog = {
       engines: { gs1: ['BE-4'], gs2: ['BE-3U'] },
     },
     'long-march-10': {
-      name: 'Long March 10 + Mengzhou',
-      short: 'Long March 10',
+      name: 'Langer Marsch 10 + Mengzhou',
+      short: 'Langer Marsch 10',
       badge: 'in Entwicklung',
       tagline: 'Chinas bemannte Mondrakete: drei Kerne mit 5 m Durchmesser, 21 YF-100K. Gebaut für den Mond, nicht für den Mars.',
       description: '92,5 m, 2189 t, ≥ 27 t auf Mondkurs (TLI). Die einkernige 10A flog im Feb. 2026 einen suborbitalen Test des Rettungssystems; der erste Orbitalflug der Variante 10B wurde im Juli 2026 gemeldet (unbestätigt). Mengzhou ist eine dreisitzige Mondkapsel.',

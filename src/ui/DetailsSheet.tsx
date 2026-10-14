@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { useT } from '../i18n'
 import { AU_KM } from '../sim/constants'
@@ -19,13 +19,28 @@ export default function DetailsSheet() {
   const setTab = useAppStore((s) => s.setTab)
   const open = useAppStore((s) => s.drawer === 'details')
   const setDrawer = useAppStore((s) => s.setDrawer)
+  // the tabs scroll sideways in long languages: keep the open one in view — by scrolling the row
+  // itself (scrollIntoView would also scroll the page towards the closed, off-screen drawer)
+  const activeTab = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const el = activeTab.current
+    const row = el?.parentElement
+    if (!open || !el || !row) return
+    const overflow = row.scrollWidth > row.clientWidth + 1
+    row.classList.toggle('tabs--overflow', overflow)
+    if (!overflow) return
+    const left = el.offsetLeft
+    const right = left + el.offsetWidth
+    if (right > row.scrollLeft + row.clientWidth - 18) row.scrollLeft = right - row.clientWidth + 18
+    else if (left < row.scrollLeft) row.scrollLeft = left
+  }, [tab, open, L])
 
   return (
     <aside className={`drawer drawer--right ${open ? 'drawer--open' : ''}`} inert={!open}>
       <div className="drawer__head">
         <nav className="tabs" aria-label={D.aria}>
           {TABS.map((id) => (
-            <button key={id} className={`tab ${tab === id ? 'tab--on' : ''}`} onClick={() => setTab(id)}>
+            <button key={id} ref={tab === id ? activeTab : undefined} className={`tab ${tab === id ? 'tab--on' : ''}`} onClick={() => setTab(id)}>
               {D.tabs[id]}
             </button>
           ))}
@@ -231,7 +246,7 @@ function Model({ result }: { result: MissionResult }) {
   const sc = v.spacecraft
   return (
     <div className="model">
-      <h3 className="h3">{vt.name}</h3>
+      <h3 className="model__name">{vt.name}</h3>
       <p className="note">{vt.description}</p>
       <p className="note">{D.record({ record: vt.record })}</p>
       <table className="table">

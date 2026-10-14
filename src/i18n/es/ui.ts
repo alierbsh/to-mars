@@ -87,6 +87,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => `tripulación de ${p.n}`,
     /** the text that goes with a shared link */
     question: '¿Pueden los cohetes actuales llevar una tripulación a Marte?',
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}. ` : ''}${p.desc}. ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -320,7 +322,7 @@ export const UI: UiCatalog = {
     sources: 'Fuentes',
     /** the credit for the scenery, around a link to NASA-3D-Resources */
     placesBefore: 'Lugares: ',
-    placesAfter: ' (dominio público): el modelo de la plataforma Mobile Launcher, los modelos digitales de elevación del JPL de los cráteres Gusev y Victoria y el mosaico global de Marte. La geografía de Cape Canaveral está trazada a partir de mapas públicos; las estructuras de las plataformas son procedurales.',
+    placesAfter: ' (dominio público): el modelo de la plataforma Mobile Launcher, los modelos digitales de elevación del JPL de los cráteres Gusev y Victoria y el mosaico global de Marte. La geografía de Cabo Cañaveral está trazada a partir de mapas públicos; las estructuras de las plataformas son procedurales.',
   },
   board: {
     aria: 'Marcador',
@@ -335,6 +337,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => `ninguno de los ${p.n} cohetes lo consigue con «${p.preset}»`,
     allOf: (p: { ship: string }) => `todas con ${p.ship}`,
     rocket: 'Cohete',
+    /** after the current mission's window */
+    now: 'actual',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `llegada a ${n(p.v)} km/s`,
     cells: {

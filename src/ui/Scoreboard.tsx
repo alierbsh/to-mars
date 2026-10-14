@@ -84,7 +84,7 @@ export default function Scoreboard() {
           <span>
             {B.summary({ n: crewedTotal })}
             <span className="board__sub">
-              {alive === 0 ? B.none({ n: VEHICLES.length, preset: presetTexts(preset.id, L).name }) : aliveShips.length === 1 ? B.allOf({ ship: vehicleTexts(aliveShips[0], L).short }) : aliveShips.map((id) => vehicleTexts(id, L).short).join(', ')}
+              {alive === 0 ? B.none({ n: VEHICLES.length, preset: presetTexts(preset.id, L).name }) : aliveShips.length === 1 ? B.allOf({ ship: vehicleTexts(aliveShips[0], L).short }) : aliveShips.map((id) => vehicleTexts(id, L).short).join(B.listSep)}
             </span>
           </span>
         </p>
@@ -100,7 +100,10 @@ export default function Scoreboard() {
                   const v = arrivalSpeed(w.note)
                   return (
                     <th key={w.id} scope="col" className={windowNow?.id === w.id ? 'board__th--now' : ''}>
-                      <span className="board__win">{windowTexts(w.id, L).label}</span>
+                      <span className="board__win">
+                        {windowTexts(w.id, L).label}
+                        {windowNow?.id === w.id && <span className="board__now"> · {B.now}</span>}
+                      </span>
                       <span className="board__winsub">{v != null ? B.arrives({ v }) : ''}</span>
                     </th>
                   )

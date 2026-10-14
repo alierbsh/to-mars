@@ -87,6 +87,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => `${p.n}-köpfige Crew`,
     /** the text that goes with a shared link */
     question: 'Können die Raketen von heute eine Crew zum Mars bringen?',
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}. ` : ''}${p.desc}. ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -335,6 +337,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => `keine der ${p.n} Raketen schafft es mit den Annahmen „${p.preset}“`,
     allOf: (p: { ship: string }) => `alle mit ${p.ship}`,
     rocket: 'Rakete',
+    /** after the current mission's window */
+    now: 'aktuell',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `Ankunft mit ${n(p.v)} km/s`,
     cells: {

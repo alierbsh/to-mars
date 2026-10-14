@@ -82,8 +82,8 @@ export type ShareOutcome = 'shared' | 'copied' | 'failed' | 'cancelled'
 /** the share sheet where there is one, else the clipboard */
 export async function shareMission(cfg: MissionConfig, result: MissionResult | null, L: Bundle): Promise<{ outcome: ShareOutcome; url: string }> {
   const url = missionUrl(cfg)
-  const headline = result ? `${L.t(result.verdict.msg?.headline ?? result.verdict.headline)}. ` : ''
-  const text = `${headline}${describeMission(cfg, L)}. ${L.ui.share.question}`
+  const headline = result ? L.t(result.verdict.msg?.headline ?? result.verdict.headline) : ''
+  const text = L.ui.share.text({ headline, desc: describeMission(cfg, L), question: L.ui.share.question })
   const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void>; canShare?: (d: ShareData) => boolean }
   // the share sheet on touch devices; on a desktop browser the clipboard is the expected thing
   const touch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches

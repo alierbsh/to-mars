@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { sound } from '../audio/sound'
 import { LangMenu } from './LangPicker'
-import { vehicleTexts } from './texts'
+import { nameLang, vehicleTexts } from './texts'
 
 /** Wordmark, the ship this mission flies (changed only by starting a new mission), and the panel toggles. */
 export default function TopBar() {
@@ -29,7 +29,7 @@ export default function TopBar() {
   return (
     <header className="top">
       <div className="brand">
-        <div className="wordmark">
+        <div className="wordmark" lang="en">
           <span className="wordmark__dot" aria-hidden="true" />
           Occupy Mars Simulation
         </div>
@@ -38,7 +38,7 @@ export default function TopBar() {
         </a>
       </div>
       <div className="craft" aria-label={T.shipAria}>
-        <span className="craft__name" title={vt.name}>
+        <span className="craft__name" title={vt.name} lang={nameLang(vehicle.id, L)}>
           {vt.short}
         </span>
         <button

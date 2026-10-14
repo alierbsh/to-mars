@@ -5,7 +5,7 @@ import { useAppStore } from '../state/store'
 import { describeMission } from './share'
 import { sound } from '../audio/sound'
 import { LangList } from './LangPicker'
-import { vehicleTexts } from './texts'
+import { nameLang, vehicleTexts } from './texts'
 
 const BASE_URL = import.meta.env.BASE_URL
 const SPEEDS = [0.5, 1, 2, 4, 10]
@@ -30,7 +30,9 @@ function Start() {
   const setIntro = useAppStore((s) => s.setIntro)
   return (
     <section className="intro__panel intro__panel--start">
-      <p className="label">{I.brand}</p>
+      <p className="label" lang="en">
+        {I.brand}
+      </p>
       <h1 className="intro__title">{I.title}</h1>
       <div className="intro__text">
         {I.text.map((p, i) => (
@@ -113,10 +115,26 @@ function Pick() {
             launch(vehicleId, speed)
           }}
         >
-          {I.launch({ ship: vehicleTexts(v.id, L).short })}
+          <LaunchLabel id={v.id} />
         </button>
       </div>
     </section>
+  )
+}
+
+/** "Launch Starship V3", the ship's name marked as English where the language keeps it (for the capitals) */
+function LaunchLabel({ id }: { id: string }) {
+  const L = useT()
+  const ship = vehicleTexts(id, L).short
+  const lang = nameLang(id, L)
+  if (!lang) return <>{L.ui.intro.launch({ ship })}</>
+  const [before, after] = L.ui.intro.launch({ ship: '\u0001' }).split('\u0001')
+  return (
+    <>
+      {before}
+      <span lang={lang}>{ship}</span>
+      {after}
+    </>
   )
 }
 

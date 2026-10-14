@@ -26,6 +26,14 @@ export function vehicleTexts(id: string, L: Bundle): VehicleTexts {
   return all(L)[id] ?? all(EN)[id]!
 }
 
+/**
+ * The language a vehicle's name is written in: English when the reader's language keeps the
+ * English name (so Turkish capitals do not dot its i: STARSHIP, not STARSHİP), else the page's.
+ */
+export function nameLang(id: string, L: Bundle): string | undefined {
+  return L.lang !== 'en' && vehicleTexts(id, L).short === vehicleTexts(id, EN).short ? 'en' : undefined
+}
+
 export function presetTexts(id: string, L: Bundle): { name: string; blurb: string } {
   const all = (b: Bundle) => b.data.presets as unknown as Record<string, { name: string; blurb: string } | undefined>
   return all(L)[id] ?? all(EN)[id] ?? { name: id, blurb: '' }

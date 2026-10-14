@@ -50,7 +50,7 @@ export const WIKI: WikiCatalog = {
       'Llegar a la órbita consume casi todo el propelente que lleva un cohete. Starship alcanza la órbita con unas 100–200 toneladas en un tanque de 1600 toneladas: demasiado poco para impulsarse hasta Marte y aterrizar. El plan de SpaceX es lanzar naves cisterna Starship, acoplarlas y trasvasar propelente, una y otra vez, hasta que la nave esté lo bastante llena para el viaje.',
       'Tres cifras deciden si esto funciona, y ninguna se ha medido todavía en vuelo: cuánto entrega realmente una cisterna en cada vuelo (el plan habla de ~100 toneladas), a qué ritmo se evapora el propelente criogénico mientras espera al sol (menos de un 1 % al día, que se va acumulando) y con qué rapidez se pueden lanzar las cisternas. Una cadencia lenta significa más evaporación y más cisternas; si es demasiado lenta, la ventana de salida se cierra antes de que la nave esté llena.',
       'El indicador Propelente de la franja inferior muestra las toneladas a bordo frente a las que necesita la misión; la línea de tiempo marca el acoplamiento de cada cisterna. Los tres conjuntos de hipótesis —lo que afirma SpaceX, las estimaciones independientes y lo demostrado hasta ahora— acotan esas incógnitas.',
-      'Ninguno de los demás (Orion, Dragon, Mengzhou, Apollo) se puede recargar: el propelente que le quede en órbita a su etapa superior es todo lo que tienen.',
+      'Ninguno de los demás (Orion, Dragon, Mengzhou, Apolo) se puede recargar: el propelente que le quede en órbita a su etapa superior es todo lo que tienen.',
     ],
   },
   window: {
@@ -76,7 +76,7 @@ export const WIKI: WikiCatalog = {
     lead: 'De seis a nueve meses de vuelo por inercia: aire, agua, comida y la radiación que nadie puede apagar.',
     body: [
       'Tras el encendido, los motores quedan apagados el resto del camino: la nave avanza por inercia sobre su elipse, con solo pequeñas correcciones de rumbo. No pasa nada, y ese es el problema. Hay que mantener con vida a la tripulación todo ese tiempo con lo que se haya embarcado.',
-      'El presupuesto diario de la NASA por persona es de unos 0,9 kg de oxígeno, 2,4 kg de comida y 3,5 kg de agua, antes de reciclar. Un buen sistema de soporte vital de ciclo cerrado recupera la mayor parte del agua y algo del oxígeno; una cápsula diseñada para tres semanas no tiene ninguno. La simulación usa la autonomía real en vuelo libre de cada vehículo (Orion, 21 días; Apollo, 14; Dragon, alrededor de una semana) frente a un viaje de 200–300 días.',
+      'El presupuesto diario de la NASA por persona es de unos 0,9 kg de oxígeno, 2,4 kg de comida y 3,5 kg de agua, antes de reciclar. Un buen sistema de soporte vital de ciclo cerrado recupera la mayor parte del agua y algo del oxígeno; una cápsula diseñada para tres semanas no tiene ninguno. La simulación usa la autonomía real en vuelo libre de cada vehículo (Orion, 21 días; Apolo, 14; Dragon, alrededor de una semana) frente a un viaje de 200–300 días.',
       '## Radiación',
       'Fuera del campo magnético terrestre, la tripulación está expuesta en todo momento a los rayos cósmicos galácticos. El rover Curiosity midió 1,8 mSv al día durante el viaje a Marte; un viaje de nueve meses supone unos 500 mSv, la mayor parte de un límite de carrera de 600 mSv, y el regreso duplica la dosis. Ningún blindaje ligero puede detener esa radiación. El indicador va sumando la dosis sobre la marcha.',
     ],
@@ -98,7 +98,7 @@ export const WIKI: WikiCatalog = {
       'Por debajo de unos 20 km, Starship cae de panza como un paracaidista, y sus cuatro aletas la dirigen variando la resistencia que genera cada lado. Todavía va más rápido que el sonido. A pocos kilómetros del suelo, tres motores se encienden con la nave aún en horizontal y el empuje la endereza —el giro— en unos segundos. A partir de ahí es una frenada en el último instante (hover-slam): los motores tienen que anular varios cientos de metros por segundo de caída en unos treinta segundos, sin margen de sobra.',
       'Es retropropulsión supersónica: encender los motores contra un aire que te llega más rápido que el sonido. No estaba demostrada hasta que los propulsores de Falcon 9 empezaron a hacerlo sobre el Atlántico; en Marte nunca se ha hecho. La simulación modela el encendido como un «encendido suicida» que empieza lo más tarde posible, tiene en cuenta la resistencia aerodinámica y reserva un 30 % del empuje para el control.',
       '## Las cápsulas',
-      'Orion, Dragon, Mengzhou y Apollo no tienen motores de aterrizaje capaces de hacer esto; se construyeron para amerizar con paracaídas en la Tierra. En Marte, sus paracaídas se abrirían en un aire demasiado tenue para servir de algo. Chocan contra el suelo a velocidad terminal —varios cientos de metros por segundo—, y la simulación lo refleja.',
+      'Orion, Dragon, Mengzhou y Apolo no tienen motores de aterrizaje capaces de hacer esto; se construyeron para amerizar con paracaídas en la Tierra. En Marte, sus paracaídas se abrirían en un aire demasiado tenue para servir de algo. Chocan contra el suelo a velocidad terminal —varios cientos de metros por segundo—, y la simulación lo refleja.',
     ],
   },
   verdict: {
@@ -135,7 +135,7 @@ export const WIKI: WikiCatalog = {
       '- Transferencia: problema de Lambert con los elementos planetarios aproximados del JPL (válidos entre 1800 y 2050), con el efecto Oberth, un margen por encendido finito y correcciones a mitad de trayecto; contrastada con las oportunidades 2026/2028/2031/2033 de NASA Glenn, con menos de un 1 % de diferencia.',
       '- Crucero: el presupuesto de consumibles por tripulante de la NASA con recuperación ECLSS; la tasa de dosis en crucero de Curiosity (MSL RAD) frente al límite de carrera de 600 mSv.',
       '- Entrada: el perfil de densidad de la Mars Climate Database con un factor por el polvo; sustentación con una regla de alabeo; calentamiento en el punto de remanso según Sutton–Graves, calibrado con las reentradas de Starship en la Tierra; carga g frente al límite de una tripulación desacondicionada; un encendido de aterrizaje con retropropulsión supersónica que descuenta la resistencia aerodinámica.',
-      'Cada cifra remite a una nota de investigación con fuentes y una etiqueta de confianza. El paisaje —Cape Canaveral, la Tierra, Marte— está construido con datos de la NASA y de Natural Earth, y pintado para que se vea como se ve desde un cohete.',
+      'Cada cifra remite a una nota de investigación con fuentes y una etiqueta de confianza. El paisaje —Cabo Cañaveral, la Tierra, Marte— está construido con datos de la NASA y de Natural Earth, y pintado para que se vea como se ve desde un cohete.',
     ],
   },
 }

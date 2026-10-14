@@ -123,9 +123,16 @@ ul, ol { padding: 0; list-style: none; }
 .langlist--chips { margin-top: 8px; font-size: 13px; }
 .intro__langs { margin-top: 26px; }
 
-/* scripts without capitals: no tracking (it breaks Devanagari's headline stroke and spreads Chinese apart),
-   and the smallest labels a little larger */
-:lang(hi) *, :lang(zh) * { letter-spacing: 0 !important; }
+/* scripts without capitals: no tracking (it breaks Devanagari's headline stroke and spreads Chinese
+   apart) — except what is marked English inside them (the wordmark) — and the smallest labels a
+   little larger, since Devanagari and Han lose legibility at sizes Latin capitals still read */
+*:lang(hi), *:lang(zh) { letter-spacing: 0 !important; }
+.tl__name:lang(hi), .tl__name:lang(zh) { font-size: 10px; }
+.tl__phaselabel:lang(hi), .tl__phaselabel:lang(zh) { font-size: 10.5px; }
+.label:lang(hi), .label:lang(zh), .keystat dt:lang(hi), .keystat dt:lang(zh), .milestone:lang(hi), .milestone:lang(zh) { font-size: 12px; }
+.dial__unit:lang(hi), .dial__unit:lang(zh), .eng__label:lang(hi), .eng__label:lang(zh) { font-size: 10.5px; }
+.dial__label:lang(hi), .dial__label:lang(zh), .lower__phase:lang(hi), .lower__phase:lang(zh), .lower__thirdlabel:lang(hi), .lower__thirdlabel:lang(zh) { font-size: 12px; }
+.keystat__note:lang(hi), .cell__detail:lang(hi), .cell__crew:lang(hi) { line-height: 1.5; }
 
 /* ---------- verdict card ---------- */
 .verdict {
@@ -348,8 +355,14 @@ ul, ol { padding: 0; list-style: none; }
 .advanced { margin-top: 6px; }
 
 /* ---------- details ---------- */
-.tabs { display: flex; gap: 2px; }
-.tab { padding: 6px 11px; border-radius: 999px; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t3); }
+/* the tabs scroll sideways when a language's names do not fit beside the close button */
+.tabs { position: relative; display: flex; gap: 0; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs--overflow { mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; padding: 6px 8px; border-radius: 999px; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--t3); white-space: nowrap; }
+.drawer--right .drawer__head { padding-left: 14px; padding-right: 16px; }
+.drawer__head > .drawer__close { flex: none; }
+.model__name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 18px 0 8px; }
 .tab--on { color: #000; background: var(--t1); }
 
 .timeline { padding: 10px 0 30px; }
@@ -496,7 +509,7 @@ ul, ol { padding: 0; list-style: none; }
 .board__corner { width: 150px; }
 .board__win { display: block; font-size: 13px; color: var(--t1); }
 .board__winsub { display: block; font-size: 11px; color: var(--t3); margin-top: 2px; }
-.board__th--now .board__win::after { content: ' · now'; color: var(--rust); }
+.board__now { color: var(--rust); }
 .board__rowhead { vertical-align: middle !important; position: sticky; left: 0; z-index: 1; background: rgba(5, 6, 9, 0.96); }
 .board__ship { display: block; font-size: 14px; font-weight: 600; color: var(--t1); }
 .board__badge { display: block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t3); margin-top: 2px; }
@@ -608,4 +621,6 @@ ul, ol { padding: 0; list-style: none; }
   .intro__text { font-size: 14px; }
   .intro__row { align-items: stretch; }
   .intro__row .intro__cta { justify-content: center; width: 100%; }
+  /* long calls to action (German, French…) wrap instead of running off a phone's screen */
+  .intro__cta { white-space: normal; max-width: 100%; font-size: 13px; letter-spacing: 0.08em; padding: 14px 22px; line-height: 1.3; }
 }

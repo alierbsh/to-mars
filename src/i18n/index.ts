@@ -20,12 +20,12 @@ export type { Bundle, DataCatalog, Lang, LangModule, MarkKey, SimCatalog, UiCata
 /** every language the site has catalogs for; `ready` ones are offered (a language is switched on once its translation is in) */
 export const ALL_LANGS: Array<{ id: Lang; name: string; locale: string; code: string; ready: boolean }> = [
   { id: 'en', name: 'English', locale: 'en-US', code: 'EN', ready: true },
-  { id: 'tr', name: 'Türkçe', locale: 'tr-TR', code: 'TR', ready: false },
-  { id: 'es', name: 'Español', locale: 'es-ES', code: 'ES', ready: false },
-  { id: 'fr', name: 'Français', locale: 'fr-FR', code: 'FR', ready: false },
-  { id: 'de', name: 'Deutsch', locale: 'de-DE', code: 'DE', ready: false },
-  { id: 'hi', name: 'हिन्दी', locale: 'hi-IN', code: 'HI', ready: false },
-  { id: 'zh', name: '中文', locale: 'zh-CN', code: '中文', ready: false },
+  { id: 'tr', name: 'Türkçe', locale: 'tr-TR', code: 'TR', ready: true },
+  { id: 'es', name: 'Español', locale: 'es-ES', code: 'ES', ready: true },
+  { id: 'fr', name: 'Français', locale: 'fr-FR', code: 'FR', ready: true },
+  { id: 'de', name: 'Deutsch', locale: 'de-DE', code: 'DE', ready: true },
+  { id: 'hi', name: 'हिन्दी', locale: 'hi-IN', code: 'HI', ready: true },
+  { id: 'zh', name: '中文', locale: 'zh-CN', code: '中文', ready: true },
 ]
 
 /** the languages offered */

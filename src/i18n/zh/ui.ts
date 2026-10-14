@@ -104,6 +104,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => zh`${p.n} 人乘组`,
     /** the text that goes with a shared link */
     question: '今天的火箭能把乘组送上火星吗？',
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}。` : ''}${p.desc}。${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -312,9 +314,9 @@ export const UI: UiCatalog = {
     porkchopTitle: '本窗口附近的出发能量',
     computing: '计算中……',
     porkchopAria: '出发 C3 随出发日期和飞行时间的变化',
-    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => zh`${p.date}，${p.days} d：C3 ${f(p.c3, 1)} km²/s²，到达 v∞ ${f(p.vinf, 2)} km/s`,
+    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => zh`${p.date}，${p.days} 天：C3 ${f(p.c3, 1)} km²/s²，到达 v∞ ${f(p.vinf, 2)} km/s`,
     /** a number of days on the chart's axes: "120 d", "+120 d" */
-    days: (p: { n: string }) => zh`${p.n} d`,
+    days: (p: { n: string }) => zh`${p.n} 天`,
     porkchopNote: '横轴为出发日期，纵轴为飞行时间；蓝色代表出发能量低（C3 ≈ 7 km²/s²），红色代表能量高（≥ 40）。点击任一格即可按该方案飞行。基于 JPL 行星根数求解 Lambert 问题。',
     record: (p: { record: string }) => zh`飞行记录：${p.record}`,
     table: { stage: '级', dry: '干质量', prop: '推进剂', engines: '发动机', isp: '真空 Isp' },
@@ -352,6 +354,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => zh`在“${p.preset}”假设下，${p.n} 款火箭无一成功`,
     allOf: (p: { ship: string }) => zh`全部由${p.ship}完成`,
     rocket: '火箭',
+    /** after the current mission's window */
+    now: '当前',
+    /** between ship names in a list */
+    listSep: '、',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => zh`到达速度 ${n(p.v)} km/s`,
     cells: {

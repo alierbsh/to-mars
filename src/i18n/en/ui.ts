@@ -94,6 +94,8 @@ export const UI = {
     crew: (p: { n: number }) => `crew of ${p.n}`,
     /** the text that goes with a shared link */
     question: "Can today's rockets carry a crew to Mars?",
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}. ` : ''}${p.desc}. ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -342,6 +344,10 @@ export const UI = {
     none: (p: { n: number; preset: string }) => `none of the ${p.n} rockets makes it under “${p.preset}”`,
     allOf: (p: { ship: string }) => `all of them ${p.ship}`,
     rocket: 'Rocket',
+    /** after the current mission's window */
+    now: 'now',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `arrives at ${n(p.v)} km/s`,
     cells: {

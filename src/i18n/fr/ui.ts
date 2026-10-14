@@ -87,6 +87,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => `équipage de ${p.n}`,
     /** the text that goes with a shared link */
     question: "Les fusées d'aujourd'hui peuvent-elles emmener un équipage sur Mars ?",
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}. ` : ''}${p.desc}. ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -225,7 +227,7 @@ export const UI: UiCatalog = {
     advanced: 'Options avancées',
     shift: 'Décalage du départ',
     /** "+12 d · 2028-12-14" */
-    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} d · ${p.date}`,
+    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} j · ${p.date}`,
     ship: 'Vaisseau',
     crewSystems: "Systèmes d'équipage",
     crewSystemsNote: "Cabine, matériel ECLSS, abri contre les tempêtes solaires. Études d'habitat de transit de la NASA : 25–45 t.",
@@ -295,9 +297,9 @@ export const UI: UiCatalog = {
     porkchopTitle: 'Énergie de départ autour de cette fenêtre',
     computing: 'Calcul en cours…',
     porkchopAria: 'C3 au départ selon la date de départ et la durée du transit',
-    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} d : C3 ${f(p.c3, 1)} km²/s², v∞ à l'arrivée ${f(p.vinf, 2)} km/s`,
+    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} j : C3 ${f(p.c3, 1)} km²/s², v∞ à l'arrivée ${f(p.vinf, 2)} km/s`,
     /** a number of days on the chart's axes: "120 d", "+120 d" */
-    days: (p: { n: string }) => `${p.n} d`,
+    days: (p: { n: string }) => `${p.n} j`,
     porkchopNote: "Date de départ en abscisse, durée du transit en ordonnée ; le bleu est économique (C3 ≈ 7 km²/s²), le rouge coûteux (≥ 40). Cliquez sur une case pour lancer cette mission. Solution du problème de Lambert sur les éléments planétaires du JPL.",
     record: (p: { record: string }) => `Bilan : ${p.record}`,
     table: { stage: 'Étage', dry: 'À vide', prop: 'Ergols', engines: 'Moteurs', isp: 'Isp vide' },
@@ -320,7 +322,7 @@ export const UI: UiCatalog = {
     sources: 'Sources',
     /** the credit for the scenery, around a link to NASA-3D-Resources */
     placesBefore: 'Lieux : ',
-    placesAfter: " (domaine public) — le modèle du Mobile Launcher, les MNT du JPL des cratères Gusev et Victoria, la mosaïque globale de Mars. Géographie de Cape Canaveral tracée d'après des cartes publiques ; structures des pas de tir procédurales.",
+    placesAfter: " (domaine public) — le modèle du Mobile Launcher, les MNT du JPL des cratères Gusev et Victoria, la mosaïque globale de Mars. Géographie du cap Canaveral tracée d'après des cartes publiques ; structures des pas de tir procédurales.",
   },
   board: {
     aria: 'Tableau des scores',
@@ -335,6 +337,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => `aucune des ${p.n} fusées n'y parvient avec les hypothèses « ${p.preset} »`,
     allOf: (p: { ship: string }) => `toutes avec ${p.ship}`,
     rocket: 'Fusée',
+    /** after the current mission's window */
+    now: 'actuelle',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `arrivée à ${n(p.v)} km/s`,
     cells: {

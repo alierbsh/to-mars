@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useT } from '../i18n'
 
 export interface Series {
   name: string
@@ -33,6 +34,7 @@ function niceTicks(min: number, max: number, n = 4): number[] {
 }
 
 export function LineChart({ series, xLabel, yLabel, yRightLabel, height = 160, xFormat, marker, yMin }: Props) {
+  const L = useT()
   const W = 420
   const H = height
   const padL = 44
@@ -82,7 +84,7 @@ export function LineChart({ series, xLabel, yLabel, yRightLabel, height = 160, x
   const xt = niceTicks(xs[0], xs[1], 5)
   const yt = niceTicks(ys[0], ys[1], 4)
   const ytR = niceTicks(ysR[0], ysR[1], 4)
-  const fmt = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `${Number(v.toFixed(2))}`)
+  const fmt = (v: number) => (Math.abs(v) >= 1000 ? `${L.n.f(v / 1000, v >= 10000 ? 0 : 1)}k` : L.n.n(Number(v.toFixed(2))))
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img">
       {yt.map((v) => (

@@ -87,6 +87,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => `${p.n} kişilik mürettebat`,
     /** the text that goes with a shared link */
     question: "Bugünün roketleri Mars'a mürettebat taşıyabilir mi?",
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}. ` : ''}${p.desc}. ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -163,7 +165,7 @@ export const UI: UiCatalog = {
     ignition: 'ATEŞLEME',
     fairing: 'FARİNG',
     seco: 'SECO',
-    circ: 'DAİRESELLEŞTİRME',
+    circ: 'APOJE YANMASI',
     orbit: 'YÖRÜNGE',
     tanker: (p: { n: number }) => `TANKER ${p.n}`,
     fuelled: 'YAKIT TAMAM',
@@ -225,7 +227,7 @@ export const UI: UiCatalog = {
     advanced: 'Gelişmiş',
     shift: 'Ayrılış ötelemesi',
     /** "+12 d · 2028-12-14" */
-    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} d · ${p.date}`,
+    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} gün · ${p.date}`,
     ship: 'Gemi',
     crewSystems: 'Mürettebat sistemleri',
     crewSystemsNote: "Kabin, ECLSS donanımı, güneş fırtınası sığınağı. NASA'nın transit habitat çalışmaları: 25–45 t.",
@@ -295,9 +297,9 @@ export const UI: UiCatalog = {
     porkchopTitle: 'Bu pencere çevresinde ayrılış enerjisi',
     computing: 'Hesaplanıyor…',
     porkchopAria: 'Ayrılış tarihine ve yolculuk süresine göre ayrılış C3 değeri',
-    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} d: C3 ${f(p.c3, 1)} km²/s², varışta v∞ ${f(p.vinf, 2)} km/s`,
+    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} gün: C3 ${f(p.c3, 1)} km²/s², varışta v∞ ${f(p.vinf, 2)} km/s`,
     /** a number of days on the chart's axes: "120 d", "+120 d" */
-    days: (p: { n: string }) => `${p.n} d`,
+    days: (p: { n: string }) => `${p.n} gün`,
     porkchopNote: 'Yatay eksende ayrılış tarihi, dikey eksende yolculuk süresi; mavi ucuz (C3 ≈ 7 km²/s²), kırmızı pahalı (≥ 40). Bir hücreye tıklayınca o görev başlar. JPL gezegen elemanları üzerinde Lambert çözümü.',
     record: (p: { record: string }) => `Uçuş geçmişi: ${p.record}`,
     table: { stage: 'Kademe', dry: 'Kuru', prop: 'Yakıt', engines: 'Motorlar', isp: 'Isp vakum' },
@@ -335,6 +337,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => `“${p.preset}” varsayımlarıyla ${p.n} roketin hiçbiri başaramıyor`,
     allOf: (p: { ship: string }) => `hepsi ${p.ship}`,
     rocket: 'Roket',
+    /** after the current mission's window */
+    now: 'şu an',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `varış hızı ${n(p.v)} km/s`,
     cells: {

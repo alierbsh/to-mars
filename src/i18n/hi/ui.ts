@@ -87,6 +87,8 @@ export const UI: UiCatalog = {
     crew: (p: { n: number }) => `${p.n} सदस्यीय चालक दल`,
     /** the text that goes with a shared link */
     question: 'क्या आज के रॉकेट किसी चालक दल को मंगल तक पहुंचा सकते हैं?',
+    /** the text that goes with a shared link: the verdict's headline (or nothing), the mission, the question */
+    text: (p: { headline: string; desc: string; question: string }) => `${p.headline ? `${p.headline}। ` : ''}${p.desc}। ${p.question}`,
   },
   lower: {
     /** the phases along the timeline, short */
@@ -225,7 +227,7 @@ export const UI: UiCatalog = {
     advanced: 'उन्नत',
     shift: 'प्रस्थान में बदलाव',
     /** "+12 d · 2028-12-14" */
-    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} d · ${p.date}`,
+    shiftValue: (p: { d: number; date: string }) => `${p.d >= 0 ? '+' : ''}${p.d} दिन · ${p.date}`,
     ship: 'यान',
     crewSystems: 'चालक दल प्रणालियां',
     crewSystemsNote: 'केबिन, ECLSS हार्डवेयर, सौर तूफान से बचाव का कक्ष। नासा के यात्रा-आवास (ट्रांजिट हैबिटेट) अध्ययन: 25–45 t।',
@@ -295,9 +297,9 @@ export const UI: UiCatalog = {
     porkchopTitle: 'इस विंडो के आसपास प्रस्थान ऊर्जा',
     computing: 'गणना हो रही है…',
     porkchopAria: 'प्रस्थान तिथि और यात्रा अवधि के अनुसार प्रस्थान C3',
-    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} d: C3 ${f(p.c3, 1)} km²/s², आगमन v∞ ${f(p.vinf, 2)} km/s`,
+    porkchopCell: (p: { date: string; days: number; c3: number; vinf: number }) => `${p.date}, ${p.days} दिन: C3 ${f(p.c3, 1)} km²/s², आगमन v∞ ${f(p.vinf, 2)} km/s`,
     /** a number of days on the chart's axes: "120 d", "+120 d" */
-    days: (p: { n: string }) => `${p.n} d`,
+    days: (p: { n: string }) => `${p.n} दिन`,
     porkchopNote: 'क्षैतिज अक्ष पर प्रस्थान तिथि, ऊर्ध्व अक्ष पर यात्रा अवधि; नीला सस्ता (C3 ≈ 7 km²/s²), लाल महंगा (≥ 40)। किसी खाने पर क्लिक करके वह मिशन उड़ाएं। जेपीएल के ग्रहीय तत्वों पर लैम्बर्ट हल।',
     record: (p: { record: string }) => `रिकॉर्ड: ${p.record}`,
     table: { stage: 'चरण', dry: 'शुष्क', prop: 'प्रणोदक', engines: 'इंजन', isp: 'Isp (निर्वात)' },
@@ -335,6 +337,10 @@ export const UI: UiCatalog = {
     none: (p: { n: number; preset: string }) => `“${p.preset}” के तहत ${p.n} में से कोई भी रॉकेट सफल नहीं होता`,
     allOf: (p: { ship: string }) => `सभी ${p.ship} के मिशन`,
     rocket: 'रॉकेट',
+    /** after the current mission's window */
+    now: 'वर्तमान',
+    /** between ship names in a list */
+    listSep: ', ',
     /** under a window: the arrival speed at Mars */
     arrives: (p: { v: number }) => `${n(p.v)} km/s पर आगमन`,
     cells: {
