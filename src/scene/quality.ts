@@ -16,6 +16,8 @@ export type Quality = 'high' | 'medium' | 'low'
 export interface QualitySettings {
   /** the canvas's device-pixel-ratio cap */
   dpr: number
+  /** at most this many pixels in the canvas (a tablet on the low tier renders below one per CSS pixel) */
+  maxPixels: number
   antialias: boolean
   /** shadow map size; 0 turns shadows off */
   shadowMap: number
@@ -47,9 +49,9 @@ export interface QualitySettings {
 }
 
 export const QUALITY: Record<Quality, QualitySettings> = {
-  high: { dpr: 1.5, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, plumeMesh: [48, 72], tongueMesh: [24, 36], plumeLights: true, sprites: 1, mesh: 1, textures: 'full', anisotropy: 16, fps: 60, fpsIdle: 30 },
-  medium: { dpr: 1.25, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, plumeMesh: [40, 60], tongueMesh: [20, 30], plumeLights: true, sprites: 0.7, mesh: 0.75, textures: 'full', anisotropy: 8, fps: 60, fpsIdle: 24 },
-  low: { dpr: 1, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, plumeMesh: [28, 44], tongueMesh: [14, 20], plumeLights: false, sprites: 0.5, mesh: 0.5, textures: 'half', anisotropy: 4, fps: 30, fpsIdle: 15 },
+  high: { dpr: 1.5, maxPixels: Infinity, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, plumeMesh: [48, 72], tongueMesh: [24, 36], plumeLights: true, sprites: 1, mesh: 1, textures: 'full', anisotropy: 16, fps: 60, fpsIdle: 30 },
+  medium: { dpr: 1.25, maxPixels: Infinity, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, plumeMesh: [40, 60], tongueMesh: [20, 30], plumeLights: true, sprites: 0.7, mesh: 0.75, textures: 'full', anisotropy: 8, fps: 60, fpsIdle: 24 },
+  low: { dpr: 1, maxPixels: 1_000_000, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, plumeMesh: [28, 44], tongueMesh: [14, 20], plumeLights: false, sprites: 0.5, mesh: 0.5, textures: 'half', anisotropy: 4, fps: 30, fpsIdle: 15 },
 }
 
 const KEY = 'occupy-mars:quality'

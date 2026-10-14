@@ -1,6 +1,6 @@
 import { Canvas, advance, useFrame } from '@react-three/fiber'
 import { Environment, Lightformer, Stars } from '@react-three/drei'
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import type { MissionResult } from '../sim/types'
 import { PHASE_RATE, effectiveSpeed, phaseAt, useAppStore } from '../state/store'
 import { entryAt, momentsAt, playbackRate, type Moment } from '../ui/hud'
@@ -144,11 +144,25 @@ function AdaptiveQuality() {
   return null
 }
 
+/** the window's area in CSS pixels, following resizes and rotations */
+function useViewportArea(): number {
+  const [area, setArea] = useState(() => innerWidth * innerHeight)
+  useEffect(() => {
+    const on = () => setArea(innerWidth * innerHeight)
+    addEventListener('resize', on)
+    return () => removeEventListener('resize', on)
+  }, [])
+  return area
+}
+
 export default function Scene() {
   const vehicleId = useAppStore((s) => s.config.vehicleId)
   const quality = useAppStore((s) => s.quality)
   const dprScale = useAppStore((s) => s.dprScale)
   const q = QUALITY[quality]
+  const area = useViewportArea()
+  // the low tier's pixel budget (a tablet), then the probe's own step down for a device that still cannot keep up
+  const scale = Math.min(dprScale, Math.sqrt(q.maxPixels / area))
   // subscribe to the derived view only, so the canvas tree does not re-render every frame
   const view = useAppStore((s) => {
     const phase = s.result ? phaseAt(s.result, s.t).phase : 'ascent'
@@ -164,7 +178,7 @@ export default function Scene() {
   return (
     <>
     <Pacer />
-    <Canvas key={`${q.antialias}-${q.logDepth}-${q.textures}`} frameloop="never" shadows={q.shadowMap > 0} camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={dprScale < 1 ? q.dpr * dprScale : [1, q.dpr]} gl={{ logarithmicDepthBuffer: q.logDepth, antialias: q.antialias, powerPreference: quality === 'low' ? 'default' : 'high-performance' }}>
+    <Canvas key={`${q.antialias}-${q.logDepth}-${q.textures}`} frameloop="never" shadows={q.shadowMap > 0} camera={{ position: [200, 60, 200], fov: 35, near: 0.5, far: 600_000 }} dpr={scale < 1 ? q.dpr * scale : [1, q.dpr]} gl={{ logarithmicDepthBuffer: q.logDepth, antialias: q.antialias, powerPreference: quality === 'low' ? 'default' : 'high-performance' }}>
       <color attach="background" args={['#070b12']} />
       <fog attach="fog" args={['#070b12', 2000, 60_000]} />
       <Suspense fallback={null}>
