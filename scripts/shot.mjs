@@ -16,10 +16,10 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent((req.url ?? '/').split('?')[0])
-  if (p === '/') p = '/index.html'
+  if (p.endsWith('/')) p += 'index.html' // /tr/ is the Turkish page
   let file = join(root, p)
   try {
-    await stat(file)
+    if ((await stat(file)).isDirectory()) file = join(file, 'index.html')
   } catch {
     file = join(root, 'index.html')
   }

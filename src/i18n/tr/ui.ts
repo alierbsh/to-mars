@@ -1,14 +1,12 @@
 /** The interface — tr (translated from en/ui.ts; same keys, same parameters). */
 import { numbers } from '../numbers'
+import { META } from './meta'
 import type { UiCatalog } from '../types'
 
 const { f, n } = numbers('tr-TR')
 
 export const UI: UiCatalog = {
-  meta: {
-    /** the browser tab */
-    title: "Occupy Mars Simulation — bugünün roketleri Mars'a mürettebat taşıyabilir mi?",
-  },
+  meta: META,
   lang: {
     label: 'Dil',
   },

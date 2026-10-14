@@ -1,5 +1,6 @@
 /** The interface — zh (translated from en/ui.ts; same keys, same parameters). */
 import { numbers } from '../numbers'
+import { META } from './meta'
 import type { UiCatalog } from '../types'
 
 const { f, n } = numbers('zh-CN')
@@ -22,10 +23,7 @@ const zh = (s: TemplateStringsArray, ...v: unknown[]): string =>
   }, s[0])
 
 export const UI: UiCatalog = {
-  meta: {
-    /** the browser tab */
-    title: 'Occupy Mars Simulation——今天的火箭能把乘组送上火星吗？',
-  },
+  meta: META,
   lang: {
     label: '语言',
   },

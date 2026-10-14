@@ -1,14 +1,12 @@
 /** The interface — fr (translated from en/ui.ts; same keys, same parameters). */
 import { numbers } from '../numbers'
+import { META } from './meta'
 import type { UiCatalog } from '../types'
 
 const { f, n } = numbers('fr-FR')
 
 export const UI: UiCatalog = {
-  meta: {
-    /** the browser tab */
-    title: "Occupy Mars Simulation — les fusées d'aujourd'hui peuvent-elles emmener un équipage sur Mars ?",
-  },
+  meta: META,
   lang: {
     label: 'Langue',
   },

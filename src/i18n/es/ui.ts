@@ -1,14 +1,12 @@
 /** The interface — es (translated from en/ui.ts; same keys, same parameters). */
 import { numbers } from '../numbers'
+import { META } from './meta'
 import type { UiCatalog } from '../types'
 
 const { f, n } = numbers('es-ES')
 
 export const UI: UiCatalog = {
-  meta: {
-    /** the browser tab */
-    title: 'Occupy Mars Simulation — ¿pueden los cohetes actuales llevar una tripulación a Marte?',
-  },
+  meta: META,
   lang: {
     label: 'Idioma',
   },

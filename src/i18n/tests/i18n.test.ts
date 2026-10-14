@@ -13,6 +13,7 @@ import type { MissionConfig, MissionResult } from '../../sim/types'
 import { DATA as EN_DATA } from '../en/data'
 import { SIM as EN_SIM } from '../en/sim'
 import { ALL_LANGS as LANGS, EN, loadBundle, type Bundle, type Lang } from '../index'
+import { langFromPath, langPath } from '../langs'
 import type { Text } from '../msg'
 
 const BAD = /undefined|NaN|\[object Object\]|Infinity/
@@ -132,6 +133,17 @@ describe('the simulation renders its own English', () => {
   it('the test missions reach every outcome', () => {
     const outcomes = new Set(results.map((r) => r.verdict.outcome))
     for (const o of ['landed', 'burned-up', 'crashed', 'failed-tmi', 'failed-launch', 'flyby']) expect(outcomes).toContain(o)
+  })
+})
+
+describe('every language has its own address', () => {
+  it('/tr/ is Turkish, / is none, and each address names its language', () => {
+    expect(langFromPath('/')).toBeNull()
+    expect(langFromPath('/index.html')).toBeNull()
+    expect(langFromPath('/xx/')).toBeNull()
+    expect(langFromPath('/tr')).toBe('tr')
+    expect(langFromPath('/zh/index.html')).toBe('zh')
+    for (const l of LANGS) expect(langFromPath(langPath(l.id))).toBe(l.id)
   })
 })
 

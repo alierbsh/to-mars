@@ -1,14 +1,12 @@
 /** The interface — hi (translated from en/ui.ts; same keys, same parameters). */
 import { numbers } from '../numbers'
+import { META } from './meta'
 import type { UiCatalog } from '../types'
 
 const { f, n } = numbers('hi-IN')
 
 export const UI: UiCatalog = {
-  meta: {
-    /** the browser tab */
-    title: 'Occupy Mars Simulation — क्या आज के रॉकेट किसी चालक दल को मंगल तक पहुंचा सकते हैं?',
-  },
+  meta: META,
   lang: {
     label: 'भाषा',
   },

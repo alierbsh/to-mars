@@ -8,14 +8,12 @@
  * (fixed decimals) or `n` (as is) so each language gets its own decimal mark.
  */
 import { numbers } from '../numbers'
+import { META } from './meta'
 
 const { f, n } = numbers('en')
 
 export const UI = {
-  meta: {
-    /** the browser tab */
-    title: "Occupy Mars Simulation — can today's rockets carry a crew to Mars?",
-  },
+  meta: META,
   lang: {
     label: 'Language',
   },
