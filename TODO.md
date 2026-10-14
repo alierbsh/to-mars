@@ -42,6 +42,14 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **Graphics on the opening screen.** Auto / High / Medium / Low on the ship-choice step, next to the time speed.
 - [ ] Possible next: compile the next scene's shaders before the cut (orbit, cruise, entry) — on a slow phone each cut can stall for a second while its programs compile.
 
+## Muhammet's list, 14 Oct (third run) — realism
+- [x] **The Earth during the dockings.** NASA's real cloud cover (edges broken up close), the city lights at night (sodium orange, broken into districts close up), the dusk band, airglow, lightning in night storms, point stars; the dockings and the departure burn flown over the Bahamas in daylight on the 0.5 km/px regional tile with its cumulus and their shadows; eclipse and orbital sunset; the tanker's thruster puffs.
+- [x] **The departure burn up close.** The clock holds 1× for 17 s; the camera starts behind the glowing engines and swings out along the hull (up over them on a phone); faint vacuum plumes, no flame lights in orbit (they burned the hull white).
+- [x] **Staging.** Starship hot-staging with flame from the vented ring, the booster's flip and boostback burn, a pitch that turns at a rocket's rate; condensation collars through Mach 1.
+- [x] **The cruise as film.** Leaving Earth (the planet swinging round behind the ship and shrinking, the Moon beside it) and closing on Mars (growing ahead, veiled by the storm, its limb); the entry opens on the same black sky and glowing limb.
+- [x] Seams: the Cape tiles fade over ~4 km; the regional tile's beaches no longer outline every island.
+- [ ] Proposed next: the real star catalogue (constellations you can recognise, in orbit and the cruise); the sun where it really is for the launch date and hour; the booster caught by the tower's arms; a signal-delay readout through the cruise (light-minutes to Earth); a sound for hot staging and the boostback; compile the next scene's shaders before each cut.
+
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
 - Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
