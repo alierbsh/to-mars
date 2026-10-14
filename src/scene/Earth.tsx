@@ -49,9 +49,9 @@ export function earthFixed(latDeg: number, lonDeg: number): THREE.Vector3 {
 const CLOUD_SHAPE = 'float cloudShape(float c) { return smoothstep(0.06, 0.62, c); }'
 
 /** a ground material (the globe, the regional tile) given night lights, the clouds' shade, the dusk band */
-function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { value: THREE.Texture | null }; clouds: { value: THREE.Texture | null }; cloudShift: { value: number } }, globeUvAttr: boolean): THREE.MeshStandardMaterial {
+function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { value: THREE.Texture | null }; clouds: { value: THREE.Texture | null }; cloudShift: { value: number }; roughMin: { value: number } }, globeUvAttr: boolean): THREE.MeshStandardMaterial {
   material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, { uNight: u.night, uCloudMap: u.clouds, uCloudShift: u.cloudShift, uSunDir: { value: SUN_DIR } })
+    Object.assign(shader.uniforms, { uNight: u.night, uCloudMap: u.clouds, uCloudShift: u.cloudShift, uSunDir: { value: SUN_DIR }, uRoughMin: u.roughMin })
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\nvarying vec3 vWorldN;\nvarying vec2 vGlobeUv;${globeUvAttr ? '\nattribute vec2 globeUv;' : ''}`)
       .replace('#include <project_vertex>', `#include <project_vertex>\nvWorldN = normalize(mat3(modelMatrix) * objectNormal);\nvGlobeUv = ${globeUvAttr ? 'globeUv' : 'uv'};`)
@@ -59,7 +59,7 @@ function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { va
       .replace(
         '#include <common>',
         `#include <common>
-        uniform sampler2D uNight; uniform sampler2D uCloudMap; uniform float uCloudShift; uniform vec3 uSunDir;
+        uniform sampler2D uNight; uniform sampler2D uCloudMap; uniform float uCloudShift; uniform vec3 uSunDir; uniform float uRoughMin;
         varying vec3 vWorldN; varying vec2 vGlobeUv;
         ${CLOUD_SHAPE}
         float hash2(vec2 p) { p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }
@@ -78,6 +78,9 @@ function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { va
         float dusk = smoothstep(0.32, 0.0, sunDot) * smoothstep(-0.14, 0.02, sunDot);
         diffuseColor.rgb *= mix(vec3(1.0), vec3(1.0, 0.7, 0.5), 0.8 * dusk);`,
       )
+      // seen from afar the sea's glint is the sun's reflection spread over thousands of km of waves:
+      // softer than the 10 km texels' smooth water makes it
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n        roughnessFactor = max(roughnessFactor, uRoughMin);')
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
@@ -108,10 +111,10 @@ function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { va
  * shell's own space (two or three octaves by tier); thinned over the regional tile, whose deck is
  * sharper.
  */
-function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 } }, octaves: number): THREE.MeshStandardMaterial {
+function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }; regionK: { value: number } }, octaves: number): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: '#ffffff', alphaMap: map, transparent: true, depthWrite: false, roughness: 1, metalness: 0, envMapIntensity: 0.12 })
   m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, { uRegion: u.region })
+    Object.assign(shader.uniforms, { uRegion: u.region, uRegionK: u.regionK })
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vShell; varying float vNear;')
       .replace(
@@ -124,7 +127,7 @@ function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }
       .replace(
         '#include <common>',
         `#include <common>
-        uniform vec3 uRegion; varying vec3 vShell; varying float vNear;
+        uniform vec3 uRegion; uniform float uRegionK; varying vec3 vShell; varying float vNear;
         ${CLOUD_SHAPE}
         float hash3(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
         float vnoise(vec3 x) {
@@ -143,7 +146,7 @@ function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }
           cov += (n - 0.5) * 0.42 * vNear * (1.0 - cov * 0.6);
         }
         float region = smoothstep(cos(950.0 / ${EARTH_R.toFixed(1)}), cos(700.0 / ${EARTH_R.toFixed(1)}), dot(normalize(vShell), uRegion));
-        diffuseColor.a *= cloudShape(cov) * (1.0 - 0.82 * region);`,
+        diffuseColor.a *= cloudShape(cov) * (1.0 - 0.82 * region * uRegionK);`,
       )
   }
   m.customProgramCacheKey = () => `orbitclouds|${octaves}`
@@ -194,7 +197,8 @@ function atmosphereMaterial(): THREE.ShaderMaterial {
  */
 function limbMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
-    uniforms: { sunDir: { value: SUN_DIR.clone() }, radius: { value: EARTH_R } },
+    // uCam: the camera in the shell's own frame (set just before it draws: the planet may be moved and scaled)
+    uniforms: { sunDir: { value: SUN_DIR.clone() }, radius: { value: EARTH_R }, uCam: { value: new THREE.Vector3() } },
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -202,21 +206,21 @@ function limbMaterial(): THREE.ShaderMaterial {
     vertexShader: `
       #include <common>
       #include <logdepthbuf_pars_vertex>
-      varying vec3 vWorld;
+      varying vec3 vLocal;
       void main() {
-        vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+        vLocal = position;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         #include <logdepthbuf_vertex>
       }`,
     fragmentShader: `
       #include <common>
       #include <logdepthbuf_pars_fragment>
-      uniform vec3 sunDir; uniform float radius; varying vec3 vWorld;
+      uniform vec3 sunDir; uniform float radius; uniform vec3 uCam; varying vec3 vLocal;
       void main() {
         #include <logdepthbuf_fragment>
-        vec3 d = normalize(vWorld - cameraPosition);
-        float tc = max(0.0, -dot(cameraPosition, d));      // along the ray to its closest approach
-        vec3 pc = cameraPosition + d * tc;
+        vec3 d = normalize(vLocal - uCam);
+        float tc = max(0.0, -dot(uCam, d));                 // along the ray to its closest approach
+        vec3 pc = uCam + d * tc;
         float h = length(pc) - radius;                      // km above the ground there
         if (h < 0.0) discard;                               // the ray meets the planet
         float sd = dot(normalize(pc), sunDir);
@@ -236,7 +240,7 @@ function limbMaterial(): THREE.ShaderMaterial {
   })
 }
 
-function moonTexture(): THREE.CanvasTexture {
+export function moonTexture(): THREE.CanvasTexture {
   const n = 256
   const c = document.createElement('canvas')
   c.width = n * 2
@@ -276,7 +280,7 @@ function moonTexture(): THREE.CanvasTexture {
 }
 
 let glowCache: THREE.CanvasTexture | null = null
-function sunGlowTexture(): THREE.CanvasTexture {
+export function sunGlowTexture(): THREE.CanvasTexture {
   if (glowCache) return glowCache
   const c = document.createElement('canvas')
   c.width = c.height = 256
@@ -294,7 +298,7 @@ function sunGlowTexture(): THREE.CanvasTexture {
 }
 
 /** stars as points (a texture sky turns into blocks at a telephoto field of view): a few bright, most faint, slightly tinted */
-function starField(n: number, radius: number): { geo: THREE.BufferGeometry; mat: THREE.PointsMaterial } {
+export function starField(n: number, radius: number): { geo: THREE.BufferGeometry; mat: THREE.PointsMaterial } {
   const pos = new Float32Array(n * 3)
   const col = new Float32Array(n * 3)
   let seed = 11
@@ -333,7 +337,16 @@ function regionCap(R: number, segments: number): THREE.BufferGeometry {
   return g
 }
 
-export function Earth() {
+/**
+ * `sky` false leaves out the stars, the sun's glow and the Moon (a scene that brings its own).
+ * `detail` false drops the regional tile and its cumulus deck (from afar the tile's palette shows
+ * as a square; the global clouds cover the region again).
+ * `far`: the planet is a backdrop the scene moves and scales (`root`) to stand in for a distant
+ * one at its true angular size: its layers write no depth (they are drawn in order, the globe
+ * first; at a pseudo-distance of 20,000 km a depth buffer without the logarithmic mapping cannot
+ * keep 8 km of cloud off the ground) and anything in front still hides them.
+ */
+export function Earth({ sky = true, far = false, detail = true, root }: { sky?: boolean; far?: boolean; detail?: boolean; root?: React.RefObject<THREE.Group | null> }) {
   const q = useQuality()
   const textures = useMaps([
     `${BASE_URL}assets/earth/${texName('earth-day-4k.jpg', q.textures)}`,
@@ -357,7 +370,7 @@ export function Earth() {
     for (const t of [region, regionRough, regionClouds]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
   }, [day, night, clouds, region, regionRough, regionClouds, q.anisotropy])
 
-  const u = useMemo(() => ({ night: { value: night as THREE.Texture | null }, clouds: { value: clouds as THREE.Texture | null }, cloudShift: { value: 0 }, region: { value: new THREE.Vector3() }, regionSun: { value: new THREE.Vector3(0, 1, 0) }, regionDeck: { value: regionClouds as THREE.Texture | null } }), [night, clouds, regionClouds])
+  const u = useMemo(() => ({ night: { value: night as THREE.Texture | null }, clouds: { value: clouds as THREE.Texture | null }, cloudShift: { value: 0 }, region: { value: new THREE.Vector3() }, regionSun: { value: new THREE.Vector3(0, 1, 0) }, regionDeck: { value: regionClouds as THREE.Texture | null }, regionK: { value: 1 }, roughMin: { value: far ? 0.5 : 0 } }), [night, clouds, regionClouds, far])
 
   const mats = useMemo(() => {
     // the globe pushed back in the depth buffer under the regional tile and the clouds (the low
@@ -392,8 +405,14 @@ export function Earth() {
     }
     const deck = applyEdgeFade(new THREE.MeshStandardMaterial({ map: regionClouds, transparent: true, depthWrite: false, roughness: 1, metalness: 0, envMapIntensity: 0.1 }), 0.03)
     const shell = cloudMaterial(clouds, u, q.fbmOctaves === 3 ? 3 : 2)
+    // a backdrop: all of it in the transparent pass, after the stars, in its own order, no depth written
+    if (far)
+      for (const m of [globe, tile, deck, shell]) {
+        m.depthWrite = false
+        m.transparent = true
+      }
     return { globe, tile, deck, shell }
-  }, [day, rough, region, regionRough, regionClouds, clouds, u, q.fbmOctaves])
+  }, [day, rough, region, regionRough, regionClouds, clouds, u, q.fbmOctaves, far])
 
   const geos = useMemo(() => {
     const k = q.mesh
@@ -415,9 +434,19 @@ export function Earth() {
   const cloud = useRef<THREE.Mesh>(null)
   const regionQ = useMemo(() => globeQuaternion(REGION.lat, REGION.lon).invert(), [])
   const regionUp = useMemo(() => earthFixed(REGION.lat, REGION.lon), [])
-  const tmp = useMemo(() => ({ q: new THREE.Quaternion(), v: new THREE.Vector3(), cam: new THREE.Vector3() }), [])
+  const tmp = useMemo(() => ({ q: new THREE.Quaternion(), v: new THREE.Vector3(), cam: new THREE.Vector3(), inv: new THREE.Matrix4() }), [])
+  // the limb works in its own frame: the camera brought into it right before it draws
+  const limb = useRef<THREE.Mesh>(null)
+  useEffect(() => {
+    const m = limb.current
+    if (!m) return
+    m.onBeforeRender = (_r, _s, camera) => {
+      atmo.uniforms.uCam.value.copy(camera.position).applyMatrix4(tmp.inv.copy(m.matrixWorld).invert())
+    }
+  }, [atmo, tmp])
 
   useFrame(({ camera }) => {
+    u.regionK.value = detail ? 1 : 0
     const { spin, clouds: cloudSpin } = earthState
     if (earth.current) earth.current.rotation.y = spin
     if (cloud.current) cloud.current.rotation.y = cloudSpin
@@ -428,41 +457,53 @@ export function Earth() {
     tmp.q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, -spin)
     u.regionSun.value.copy(SUN_DIR).applyQuaternion(tmp.q).applyQuaternion(tmp.q.copy(regionQ).invert())
     // exposure: a camera over the day side, with the lit planet in frame, does not see stars
-    camera.getWorldDirection(tmp.v)
-    tmp.cam.copy(camera.position).normalize()
-    const overDay = THREE.MathUtils.smoothstep(tmp.cam.dot(SUN_DIR), -0.15, 0.25)
-    const lookDown = THREE.MathUtils.smoothstep(-tmp.v.dot(tmp.cam), -0.2, 0.35)
-    stars.mat.opacity = 1 - 0.85 * overDay * lookDown
+    if (sky) {
+      camera.getWorldDirection(tmp.v)
+      tmp.cam.copy(camera.position).normalize()
+      const overDay = THREE.MathUtils.smoothstep(tmp.cam.dot(SUN_DIR), -0.15, 0.25)
+      const lookDown = THREE.MathUtils.smoothstep(-tmp.v.dot(tmp.cam), -0.2, 0.35)
+      stars.mat.opacity = 1 - 0.85 * overDay * lookDown
+    }
   })
 
   const sunPos = SUN_DIR.clone().multiplyScalar(36_000)
   const moonPos = new THREE.Vector3(-0.55, 0.2, -0.8).normalize().multiplyScalar(33_000)
+  // a backdrop draws its layers in order, before anything in front of it
+  const order = (n: number) => (far ? n - 20 : n)
   return (
     <group>
-      <points geometry={stars.geo} material={stars.mat} renderOrder={-10} frustumCulled={false} />
-      <sprite position={sunPos.toArray()} scale={[9000, 9000, 1]}>
-        <spriteMaterial map={glow} transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
-      </sprite>
-      <mesh position={moonPos.toArray()}>
-        <sphereGeometry args={[33_000 * 0.00452, 32, 24]} />
-        <meshStandardMaterial map={moonTex} roughness={1} />
-      </mesh>
-      {/* the planet */}
-      <group ref={earth}>
-        <mesh geometry={geos.globe} material={mats.globe} />
-        <group quaternion={regionQ}>
-          <mesh geometry={geos.tile} material={mats.tile} position={[0, EARTH_R + 0.3, 0]} renderOrder={1} />
-          <mesh geometry={geos.deck} material={mats.deck} position={[0, EARTH_R + REGION.cloudHeight, 0]} renderOrder={2} />
+      {sky && (
+        <>
+          <points geometry={stars.geo} material={stars.mat} renderOrder={-10} frustumCulled={false} />
+          <sprite position={sunPos.toArray()} scale={[9000, 9000, 1]}>
+            <spriteMaterial map={glow} transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
+          </sprite>
+          <mesh position={moonPos.toArray()}>
+            <sphereGeometry args={[33_000 * 0.00452, 32, 24]} />
+            <meshStandardMaterial map={moonTex} roughness={1} />
+          </mesh>
+        </>
+      )}
+      <group ref={root}>
+        {/* the planet */}
+        <group ref={earth}>
+          <mesh geometry={geos.globe} material={mats.globe} renderOrder={order(0)} />
+          {detail && (
+            <group quaternion={regionQ}>
+              <mesh geometry={geos.tile} material={mats.tile} position={[0, EARTH_R + 0.3, 0]} renderOrder={order(1)} />
+              <mesh geometry={geos.deck} material={mats.deck} position={[0, EARTH_R + REGION.cloudHeight, 0]} renderOrder={order(2)} />
+            </group>
+          )}
         </group>
+        <mesh ref={cloud} geometry={geos.shell} material={mats.shell} renderOrder={order(3)} />
+        {/* the limb's shell reaches 105 km (the airglow's height) — it has to stay under the orbit */}
+        <mesh ref={limb} material={atmo} renderOrder={far ? -16 : 0}>
+          <sphereGeometry args={[EARTH_R + 105, 96, 72]} />
+        </mesh>
+        <mesh material={haze} renderOrder={far ? -15 : 0}>
+          <sphereGeometry args={[EARTH_R * 1.006, 96, 72]} />
+        </mesh>
       </group>
-      <mesh ref={cloud} geometry={geos.shell} material={mats.shell} renderOrder={3} />
-      {/* the limb's shell reaches 105 km (the airglow's height) — it has to stay under the orbit */}
-      <mesh material={atmo}>
-        <sphereGeometry args={[EARTH_R + 105, 96, 72]} />
-      </mesh>
-      <mesh material={haze}>
-        <sphereGeometry args={[EARTH_R * 1.006, 96, 72]} />
-      </mesh>
     </group>
   )
 }

@@ -202,6 +202,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => `Acoplamiento de la cisterna ${p.n}`,
     tmi: 'Inyección transmarciana',
     peakHeat: 'Calentamiento máximo',
+    depart: 'Dejando la Tierra',
+    approach: 'Aproximación a Marte',
   },
   settings: {
     title: 'Ajustes de la misión',

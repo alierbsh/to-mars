@@ -390,7 +390,7 @@ export function momentsAt(r: MissionResult): Moment[] {
   const out: Moment[] = []
   for (const e of r.events) {
     const k = eventKey(e)
-    if (k === 'asc.coreSep') out.push({ t: e.t, key: 'stageSep', before: 3, after: 7, rate: 1 })
+    if (k === 'asc.coreSep') out.push({ t: e.t, key: 'stageSep', before: 3, after: 10, rate: 1 })
     else if (k === 'asc.boosterSep') out.push({ t: e.t, key: 'boosterSep', before: 3, after: 6, rate: 1 })
     else if (k === 'asc.fairing') out.push({ t: e.t, key: 'fairing', before: 1.5, after: 3, rate: 1 })
     else if (k === 'asc.seco' || k === 'asc.seco1') out.push({ t: e.t, key: 'seco', before: 3, after: 2.5, rate: 1 })
@@ -400,8 +400,20 @@ export function momentsAt(r: MissionResult): Moment[] {
     else if (k === 'en.peakHeat') out.push({ t: e.t, key: 'peakHeat', before: 3, after: 4, rate: 1 })
     else if (e.severity === 'fail' && e.phase === 'ascent') out.push({ t: e.t, key: null, event: e.msg?.label ?? e.label, before: 3, after: 4, rate: 1 })
   }
+  // the cruise's close shots: named, not slowed here — the cruise sets its own pace near the
+  // planets (store.ts: effectiveSpeed)
+  const cruise = r.phases.find((p) => p.phase === 'cruise')
+  if (cruise) {
+    out.push({ t: cruise.start, key: 'depart', before: 0, after: DEPART_SHOT_S, rate: Infinity })
+    out.push({ t: cruise.end, key: 'approach', before: APPROACH_SHOT_S, after: 0, rate: Infinity })
+  }
   return out.sort((a, b) => a.t - b.t)
 }
+
+/** how long (mission seconds) the cruise shows the ship leaving Earth, and closing on Mars, before
+ * and after its months on the map (CruiseScene) */
+export const DEPART_SHOT_S = 2.5 * DAY_S
+export const APPROACH_SHOT_S = 1.5 * DAY_S
 
 /** real seconds taken to slow into a moment and to speed out of it */
 const MOMENT_RAMP_S = 1.2

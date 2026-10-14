@@ -202,6 +202,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => `Tanker ${p.n} dockt an`,
     tmi: 'Mars-Transferzündung',
     peakHeat: 'Maximale Aufheizung',
+    depart: 'Abschied von der Erde',
+    approach: 'Anflug auf den Mars',
   },
   settings: {
     title: 'Einstellungen',

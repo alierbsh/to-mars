@@ -202,6 +202,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => `Amarrage du ravitailleur ${p.n}`,
     tmi: 'Injection vers Mars',
     peakHeat: "Pic d'échauffement",
+    depart: 'Départ de la Terre',
+    approach: 'Approche de Mars',
   },
   settings: {
     title: 'Réglages de la mission',

@@ -211,6 +211,8 @@ export const UI = {
     docking: (p: { n: number }) => `Tanker ${p.n} docking`,
     tmi: 'Trans-Mars injection',
     peakHeat: 'Peak heating',
+    depart: 'Leaving Earth',
+    approach: 'Mars approach',
   },
   settings: {
     title: 'Mission settings',

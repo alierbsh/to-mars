@@ -78,7 +78,7 @@ function Playback() {
     const end = result.phases[result.phases.length - 1].end
     const phase = result.phases.find((p) => cur >= p.start && cur < p.end) ?? result.phases[result.phases.length - 1]
     const alt = phase.phase === 'entry' ? entryAt(result, cur)?.alt : undefined
-    const base = PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt })
+    const base = PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt, left: phase.end - cur })
     let next = cur + dt * playbackRate(base, cur, memo.current.moments, speed, phase).rate
     // never skip the end of a phase in one frame
     if (next > phase.end && cur < phase.end) next = phase.end + 1e-3
@@ -196,7 +196,7 @@ export default function Scene() {
       {view !== 'ascent' && <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />}
       {view === 'ascent' && <AscentScene vehicleId={vehicleId} />}
       {view === 'orbit' && <OrbitScene vehicleId={vehicleId} />}
-      {view === 'cruise' && <CruiseScene />}
+      {view === 'cruise' && <CruiseScene vehicleId={vehicleId} />}
       {view === 'entry' && <EntryScene vehicleId={vehicleId} />}
     </Canvas>
     </>

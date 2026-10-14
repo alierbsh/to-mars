@@ -219,6 +219,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => zh`加注飞船 ${p.n} 对接`,
     tmi: '地火转移点火',
     peakHeat: '峰值热流',
+    depart: '告别地球',
+    approach: '接近火星',
   },
   settings: {
     title: '任务设置',

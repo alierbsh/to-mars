@@ -202,6 +202,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => `टैंकर ${p.n} की डॉकिंग`,
     tmi: 'मंगल स्थानांतरण दहन',
     peakHeat: 'अधिकतम तापन',
+    depart: 'पृथ्वी से विदा',
+    approach: 'मंगल के निकट',
   },
   settings: {
     title: 'मिशन सेटिंग्स',

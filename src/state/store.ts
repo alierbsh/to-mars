@@ -213,7 +213,7 @@ export const useAppStore = create<AppState>((set, get) => ({
  * chosen speed by T+85 s; the in-between phases run at the chosen speed; entry, descent and
  * landing follow their own profile down to real time for the landing burn; the aftermath at 1×.
  */
-export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number, ctx?: { alt?: number }): number {
+export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number, ctx?: { alt?: number; left?: number }): number {
   if (phase === 'ascent') {
     // liftoff in real time (the natural rate is 4×, so 0.25 of it), ramping to the chosen speed by T+85
     const real = 1 / PHASE_RATE.ascent
@@ -231,8 +231,19 @@ export function effectiveSpeed(phase: Phase, tInPhase: number, chosen: number, c
     return (real / PHASE_RATE.entry) * Math.min(1, chosen)
   }
   if (phase === 'landing' || phase === 'done') return Math.min(chosen, 1)
+  if (phase === 'cruise') {
+    // leaving Earth and closing on Mars: the clock runs at a fixed share of the time since the burn
+    // (or left to the entry), so the planet shrinks — or grows — by the same share each second,
+    // from minutes a second next to it to days a second once it is a dot; the months between at
+    // the cruise's own pace
+    const near = Math.min(tInPhase, ctx?.left ?? Infinity)
+    return chosen * Math.min(1, Math.max(CRUISE_NEAR.min, CRUISE_NEAR.k * near) / PHASE_RATE.cruise)
+  }
   return chosen
 }
+
+/** the cruise's pace near a planet: k × the time from it (mission s per real s), never under `min` */
+const CRUISE_NEAR = { k: 0.6, min: 180 }
 
 /** Natural playback rate (simulated seconds per real second) for each phase. */
 export const PHASE_RATE: Record<Phase, number> = {

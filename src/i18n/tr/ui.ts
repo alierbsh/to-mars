@@ -202,6 +202,8 @@ export const UI: UiCatalog = {
     docking: (p: { n: number }) => `${p.n}. tanker kenetleniyor`,
     tmi: "Mars'a geçiş yanması",
     peakHeat: 'En yüksek ısınma',
+    depart: "Dünya'dan ayrılış",
+    approach: "Mars'a yaklaşma",
   },
   settings: {
     title: 'Görev ayarları',
