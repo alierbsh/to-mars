@@ -9,15 +9,15 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
-import type { MissionResult, Phase, Stage as StageDef, Vehicle } from '../sim/types'
+import type { MissionResult, Stage as StageDef, Vehicle } from '../sim/types'
 import { useAppStore, useThrottledT } from '../state/store'
+import { useT, type Bundle } from '../i18n'
 import { fmtT } from './format'
-import { burningAt, dialsAt, hudAt, marksAt, momentAt, momentsAt, propFractionAt, type Dial as DialData } from './hud'
+import { burningAt, dialsAt, hudAt, markLabel, marksAt, momentAt, momentLabel, momentsAt, propFractionAt, type Dial as DialData } from './hud'
 import { chapterForMark } from '../wiki/chapters'
 
 const SPEEDS = [0.5, 1, 2, 4, 10]
 const STILL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('still') === '1'
-const SHORT: Record<Phase, string> = { ascent: 'Launch', leo: 'Orbit', tmi: 'TMI', cruise: 'Cruise', entry: 'EDL', landing: 'Landing', done: 'Surface' }
 
 const R = 36
 const C = 2 * Math.PI * R
@@ -72,13 +72,14 @@ interface EngineUnit {
   pts: Array<[number, number]>
 }
 
-function unitsFor(vehicle: Vehicle): EngineUnit[] {
+function unitsFor(vehicle: Vehicle, L: Bundle): EngineUnit[] {
   const out: EngineUnit[] = []
+  const U = L.ui.lower
   const name = (s: StageDef, i: number, copies: number) => {
-    if (vehicle.id === 'starship-v3') return s.id === 'ship' ? 'Ship' : 'Booster'
-    if (s.role === 'booster') return copies > 1 ? `Booster ${i + 1}` : 'Booster'
-    if (s.role === 'upper') return vehicle.stages.filter((x) => x.role !== 'booster').indexOf(s) === 1 ? 'Stage 2' : 'Stage 3'
-    return 'Core'
+    if (vehicle.id === 'starship-v3') return s.id === 'ship' ? U.ship : U.booster
+    if (s.role === 'booster') return copies > 1 ? U.boosterN({ n: i + 1 }) : U.booster
+    if (s.role === 'upper') return vehicle.stages.filter((x) => x.role !== 'booster').indexOf(s) === 1 ? U.stage2 : U.stage3
+    return U.core
   }
   for (const s of vehicle.stages) {
     const n = s.engines.reduce((a, e) => a + e.count, 0)
@@ -93,7 +94,8 @@ function unitsFor(vehicle: Vehicle): EngineUnit[] {
 }
 
 function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle: Vehicle; t: number; open: boolean }) {
-  const units = useMemo(() => unitsFor(vehicle), [vehicle])
+  const L = useT()
+  const units = useMemo(() => unitsFor(vehicle, L), [vehicle, L])
   const preIgnition = useAppStore((s) => s.intro) !== null
   const burning = useMemo(() => burningAt(result, vehicle, t, preIgnition), [result, vehicle, t, preIgnition])
   const ascent = result.phases[0]
@@ -117,7 +119,7 @@ function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle:
               })}
             </div>
             <span className="eng__label">{u.label}</span>
-            <span className="eng__prop" title="Propellant">
+            <span className="eng__prop" title={L.ui.lower.propellant}>
               <span className="eng__propfill" style={{ width: `${(gone ? 0 : prop) * 100}%` }} />
             </span>
           </div>
@@ -128,6 +130,7 @@ function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle:
 }
 
 function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onSeek: (t: number) => void }) {
+  const L = useT()
   const marks = useMemo(() => marksAt(result), [result])
   const openWiki = useAppStore((s) => s.openWiki)
   const phases = result.phases
@@ -171,10 +174,10 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
                 const f = (e.clientX - rect.left) / rect.width
                 onSeek(p.start + f * (p.end - p.start))
               }}
-              title={`${p.label}: ${fmtT(p.start)} → ${fmtT(p.end)}`}
+              title={`${L.t(p.msg ?? p.label)}: ${fmtT(p.start, L)} → ${fmtT(p.end, L)}`}
             >
               <span className="tl__tick" />
-              <span className="tl__phaselabel">{SHORT[p.phase] ?? p.label}</span>
+              <span className="tl__phaselabel">{L.ui.lower.phases[p.phase]}</span>
             </button>
           )
         })}
@@ -184,18 +187,19 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
         const past = t >= m.t
         const inActive = phases[activeIdx].phase === m.phase
         const idxInPhase = marks.filter((x) => x.phase === m.phase).indexOf(m)
-        const chapter = chapterForMark(m.label)
+        const chapter = chapterForMark(m.key)
+        const name = markLabel(m, L)
         // names alternate above and below the line (the phase labels sit in a third row)
         const low = idxInPhase % 2 === 1
         return (
-          <span key={`${m.label}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${low ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
+          <span key={`${m.key}-${m.n ?? ''}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${low ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
             <span className="tl__dot" />
             {chapter ? (
-              <button className="tl__name tl__name--link" onClick={() => openWiki(chapter.id)} title={`Wiki: ${chapter.title}`}>
-                {m.label}
+              <button className="tl__name tl__name--link" onClick={() => openWiki(chapter.id)} title={L.ui.lower.wikiTitle({ title: L.wiki[chapter.id].title })}>
+                {name}
               </button>
             ) : (
-              <span className="tl__name">{m.label}</span>
+              <span className="tl__name">{name}</span>
             )}
           </span>
         )
@@ -206,6 +210,7 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
 }
 
 export default function LowerThird() {
+  const L = useT()
   const result = useAppStore((s) => s.result)
   const t = useThrottledT(12)
   const playing = useAppStore((s) => s.playing)
@@ -223,10 +228,10 @@ export default function LowerThird() {
     return () => window.clearTimeout(id)
   }, [])
   if (!result) return null
-  const hud = hudAt(result, t)
+  const hud = hudAt(result, t, L)
   const moments = useMemo(() => momentsAt(result), [result])
   const moment = momentAt(moments, t)
-  const [d1, d2] = dialsAt(result, t)
+  const [d1, d2] = dialsAt(result, t, L)
   const third = hud.lines[2]
   const end = result.phases[result.phases.length - 1].end
   // the clock: T+ through the launch, the mission day in between, E+ from the entry interface
@@ -237,8 +242,8 @@ export default function LowerThird() {
     const sec = Math.floor(s - m * 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
-  const main = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? `E+${mmss(Math.max(0, t - entry.start))}` : fmtT(t)
-  const sub = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? fmtT(t) : `of ${fmtT(end)}`
+  const main = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? `E+${mmss(Math.max(0, t - entry.start))}` : fmtT(t, L)
+  const sub = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? fmtT(t, L) : L.ui.lower.of({ end: fmtT(end, L) })
 
   return (
     <div className={`lower ${open ? 'lower--open' : ''} ${STILL ? 'lower--still' : ''}`}>
@@ -254,7 +259,7 @@ export default function LowerThird() {
       </div>
       <div className="lower__centre">
         <div className="lower__clock">
-          {moment ? <span className="lower__phase lower__phase--moment">{moment.label}</span> : <span className="lower__phase">{hud.phaseLabel}</span>}
+          {moment ? <span className="lower__phase lower__phase--moment">{momentLabel(moment, L)}</span> : <span className="lower__phase">{hud.phaseLabel}</span>}
           <span className="lower__t">{main}</span>
           <span className="lower__end">{sub}</span>
         </div>
@@ -263,20 +268,20 @@ export default function LowerThird() {
       <div className="lower__right">
         <Engines result={result} vehicle={vehicle} t={t} open={open} />
         <div className="lower__controls">
-          <button className="ctl ctl--main" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
+          <button className="ctl ctl--main" onClick={() => setPlaying(!playing)} aria-label={playing ? L.ui.lower.pause : L.ui.lower.play}>
             {playing ? (
               <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" fill="currentColor" /><rect x="9.5" y="2" width="3.5" height="12" fill="currentColor" /></svg>
             ) : (
               <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
             )}
           </button>
-          <button className="ctl" onClick={reset} aria-label="Restart">
+          <button className="ctl" onClick={reset} aria-label={L.ui.lower.restart}>
             <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3a5 5 0 1 1-4.5 2.8" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M3 2v4h4" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
           </button>
-          <div className="speeds" role="group" aria-label="Playback speed">
+          <div className="speeds" role="group" aria-label={L.ui.lower.speed}>
             {SPEEDS.map((s) => (
               <button key={s} className={`speed ${speed === s ? 'speed--on' : ''}`} onClick={() => setSpeed(s)}>
-                {s}×
+                {L.n.n(s)}×
               </button>
             ))}
           </div>

@@ -8,6 +8,7 @@ import '@fontsource/instrument-sans/600.css'
 import '@fontsource/instrument-sans/700.css'
 import './styles/global.css'
 import App from './App'
+import { initLang } from './i18n'
 import ModelViewer from './scene/ModelViewer'
 import TerrainViewer from './scene/TerrainViewer'
 
@@ -15,6 +16,9 @@ const params = new URLSearchParams(location.search)
 const model = params.get('model')
 const terrain = params.get('terrain')
 const num = (k: string, d: number) => Number(params.get(k) ?? d)
+
+// the reader's language is loaded before the first paint (English is built in; the others are a small chunk)
+await initLang()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

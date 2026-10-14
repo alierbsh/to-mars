@@ -3,10 +3,13 @@
  * mission per chapter in plain language. Opened from the Wiki pill or from a timeline mark.
  */
 import { useEffect, useRef } from 'react'
+import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { CHAPTERS } from '../wiki/chapters'
 
 export default function Wiki() {
+  const L = useT()
+  const W = L.ui.wiki
   const wiki = useAppStore((s) => s.wiki)
   const openWiki = useAppStore((s) => s.openWiki)
   const closeWiki = useAppStore((s) => s.closeWiki)
@@ -14,6 +17,7 @@ export default function Wiki() {
   const active = useRef<HTMLButtonElement>(null)
   const chapter = CHAPTERS.find((c) => c.id === wiki) ?? CHAPTERS[0]
   const idx = CHAPTERS.indexOf(chapter)
+  const text = (id: (typeof CHAPTERS)[number]['id']) => L.wiki[id]
   useEffect(() => {
     body.current?.scrollTo({ top: 0 })
     // the chapter list is a scrolling row on phones: keep the open chapter in view
@@ -30,36 +34,35 @@ export default function Wiki() {
     return () => window.removeEventListener('keydown', onKey)
   }, [wiki, idx, openWiki, closeWiki])
   if (!wiki) return null
+  const c = text(chapter.id)
   return (
-    <div className="wiki" role="dialog" aria-label="Wiki">
+    <div className="wiki" role="dialog" aria-label={W.aria}>
       <aside className="wiki__nav">
-        <p className="label">Wiki · how a Mars mission works</p>
+        <p className="label">{W.nav}</p>
         <ol className="wiki__list">
-          {CHAPTERS.map((c, i) => (
-            <li key={c.id}>
+          {CHAPTERS.map((ch, i) => (
+            <li key={ch.id}>
               <button
-                ref={c.id === chapter.id ? active : undefined}
-                className={`wiki__item ${c.id === chapter.id ? 'wiki__item--on' : ''}`}
-                onClick={() => openWiki(c.id)}
+                ref={ch.id === chapter.id ? active : undefined}
+                className={`wiki__item ${ch.id === chapter.id ? 'wiki__item--on' : ''}`}
+                onClick={() => openWiki(ch.id)}
               >
                 <span className="wiki__num">{String(i + 1).padStart(2, '0')}</span>
-                <span className="wiki__name">{c.title}</span>
+                <span className="wiki__name">{text(ch.id).title}</span>
               </button>
             </li>
           ))}
         </ol>
       </aside>
       <div className="wiki__body" ref={body}>
-        <button className="wiki__close drawer__close" onClick={closeWiki} aria-label="Close the wiki">
+        <button className="wiki__close drawer__close" onClick={closeWiki} aria-label={W.close}>
           ×
         </button>
-        <p className="label">
-          Chapter {idx + 1} of {CHAPTERS.length}
-        </p>
-        <h1 className="wiki__title">{chapter.title}</h1>
-        <p className="wiki__lead">{chapter.lead}</p>
+        <p className="label">{W.chapter({ i: idx + 1, n: CHAPTERS.length })}</p>
+        <h1 className="wiki__title">{c.title}</h1>
+        <p className="wiki__lead">{c.lead}</p>
         <div className="wiki__text">
-          {chapter.body.map((p, i) =>
+          {c.body.map((p, i) =>
             p.startsWith('## ') ? (
               <h3 key={i} className="wiki__h3">
                 {p.slice(3)}
@@ -76,18 +79,18 @@ export default function Wiki() {
         <div className="wiki__foot">
           {idx > 0 ? (
             <button className="wiki__step" onClick={() => openWiki(CHAPTERS[idx - 1].id)}>
-              ← {CHAPTERS[idx - 1].title}
+              ← {text(CHAPTERS[idx - 1].id).title}
             </button>
           ) : (
             <span />
           )}
           {idx < CHAPTERS.length - 1 ? (
             <button className="wiki__step" onClick={() => openWiki(CHAPTERS[idx + 1].id)}>
-              {CHAPTERS[idx + 1].title} →
+              {text(CHAPTERS[idx + 1].id).title} →
             </button>
           ) : (
             <button className="wiki__step" onClick={closeWiki}>
-              Back to the mission →
+              {W.back}
             </button>
           )}
         </div>

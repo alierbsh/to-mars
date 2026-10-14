@@ -39,24 +39,26 @@ export interface ScoreboardData {
 
 export type Tone = 'ok' | 'warn' | 'fail' | 'none'
 
-/** the short name and the tone of a cell's result */
-export function cellLabel(c: Pick<ScoreCell, 'outcome' | 'crewed' | 'crewAlive'>): { label: string; tone: Tone } {
+export type CellKey = 'aliveLanded' | 'landed' | 'landedLost' | 'burned' | 'crashed' | 'stuck' | 'noOrbit' | 'orbitOnly' | 'lostTransit' | 'flyby'
+
+/** the short name (a key of the scoreboard's cell names) and the tone of a cell's result */
+export function cellLabel(c: Pick<ScoreCell, 'outcome' | 'crewed' | 'crewAlive'>): { key: CellKey; tone: Tone } {
   switch (c.outcome) {
     case 'landed':
-      return !c.crewed ? { label: 'Landed', tone: 'ok' } : c.crewAlive ? { label: 'Crew landed alive', tone: 'ok' } : { label: 'Landed · crew lost', tone: 'warn' }
+      return !c.crewed ? { key: 'landed', tone: 'ok' } : c.crewAlive ? { key: 'aliveLanded', tone: 'ok' } : { key: 'landedLost', tone: 'warn' }
     case 'burned-up':
-      return { label: 'Burned up', tone: 'fail' }
+      return { key: 'burned', tone: 'fail' }
     case 'crashed':
-      return { label: 'Crashed', tone: 'fail' }
+      return { key: 'crashed', tone: 'fail' }
     case 'failed-tmi':
-      return { label: 'Stuck in Earth orbit', tone: 'warn' }
+      return { key: 'stuck', tone: 'warn' }
     case 'failed-launch':
-      return { label: 'Failed to reach orbit', tone: 'fail' }
+      return { key: 'noOrbit', tone: 'fail' }
     case 'orbit-only':
-      return { label: 'Orbit only', tone: 'warn' }
+      return { key: 'orbitOnly', tone: 'warn' }
     case 'lost-in-transit':
-      return { label: 'Crew lost in transit', tone: 'fail' }
+      return { key: 'lostTransit', tone: 'fail' }
     case 'flyby':
-      return { label: 'Flew past Mars', tone: 'none' }
+      return { key: 'flyby', tone: 'none' }
   }
 }

@@ -1,7 +1,29 @@
-import type { AscentSample, EntrySample, MissionResult, Phase, Vehicle } from '../sim/types'
+import type { AscentSample, EntrySample, MissionResult, Phase, SimEvent, Vehicle } from '../sim/types'
 import { PHASE_RATE, phaseAt } from '../state/store'
 import { norm, sub } from '../sim/vec'
 import { DAY_S } from '../sim/constants'
+import type { Bundle, MarkKey } from '../i18n'
+import type { KeyMsg, Text } from '../i18n/msg'
+
+/** an event's message key ('asc.liftoff', 'leo.tanker'…), and a numeric parameter of its name or detail */
+export function eventKey(e: SimEvent): string | undefined {
+  const l = e.msg?.label
+  return typeof l === 'object' && 'k' in l ? l.k : undefined
+}
+function param(x: Text | undefined, k: string): number | undefined {
+  const v = typeof x === 'object' && 'k' in x ? (x as KeyMsg).p?.[k] : undefined
+  return typeof v === 'number' ? v : undefined
+}
+/** propellant aboard after the latest tanker docking (or the campaign's summary) at or before t, tonnes */
+function aboardAt(r: MissionResult, t: number): number | undefined {
+  for (let i = (r.leo?.events.length ?? 0) - 1; i >= 0; i--) {
+    const e = r.leo!.events[i]
+    if (e.t > t) continue
+    const a = param(e.msg?.detail, 'aboard')
+    if (a !== undefined) return a
+  }
+  return undefined
+}
 
 export interface HudLine {
   label: string
@@ -60,59 +82,59 @@ export function entryAt(r: MissionResult, t: number): EntrySample | undefined {
   return { ...a, t: lerp(a.t, b.t, f), alt: onGround ? 0 : lerp(a.alt, b.alt, f), vel: over ? 0 : lerp(a.vel, b.vel, f), mach: over ? 0 : lerp(a.mach, b.mach, f), gLoad: over ? 0 : lerp(a.gLoad, b.gLoad, f), heatFlux: over ? 0 : lerp(a.heatFlux, b.heatFlux, f), heatLoad: lerp(a.heatLoad, b.heatLoad, f), mass: lerp(a.mass, b.mass, f), downrange: lerp(a.downrange, b.downrange, f), q: over ? 0 : lerp(a.q, b.q, f), fpa: lerp(a.fpa, b.fpa, f), burning: over ? false : f < 0.5 ? a.burning : b.burning }
 }
 
-export function hudAt(r: MissionResult, t: number): HudState {
+export function hudAt(r: MissionResult, t: number, L: Bundle): HudState {
   const p = phaseAt(r, t)
   const frac = Math.max(0, Math.min(1, (t - p.start) / Math.max(p.end - p.start, 1)))
   const lines: HudLine[] = []
-  const out: HudState = { phase: p.phase, phaseLabel: p.label, lines, rate: PHASE_RATE[p.phase], frac }
-  const fmt = (v: number, d = 0) => v.toFixed(d)
+  const out: HudState = { phase: p.phase, phaseLabel: L.t(p.msg ?? p.label), lines, rate: PHASE_RATE[p.phase], frac }
+  const fmt = L.n.f
+  const H = L.ui.hud
   if (p.phase === 'ascent') {
     const a = ascentAt(r, t)
     if (a) {
       out.ascent = a
-      lines.push({ label: 'Speed', value: `${fmt(a.velRel)} m/s` })
-      lines.push({ label: 'Altitude', value: `${fmt(a.alt / 1000, 1)} km` })
-      lines.push({ label: 'Acceleration', value: `${fmt(t - p.start < 0.5 ? 1 : a.accel, 2)} g` })
-      lines.push({ label: 'Mach', value: a.alt < 90_000 ? fmt(a.mach, 1) : '—' })
-      lines.push({ label: 'Mass', value: `${fmt(a.mass / 1000)} t` })
-      lines.push({ label: 'Dynamic pressure', value: `${fmt(a.q / 1000, 1)} kPa` })
+      lines.push({ label: H.speed, value: `${fmt(a.velRel)} m/s` })
+      lines.push({ label: H.altitude, value: `${fmt(a.alt / 1000, 1)} km` })
+      lines.push({ label: H.accel, value: `${fmt(t - p.start < 0.5 ? 1 : a.accel, 2)} g` })
+      lines.push({ label: H.mach, value: a.alt < 90_000 ? fmt(a.mach, 1) : '—' })
+      lines.push({ label: H.mass, value: `${fmt(a.mass / 1000)} t` })
+      lines.push({ label: H.q, value: `${fmt(a.q / 1000, 1)} kPa` })
     }
   } else if (p.phase === 'leo' && r.leo) {
     const days = (t - p.start) / DAY_S
-    const docked = r.leo.events.filter((e) => e.label.startsWith('Tanker') && e.t <= t).length
-    const propEv = [...r.leo.events].reverse().find((e) => e.t <= t && /→ (\d+) t aboard/.test(e.detail))
-    const m = propEv?.detail.match(/→ (\d+) t aboard/)
-    lines.push({ label: 'Propellant aboard', value: m ? `${m[1]} t` : `${fmt(r.ascent.residualProp / 1000)} t` })
-    if (r.config.tankers > 0 && r.leo.tankersLaunched > 0) lines.push({ label: 'Tankers docked', value: `${docked} of ${r.leo.tankersLaunched}` })
-    lines.push({ label: 'Orbit', value: r.ascent.orbit ? `${fmt(r.ascent.orbit.rp)} × ${fmt(r.ascent.orbit.ra)} km` : '—' })
-    lines.push({ label: 'Day in orbit', value: fmt(days) })
+    const docked = r.leo.events.filter((e) => eventKey(e) === 'leo.tanker' && e.t <= t).length
+    const aboard = aboardAt(r, t)
+    lines.push({ label: H.propAboard, value: `${fmt(aboard ?? r.ascent.residualProp / 1000)} t` })
+    if (r.config.tankers > 0 && r.leo.tankersLaunched > 0) lines.push({ label: H.tankers, value: H.of({ a: docked, b: r.leo.tankersLaunched }) })
+    lines.push({ label: H.orbit, value: r.ascent.orbit ? `${fmt(r.ascent.orbit.rp)} × ${fmt(r.ascent.orbit.ra)} km` : '—' })
+    lines.push({ label: H.dayInOrbit, value: fmt(days) })
   } else if (p.phase === 'tmi' && r.transfer) {
-    lines.push({ label: 'Burn', value: 'trans-Mars injection' })
-    lines.push({ label: 'Δv', value: `${r.transfer.dvTmi.toFixed(2)} km/s` })
-    lines.push({ label: 'C3', value: `${r.transfer.c3.toFixed(1)} km²/s²` })
+    lines.push({ label: H.burn, value: H.tmi })
+    lines.push({ label: 'Δv', value: `${fmt(r.transfer.dvTmi, 2)} km/s` })
+    lines.push({ label: 'C3', value: `${fmt(r.transfer.c3, 1)} km²/s²` })
   } else if (p.phase === 'cruise' && r.transfer) {
     const days = (t - p.start) / DAY_S
     const n = r.transfer.samples.length
     const idx = Math.min(n - 1, Math.max(0, Math.floor((days / r.transfer.transitDays) * (n - 1))))
     out.cruiseIndex = idx
     const s = r.transfer.samples[idx]
-    lines.push({ label: 'Day', value: `${fmt(days)} of ${r.transfer.transitDays}` })
-    lines.push({ label: 'From Earth', value: `${fmt(norm(sub(s.ship, s.earth)) / 1e6, 1)} million km` })
-    lines.push({ label: 'To Mars', value: `${fmt(norm(sub(s.ship, s.mars)) / 1e6, 1)} million km` })
+    lines.push({ label: H.day, value: H.of({ a: Math.round(days), b: r.transfer.transitDays }) })
+    lines.push({ label: H.fromEarth, value: H.millionKm({ x: norm(sub(s.ship, s.earth)) / 1e6 }) })
+    lines.push({ label: H.toMars, value: H.millionKm({ x: norm(sub(s.ship, s.mars)) / 1e6 }) })
     if (r.cruise && r.config.crew > 0) {
-      lines.push({ label: 'Radiation so far', value: `${fmt((r.cruise.doseMsv * days) / r.cruise.days)} mSv`, tone: (r.cruise.doseMsv * days) / r.cruise.days > 300 ? 'warn' : undefined })
-      if (r.cruise.consumablesRunOutDay !== null && days > r.cruise.consumablesRunOutDay) lines.push({ label: 'Life support', value: 'exhausted', tone: 'fail' })
+      lines.push({ label: H.radiation, value: `${fmt((r.cruise.doseMsv * days) / r.cruise.days)} mSv`, tone: (r.cruise.doseMsv * days) / r.cruise.days > 300 ? 'warn' : undefined })
+      if (r.cruise.consumablesRunOutDay !== null && days > r.cruise.consumablesRunOutDay) lines.push({ label: H.life, value: H.exhausted, tone: 'fail' })
     }
   } else if (p.phase === 'entry' || p.phase === 'landing') {
     const e = entryAt(r, t)
     if (e) {
       out.entry = e
-      lines.push({ label: 'Speed', value: `${fmt(e.vel)} m/s` })
-      lines.push({ label: 'Altitude', value: `${fmt(e.alt / 1000, 1)} km` })
-      lines.push({ label: e.heatFlux > 2 ? 'Heat flux' : 'Deceleration', value: e.heatFlux > 2 ? `${fmt(e.heatFlux)} W/cm²` : `${fmt(e.gLoad, 1)} g`, tone: e.heatFlux > 2 ? (e.heatFlux > 40 ? 'warn' : undefined) : e.gLoad > r.config.gLimit ? 'fail' : e.gLoad > 0.8 * r.config.gLimit ? 'warn' : undefined })
-      lines.push({ label: 'Mach', value: fmt(e.mach, 1) })
-      lines.push({ label: 'Deceleration', value: `${fmt(e.gLoad, 1)} g` })
-      lines.push({ label: e.burning ? 'Landing burn' : 'Engines', value: e.burning ? 'firing' : 'off' })
+      lines.push({ label: H.speed, value: `${fmt(e.vel)} m/s` })
+      lines.push({ label: H.altitude, value: `${fmt(e.alt / 1000, 1)} km` })
+      lines.push({ label: e.heatFlux > 2 ? H.heat : H.decel, value: e.heatFlux > 2 ? `${fmt(e.heatFlux)} W/cm²` : `${fmt(e.gLoad, 1)} g`, tone: e.heatFlux > 2 ? (e.heatFlux > 40 ? 'warn' : undefined) : e.gLoad > r.config.gLimit ? 'fail' : e.gLoad > 0.8 * r.config.gLimit ? 'warn' : undefined })
+      lines.push({ label: H.mach, value: fmt(e.mach, 1) })
+      lines.push({ label: H.decel, value: `${fmt(e.gLoad, 1)} g` })
+      lines.push({ label: e.burning ? H.landingBurn : H.engines, value: e.burning ? H.firing : H.off })
     }
   }
   return out
@@ -130,37 +152,36 @@ export interface Dial {
 }
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
-const fmtInt = (v: number) => Math.round(v).toLocaleString('en-US')
 
 /** the two round gauges of the lower third, per phase (speed/altitude in flight, the campaign in orbit, the distances in cruise) */
-export function dialsAt(r: MissionResult, t: number): [Dial, Dial] {
+export function dialsAt(r: MissionResult, t: number, L: Bundle): [Dial, Dial] {
   const p = phaseAt(r, t)
+  const D = L.ui.dials
+  const { f, i: fmtInt } = L.n
   if (p.phase === 'ascent') {
     const a = ascentAt(r, t)
     const v = a ? a.velRel * 3.6 : 0
     const alt = a ? a.alt / 1000 : 0
     return [
-      { label: 'Speed', text: fmtInt(v), unit: 'km/h', frac: clamp01(v / 28_000) },
-      { label: 'Altitude', text: alt < 10 ? alt.toFixed(1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 250) },
+      { label: D.speed, text: fmtInt(v), unit: 'km/h', frac: clamp01(v / 28_000) },
+      { label: D.altitude, text: alt < 10 ? f(alt, 1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 250) },
     ]
   }
   if (p.phase === 'leo') {
     const days = (t - p.start) / DAY_S
     const total = Math.max(1, (p.end - p.start) / DAY_S)
-    const propEv = [...(r.leo?.events ?? [])].reverse().find((e) => e.t <= t && /→ (\d+) t aboard/.test(e.detail))
-    const m = propEv?.detail.match(/→ (\d+) t aboard/)
-    const aboard = m ? Number(m[1]) : r.ascent.residualProp / 1000
+    const aboard = aboardAt(r, t) ?? r.ascent.residualProp / 1000
     const need = Math.max(aboard, r.leo ? r.leo.propAtDeparture / 1000 : aboard)
     return [
-      { label: 'Propellant', text: fmtInt(aboard), unit: 't aboard', frac: clamp01(aboard / Math.max(need, 1)) },
-      { label: 'In orbit', text: fmtInt(days), unit: 'days', frac: clamp01(days / total) },
+      { label: D.propellant, text: fmtInt(aboard), unit: D.tAboard, frac: clamp01(aboard / Math.max(need, 1)) },
+      { label: D.inOrbit, text: fmtInt(days), unit: D.days, frac: clamp01(days / total) },
     ]
   }
   if (p.phase === 'tmi' && r.transfer) {
-    const f = clamp01((t - p.start) / Math.max(p.end - p.start, 1))
+    const k = clamp01((t - p.start) / Math.max(p.end - p.start, 1))
     return [
-      { label: 'Burn', text: (r.transfer.dvTmi * f).toFixed(2), unit: 'km/s of ' + r.transfer.dvTmi.toFixed(2), frac: f },
-      { label: 'C3', text: r.transfer.c3.toFixed(1), unit: 'km²/s²', frac: clamp01(r.transfer.c3 / 20) },
+      { label: D.burn, text: f(r.transfer.dvTmi * k, 2), unit: D.kmsOf({ x: r.transfer.dvTmi }), frac: k },
+      { label: 'C3', text: f(r.transfer.c3, 1), unit: 'km²/s²', frac: clamp01(r.transfer.c3 / 20) },
     ]
   }
   if (p.phase === 'cruise' && r.transfer) {
@@ -173,8 +194,8 @@ export function dialsAt(r: MissionResult, t: number): [Dial, Dial] {
     const toMars0 = norm(sub(s0.ship, s0.mars)) / 1e6
     const fromEarth = norm(sub(s.ship, s.earth)) / 1e6
     return [
-      { label: 'To Mars', text: toMars < 10 ? toMars.toFixed(2) : toMars.toFixed(1), unit: 'million km', frac: clamp01(1 - toMars / Math.max(toMars0, 1)) },
-      { label: 'From Earth', text: fromEarth < 10 ? fromEarth.toFixed(2) : fromEarth.toFixed(1), unit: 'million km', frac: clamp01(days / r.transfer.transitDays) },
+      { label: D.toMars, text: f(toMars, toMars < 10 ? 2 : 1), unit: D.millionKm, frac: clamp01(1 - toMars / Math.max(toMars0, 1)) },
+      { label: D.fromEarth, text: f(fromEarth, fromEarth < 10 ? 2 : 1), unit: D.millionKm, frac: clamp01(days / r.transfer.transitDays) },
     ]
   }
   if (p.phase === 'entry' || p.phase === 'landing' || p.phase === 'done') {
@@ -183,13 +204,13 @@ export function dialsAt(r: MissionResult, t: number): [Dial, Dial] {
     const v0 = r.entry ? r.entry.telemetry[0].vel * 3.6 : 25_000
     const alt = e ? e.alt / 1000 : 0
     return [
-      { label: 'Speed', text: fmtInt(v), unit: 'km/h', frac: clamp01(v / Math.max(v0, 1)) },
-      { label: 'Altitude', text: alt < 10 ? alt.toFixed(1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 125) },
+      { label: D.speed, text: fmtInt(v), unit: 'km/h', frac: clamp01(v / Math.max(v0, 1)) },
+      { label: D.altitude, text: alt < 10 ? f(alt, 1) : fmtInt(alt), unit: 'km', frac: clamp01(alt / 125) },
     ]
   }
   return [
-    { label: 'Speed', text: '0', unit: 'km/h', frac: 0 },
-    { label: 'Altitude', text: '0', unit: 'km', frac: 0 },
+    { label: D.speed, text: '0', unit: 'km/h', frac: 0 },
+    { label: D.altitude, text: '0', unit: 'km', frac: 0 },
   ]
 }
 
@@ -249,51 +270,60 @@ export function propFractionAt(r: MissionResult, vehicle: Vehicle, stageId: stri
 export interface Mark {
   t: number
   phase: Phase
-  label: string
+  key: MarkKey
+  /** the tanker's number */
+  n?: number
   tone: 'info' | 'ok' | 'warn' | 'fail'
 }
 
-const SHORT: Array<[RegExp, string]> = [
-  [/^Liftoff/i, 'LIFTOFF'],
-  [/^Mach 1\b/i, 'MACH 1'],
-  [/cutoff & separation/i, 'STAGE SEP'],
-  [/^Landing burn/i, 'LANDING BURN'],
-  [/ ignition$/i, 'IGNITION'],
-  [/^Fairing/i, 'FAIRING'],
-  [/^SECO\b/, 'SECO'],
-  [/^Circularisation/i, 'CIRC BURN'],
-  [/^Parking orbit|parking orbit/i, 'ORBIT'],
-  [/^Tanker (\d+)/i, 'TANKER $1'],
-  [/campaign complete/i, 'FUELLED'],
-  [/window missed|Departure window/i, 'WINDOW MISSED'],
-  [/injection burn/i, 'TMI BURN'],
-  [/injection complete/i, 'TMI'],
-  [/Leaving Earth/i, 'EARTH SOI'],
-  [/^Halfway/i, 'HALFWAY'],
-  [/^Radiation/i, 'RADIATION'],
-  [/Entering Mars/i, 'MARS SOI'],
-  [/flyby/i, 'FLYBY'],
-  [/^Entry interface/i, 'ENTRY'],
-  [/^Peak heating/i, 'PEAK HEAT'],
-  [/^Peak deceleration/i, 'PEAK G'],
-  [/^Pull-out/i, 'PULL-OUT'],
-  [/^Touchdown/i, 'TOUCHDOWN'],
-  [/^Impact/i, 'IMPACT'],
-  [/exhausted/i, 'PROP OUT'],
-  [/^Life support/i, 'LIFE SUPPORT'],
-  [/^Hatch opens/i, 'HATCH'],
-  [/^First boots/i, 'FIRST STEPS'],
-  [/^The flag/i, 'FLAG'],
-  [/^Habitat/i, 'HABITAT'],
-  [/^Power on/i, 'POWER'],
-]
+/** the timeline mark each kind of event makes (events not listed make none) */
+const MARK_OF: Record<string, MarkKey> = {
+  'asc.liftoff': 'liftoff',
+  'asc.mach1': 'mach1',
+  'asc.coreSep': 'stageSep',
+  'en.burn': 'landingBurn',
+  'asc.ignition': 'ignition',
+  'asc.fairing': 'fairing',
+  'asc.seco': 'seco',
+  'asc.seco1': 'seco',
+  'asc.circ': 'circ',
+  'asc.circFail': 'circ',
+  'leo.parking': 'orbit',
+  'leo.ship': 'orbit',
+  'leo.tanker': 'tanker',
+  'leo.done': 'fuelled',
+  'leo.missed': 'windowMissed',
+  'tmi.missed': 'windowMissed',
+  'tmi.burn': 'tmiBurn',
+  'cr.tmi': 'tmi',
+  'cr.earthSoi': 'earthSoi',
+  'cr.half': 'halfway',
+  'cr.rad': 'radiation',
+  'cr.marsSoi': 'marsSoi',
+  flyby: 'flyby',
+  'en.interface': 'entry',
+  'en.peakHeat': 'peakHeat',
+  'en.peakG': 'peakG',
+  'en.pullout': 'pullout',
+  'en.touchdown': 'touchdown',
+  'asc.impact': 'impact',
+  'en.impact': 'impact',
+  'en.propOut': 'propOut',
+  'en.propOutBurn': 'propOut',
+  'cr.lifeOut': 'lifeSupport',
+  'cr.consOut': 'lifeSupport',
+  'cr.life': 'lifeSupport',
+  'surf.hatch': 'hatch',
+  'surf.boots': 'firstSteps',
+  'surf.flag': 'flag',
+  'surf.habitat': 'habitat',
+  'surf.power': 'power',
+}
 
-function shortLabel(label: string): string | null {
-  for (const [re, s] of SHORT) {
-    const m = label.match(re)
-    if (m) return s.replace('$1', m[1] ?? '')
-  }
-  return null
+/** a mark's name in a language */
+export function markLabel(m: Mark, L: Bundle): string {
+  const s = L.ui.marks[m.key]
+  return typeof s === 'function' ? s({ n: m.n ?? 0 }) : s
 }
 
 /** the timeline's event marks: the major moments of each phase, short webcast-style names, at most 4 per phase */
@@ -304,18 +334,19 @@ export function marksAt(r: MissionResult): Mark[] {
   if (asc && r.ascent.telemetry.length) {
     let best = r.ascent.telemetry[0]
     for (const s of r.ascent.telemetry) if (s.q > best.q) best = s
-    if (best.q > 1000) out.push({ t: asc.start + best.t, phase: 'ascent', label: 'MAX-Q', tone: 'info' })
+    if (best.q > 1000) out.push({ t: asc.start + best.t, phase: 'ascent', key: 'maxq', tone: 'info' })
   }
   for (const e of r.events) {
-    const s = shortLabel(e.label)
-    if (!s) continue
-    out.push({ t: e.t, phase: e.phase as Phase, label: s, tone: e.severity as Mark['tone'] })
+    const k = eventKey(e)
+    const key = k ? MARK_OF[k] : undefined
+    if (!key) continue
+    out.push({ t: e.t, phase: e.phase as Phase, key, n: key === 'tanker' ? param(e.msg?.label, 'n') : undefined, tone: e.severity as Mark['tone'] })
   }
   // keep ≤ 4 per phase: failures and warnings first, then the rest in time order
   const byPhase = new Map<Phase, Mark[]>()
   for (const m of out) byPhase.set(m.phase, [...(byPhase.get(m.phase) ?? []), m])
   const keep: Mark[] = []
-  const rank = (m: Mark) => (m.tone === 'fail' ? 0 : m.tone === 'warn' ? 1 : m.label === 'LIFTOFF' ? 3 : 2)
+  const rank = (m: Mark) => (m.tone === 'fail' ? 0 : m.tone === 'warn' ? 1 : m.key === 'liftoff' ? 3 : 2)
   for (const [phase, list] of byPhase) {
     const p = r.phases.find((x) => x.phase === phase)
     const span = p ? Math.max(p.end - p.start, 1) : 1
@@ -339,25 +370,35 @@ export function marksAt(r: MissionResult): Mark[] {
  */
 export interface Moment {
   t: number
-  label: string
+  /** what the clock names it: a moment kind (with the tanker's number), or the event itself (an ascent failure) */
+  key: keyof Bundle['ui']['moments'] | null
+  n?: number
+  event?: Text
   before: number
   after: number
   rate: number
 }
 
+/** a moment's name in a language */
+export function momentLabel(m: Moment, L: Bundle): string {
+  if (!m.key) return L.t(m.event)
+  const s = L.ui.moments[m.key]
+  return typeof s === 'function' ? s({ n: m.n ?? 0 }) : s
+}
+
 export function momentsAt(r: MissionResult): Moment[] {
   const out: Moment[] = []
   for (const e of r.events) {
-    const l = e.label
-    if (/cutoff & separation$/i.test(l)) out.push({ t: e.t, label: 'Stage separation', before: 3, after: 7, rate: 1 })
-    else if (/ separation$/i.test(l)) out.push({ t: e.t, label: 'Booster separation', before: 3, after: 6, rate: 1 })
-    else if (/^Fairing jettison/i.test(l)) out.push({ t: e.t, label: 'Fairing jettison', before: 1.5, after: 3, rate: 1 })
-    else if (/^SECO\b/.test(l)) out.push({ t: e.t, label: 'Engine cutoff — orbit', before: 3, after: 2.5, rate: 1 })
-    else if (/^Circularisation burn/i.test(l)) out.push({ t: e.t, label: 'Circularisation burn', before: 2, after: 3, rate: 1 })
-    else if (/^Tanker \d+ docks/i.test(l)) out.push({ t: e.t, label: l.replace(' docks', ' docking'), before: 1.5 * DAY_S, after: 0.8 * DAY_S, rate: 0.35 * DAY_S })
-    else if (/^Trans-Mars injection burn/i.test(l)) out.push({ t: e.t, label: 'Trans-Mars injection', before: 2, after: 7, rate: 1 })
-    else if (/^Peak heating/i.test(l)) out.push({ t: e.t, label: 'Peak heating', before: 3, after: 4, rate: 1 })
-    else if (e.severity === 'fail' && e.phase === 'ascent') out.push({ t: e.t, label: l, before: 3, after: 4, rate: 1 })
+    const k = eventKey(e)
+    if (k === 'asc.coreSep') out.push({ t: e.t, key: 'stageSep', before: 3, after: 7, rate: 1 })
+    else if (k === 'asc.boosterSep') out.push({ t: e.t, key: 'boosterSep', before: 3, after: 6, rate: 1 })
+    else if (k === 'asc.fairing') out.push({ t: e.t, key: 'fairing', before: 1.5, after: 3, rate: 1 })
+    else if (k === 'asc.seco' || k === 'asc.seco1') out.push({ t: e.t, key: 'seco', before: 3, after: 2.5, rate: 1 })
+    else if (k === 'asc.circ') out.push({ t: e.t, key: 'circ', before: 2, after: 3, rate: 1 })
+    else if (k === 'leo.tanker') out.push({ t: e.t, key: 'docking', n: param(e.msg?.label, 'n'), before: 1.5 * DAY_S, after: 0.8 * DAY_S, rate: 0.35 * DAY_S })
+    else if (k === 'tmi.burn') out.push({ t: e.t, key: 'tmi', before: 2, after: 7, rate: 1 })
+    else if (k === 'en.peakHeat') out.push({ t: e.t, key: 'peakHeat', before: 3, after: 4, rate: 1 })
+    else if (e.severity === 'fail' && e.phase === 'ascent') out.push({ t: e.t, key: null, event: e.msg?.label ?? e.label, before: 3, after: 4, rate: 1 })
   }
   return out.sort((a, b) => a.t - b.t)
 }

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
+import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { describeMission } from './share'
 import { sound } from '../audio/sound'
+import { LangList } from './LangPicker'
+import { vehicleTexts } from './texts'
 
 const BASE_URL = import.meta.env.BASE_URL
 const SPEEDS = [0.5, 1, 2, 4, 10]
@@ -22,15 +25,17 @@ export default function Intro() {
 }
 
 function Start() {
+  const L = useT()
+  const I = L.ui.intro
   const setIntro = useAppStore((s) => s.setIntro)
   return (
     <section className="intro__panel intro__panel--start">
-      <p className="label">Occupy Mars</p>
-      <h1 className="intro__title">Why a city on Mars?</h1>
+      <p className="label">{I.brand}</p>
+      <h1 className="intro__title">{I.title}</h1>
       <div className="intro__text">
-        <p>Every living thing that has ever existed has lived on one planet. One asteroid, one supervolcano, one bad century — and the whole story ends. A second world is the first real insurance policy life has ever been offered.</p>
-        <p>Mars is the only candidate within reach: a day almost the length of ours, water locked up as ice, carbon dioxide to make fuel and oxygen from, enough sunlight for crops under glass. Not a home yet. A frontier that can become one.</p>
-        <p>Nobody has flown there. This is a physics simulation of whether the rockets we have today — real masses, real engines, real orbital mechanics — could carry a crew to the surface alive, and what breaks first when they can't.</p>
+        {I.text.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
       </div>
       <button
         className="intro__cta"
@@ -39,17 +44,20 @@ function Start() {
           setIntro('pick')
         }}
       >
-        Start the physics, motors and engines
+        {I.cta}
       </button>
       <button className="intro__alt" onClick={() => useAppStore.getState().openBoard()}>
-        Or see how all six rockets do first →
+        {I.toBoard}
       </button>
-      <p className="intro__foot">Simulation runs in your browser. Drag to look around, scroll to zoom.</p>
+      <p className="intro__foot">{I.foot}</p>
+      <LangList className="intro__langs" />
     </section>
   )
 }
 
 function Pick() {
+  const L = useT()
+  const I = L.ui.intro
   const current = useAppStore((s) => s.config.vehicleId)
   const config = useAppStore((s) => s.config)
   const pickFrom = useAppStore((s) => s.pickFrom)
@@ -61,39 +69,42 @@ function Pick() {
     <section className="intro__panel intro__panel--pick">
       {pickFrom ? (
         <>
-          <p className="label label--rust">{pickFrom === 'shared' ? 'Someone sent you a mission' : 'From the scoreboard'}</p>
-          <h1 className="intro__title">{describeMission(config)}</h1>
-          <p className="intro__shared">Launch it to see what happens — or pick another ship.</p>
+          <p className="label label--rust">{pickFrom === 'shared' ? I.shared : I.fromBoard}</p>
+          <h1 className="intro__title">{describeMission(config, L)}</h1>
+          <p className="intro__shared">{I.sharedHint}</p>
         </>
       ) : (
         <>
-          <p className="label">Step 1 of 2</p>
-          <h1 className="intro__title">Choose your ship</h1>
+          <p className="label">{I.step}</p>
+          <h1 className="intro__title">{I.choose}</h1>
         </>
       )}
       <ul className="ships">
-        {VEHICLES.map((s) => (
-          <li key={s.id}>
-            <button className={`ship ${s.id === vehicleId ? 'ship--on' : ''}`} onClick={() => setVehicleId(s.id)}>
-              <img className="ship__img" src={`${BASE_URL}assets/ships/${s.id}.jpg`} alt="" />
-              <span className="ship__name">{s.short}</span>
-              <span className="ship__meta">{s.badge}</span>
-              <span className="ship__line">{s.tagline}</span>
-            </button>
-          </li>
-        ))}
+        {VEHICLES.map((s) => {
+          const st = vehicleTexts(s.id, L)
+          return (
+            <li key={s.id}>
+              <button className={`ship ${s.id === vehicleId ? 'ship--on' : ''}`} onClick={() => setVehicleId(s.id)}>
+                <img className="ship__img" src={`${BASE_URL}assets/ships/${s.id}.jpg`} alt="" />
+                <span className="ship__name">{st.short}</span>
+                <span className="ship__meta">{st.badge}</span>
+                <span className="ship__line">{st.tagline}</span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
       <div className="intro__row">
         <div>
-          <p className="label">Time speed</p>
-          <div className="speedpick" role="group" aria-label="Time speed">
+          <p className="label">{I.timeSpeed}</p>
+          <div className="speedpick" role="group" aria-label={I.timeSpeed}>
             {SPEEDS.map((sp) => (
               <button key={sp} className={`speedpick__item ${sp === speed ? 'speedpick__item--on' : ''}`} onClick={() => setSpeed(sp)}>
-                {sp}×{sp === RECOMMENDED && <span className="speedpick__tag">Recommended</span>}
+                {L.n.n(sp)}×{sp === RECOMMENDED && <span className="speedpick__tag">{I.recommended}</span>}
               </button>
             ))}
           </div>
-          <p className="hint">For the orbit and the cruise. Liftoff always plays at 1×, and the clock drops back to real time for the moments that matter — staging, orbit insertion, the dockings, the departure burn, peak heating — then speeds up again. Entry, descent and landing never faster than 2×.</p>
+          <p className="hint">{I.speedHint}</p>
         </div>
         <button
           className="intro__cta"
@@ -102,7 +113,7 @@ function Pick() {
             launch(vehicleId, speed)
           }}
         >
-          Launch {v.short}
+          {I.launch({ ship: vehicleTexts(v.id, L).short })}
         </button>
       </div>
     </section>
@@ -110,6 +121,7 @@ function Pick() {
 }
 
 function Countdown() {
+  const L = useT()
   const ignite = useAppStore((s) => s.ignite)
   const status = useAppStore((s) => s.status)
   const [n, setN] = useState(5)
@@ -128,13 +140,13 @@ function Countdown() {
   return (
     <div className="countdown" aria-live="assertive">
       {status !== 'done' ? (
-        <p className="label">Running the physics…</p>
+        <p className="label">{L.ui.intro.running}</p>
       ) : n > 0 ? (
         <span className="countdown__n" key={n}>
           {n}
         </span>
       ) : (
-        <span className="countdown__go">Ignition</span>
+        <span className="countdown__go">{L.ui.intro.ignition}</span>
       )}
     </div>
   )

@@ -21,7 +21,9 @@
   --rust: #c8552f;
   --steel: #8fb8e8;
 
-  --font: 'Instrument Sans', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  /* Instrument Sans for the Latin scripts; हिन्दी falls through to Noto Sans Devanagari (loaded
+     with the language), 中文 to the system's CJK face */
+  --font: 'Instrument Sans', 'Noto Sans Devanagari', -apple-system, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', 'Source Han Sans SC', 'Nirmala UI', 'Kohinoor Devanagari', sans-serif;
   --r: 14px;
   --r-s: 8px;
   --drawer-w: 400px;
@@ -104,6 +106,26 @@ ul, ol { padding: 0; list-style: none; }
 .pill--on { background: var(--t1); color: #000; border-color: var(--t1); }
 .pill--icon { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 50%; }
 .pill--muted { color: var(--t3); }
+
+/* ---------- languages: the globe pill and its menu; the plain list on the opening screen and in settings ---------- */
+.langmenu { position: relative; }
+.pill--lang { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; }
+.pill__code { font-size: 11px; letter-spacing: 0.08em; line-height: 1; }
+.langmenu__list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; min-width: 160px; padding: 6px; border-radius: 12px; background: var(--glass-2); border: 1px solid var(--line-2); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); display: flex; flex-direction: column; gap: 1px; }
+.langmenu__item { display: block; width: 100%; text-align: left; padding: 8px 12px; border-radius: 8px; font-size: 13.5px; color: var(--t2); transition: background 0.15s, color 0.15s; }
+.langmenu__item:hover { background: rgba(255, 255, 255, 0.07); color: var(--t1); }
+.langmenu__item--on { color: var(--t1); background: rgba(255, 255, 255, 0.1); }
+.langlist { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--t3); font-size: 12.5px; }
+.langlist > svg { flex: none; margin-right: -6px; }
+.langlist__item { color: var(--t3); padding: 2px 0; border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s; }
+.langlist__item:hover { color: var(--t1); }
+.langlist__item--on { color: var(--t1); border-bottom-color: var(--t2); }
+.langlist--chips { margin-top: 8px; font-size: 13px; }
+.intro__langs { margin-top: 26px; }
+
+/* scripts without capitals: no tracking (it breaks Devanagari's headline stroke and spreads Chinese apart),
+   and the smallest labels a little larger */
+:lang(hi) *, :lang(zh) * { letter-spacing: 0 !important; }
 
 /* ---------- verdict card ---------- */
 .verdict {
@@ -397,8 +419,10 @@ ul, ol { padding: 0; list-style: none; }
   .pill { padding: 6px 10px; font-size: 11px; letter-spacing: 0.04em; }
   /* the mute button moves down to the badge's row, at its right end */
   .pill--icon { width: 30px; height: 30px; position: absolute; right: 12px; bottom: 13px; }
+  .langmenu { position: absolute; right: 48px; bottom: 13px; }
+  .pill--lang { height: 30px; padding: 0 9px; gap: 5px; }
   .pill--board { display: none; }
-  .craft { grid-column: 1 / -1; grid-row: 2; justify-self: start; max-width: calc(100% - 40px); }
+  .craft { grid-column: 1 / -1; grid-row: 2; justify-self: start; max-width: calc(100% - 110px); }
   .status { display: none; }
   /* the verdict as a strip above the lower third; the lower third as two compact rows:
      dials · clock · controls, then the timeline */

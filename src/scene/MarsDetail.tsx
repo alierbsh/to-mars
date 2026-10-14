@@ -9,6 +9,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useAppStore } from '../state/store'
+import { useT } from '../i18n'
 import { SPIRIT_LANDER, dustDevils, type MarsSite, type Rock } from './marsSite'
 import { fbm, hash2 } from './noise'
 import { canvasTexture } from './terrain'
@@ -244,6 +245,7 @@ const lander = {
  * the deflated airbags around it. 2.65 m across the base platform; the petals reach ~5 m.
  */
 export function SpiritLander({ site }: { site: MarsSite }) {
+  const L = useT()
   const { x, z, heading } = SPIRIT_LANDER
   const y = site.nearHeight(x, z)
   const petal = useMemo(() => {
@@ -295,8 +297,8 @@ export function SpiritLander({ site }: { site: MarsSite }) {
       </mesh>
       <Html position={[0, 2.2, 0]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
         <div ref={label} className="label3d label3d--site">
-          <span className="label3d__title">Columbia Memorial Station</span>
-          <span className="label3d__sub">Spirit's lander · 4 January 2004</span>
+          <span className="label3d__title">{L.ui.scene.site}</span>
+          <span className="label3d__sub">{L.ui.scene.siteSub}</span>
         </div>
       </Html>
     </group>

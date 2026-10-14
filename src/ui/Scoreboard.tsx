@@ -7,27 +7,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import data from '../data/scoreboard.json'
+import { useT, type Bundle } from '../i18n'
 import { PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import { useAppStore } from '../state/store'
 import { cellConfig, cellLabel, type ScoreCell, type ScoreboardData } from './scoreboardTypes'
+import { presetTexts, vehicleTexts, windowTexts } from './texts'
 
 const BOARD = data as ScoreboardData
 
-/** "arrival v∞ 2.7 km/s" from a window's note */
-function arrival(note: string): string {
+/** the arrival speed at Mars, from a window's note ("arrival v∞ 2.7 km/s") */
+function arrivalSpeed(note: string): number | null {
   const m = note.match(/arrival v∞ ([\d.]+) km\/s/)
-  return m ? `arrives at ${m[1]} km/s` : ''
+  return m ? Number(m[1]) : null
 }
 
-function crewLine(c: ScoreCell): string | null {
-  if (!c.crewed) return 'Uncrewed'
-  if (c.crewLostDay != null) return `Crew lost on day ${c.crewLostDay} of ${c.tripDays} — life support`
-  if (c.outcome === 'failed-tmi') return 'Crew safe in Earth orbit'
+function crewLine(c: ScoreCell, L: Bundle): string | null {
+  const B = L.ui.board
+  if (!c.crewed) return B.uncrewed
+  if (c.crewLostDay != null) return B.crewLost({ day: c.crewLostDay, days: c.tripDays ?? 0 })
+  if (c.outcome === 'failed-tmi') return B.crewSafe
   return null
 }
 
 export default function Scoreboard() {
+  const L = useT()
+  const B = L.ui.board
   const closeBoard = useAppStore((s) => s.closeBoard)
   const flyMission = useAppStore((s) => s.flyMission)
   const config = useAppStore((s) => s.config)
@@ -54,34 +59,32 @@ export default function Scoreboard() {
   const aliveBy = (id: string) => BOARD.cells.filter((c) => c.presetId === id && c.crewed && c.crewAlive && c.outcome === 'landed').length
 
   return (
-    <div className="board" role="dialog" aria-label="Scoreboard">
+    <div className="board" role="dialog" aria-label={B.aria}>
       <div className="board__inner">
-        <button className="board__close drawer__close" onClick={closeBoard} aria-label="Close the scoreboard">
+        <button className="board__close drawer__close" onClick={closeBoard} aria-label={B.close}>
           ×
         </button>
-        <p className="label">Scoreboard</p>
-        <h1 className="board__title">Which rockets get a crew to Mars alive?</h1>
-        <p className="board__lead">
-          Every rocket, every departure window from 2026 to 2035, under three sets of assumptions — {BOARD.cells.length} missions, run with the same physics as the simulation.
-        </p>
+        <p className="label">{B.label}</p>
+        <h1 className="board__title">{B.title}</h1>
+        <p className="board__lead">{B.lead({ n: BOARD.cells.length })}</p>
 
-        <div className="board__presets" role="group" aria-label="Assumptions">
+        <div className="board__presets" role="group" aria-label={B.assumptions}>
           {PRESETS.map((p) => (
             <button key={p.id} className={`chip ${p.id === presetId ? 'chip--on' : ''}`} onClick={() => setPresetId(p.id)}>
-              {p.name} <span className="board__count">{aliveBy(p.id)}</span>
+              {presetTexts(p.id, L).name} <span className="board__count">{aliveBy(p.id)}</span>
             </button>
           ))}
         </div>
         <p className="hint board__hint">
-          {preset.blurb} These assumptions only change Starship — it is the only ship here that refuels in orbit.
+          {presetTexts(preset.id, L).blurb} {B.starshipOnly}
         </p>
 
         <p className="board__summary">
           <span className={`board__big ${alive > 0 ? 'board__big--ok' : 'board__big--fail'}`}>{alive}</span>
           <span>
-            of {crewedTotal} crewed missions land with the crew alive
+            {B.summary({ n: crewedTotal })}
             <span className="board__sub">
-              {alive === 0 ? `none of the ${VEHICLES.length} rockets makes it under ${preset.name.toLowerCase()}` : aliveShips.length === 1 ? `all of them ${VEHICLES.find((v) => v.id === aliveShips[0])?.short}` : aliveShips.map((id) => VEHICLES.find((v) => v.id === id)?.short).join(', ')}
+              {alive === 0 ? B.none({ n: VEHICLES.length, preset: presetTexts(preset.id, L).name }) : aliveShips.length === 1 ? B.allOf({ ship: vehicleTexts(aliveShips[0], L).short }) : aliveShips.map((id) => vehicleTexts(id, L).short).join(', ')}
             </span>
           </span>
         </p>
@@ -91,55 +94,61 @@ export default function Scoreboard() {
             <thead>
               <tr>
                 <th className="board__corner" scope="col">
-                  <span className="label">Rocket</span>
+                  <span className="label">{B.rocket}</span>
                 </th>
-                {WINDOWS.map((w) => (
-                  <th key={w.id} scope="col" className={windowNow?.id === w.id ? 'board__th--now' : ''}>
-                    <span className="board__win">{w.label}</span>
-                    <span className="board__winsub">{arrival(w.note)}</span>
-                  </th>
-                ))}
+                {WINDOWS.map((w) => {
+                  const v = arrivalSpeed(w.note)
+                  return (
+                    <th key={w.id} scope="col" className={windowNow?.id === w.id ? 'board__th--now' : ''}>
+                      <span className="board__win">{windowTexts(w.id, L).label}</span>
+                      <span className="board__winsub">{v != null ? B.arrives({ v }) : ''}</span>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
-              {VEHICLES.map((v) => (
-                <tr key={v.id}>
-                  <th scope="row" className="board__rowhead">
-                    <span className="board__ship">{v.short}</span>
-                    <span className="board__badge">{v.badge}</span>
-                  </th>
-                  {WINDOWS.map((w) => {
-                    const c = cells.find((x) => x.vehicleId === v.id && x.windowId === w.id)
-                    if (!c) return <td key={w.id} />
-                    const { label, tone } = cellLabel(c)
-                    const crew = crewLine(c)
-                    const here = config.vehicleId === v.id && windowNow?.id === w.id && (current?.id === presetId || !v.refuelable)
-                    return (
-                      <td key={w.id}>
-                        <button
-                          className={`cell cell--${tone} ${here ? 'cell--here' : ''}`}
-                          onClick={() => flyMission(cellConfig(v.id, presetId, w.id), 'scoreboard')}
-                          title={`${c.headline}. ${c.detail}${crew ? ` ${crew}.` : ''} — click to fly this mission`}
-                        >
-                          <span className="cell__label">
-                            <span className="cell__dot" aria-hidden="true" />
-                            {label}
-                          </span>
-                          <span className="cell__detail">{c.detail}</span>
-                          {crew && <span className="cell__crew">{crew}</span>}
-                        </button>
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+              {VEHICLES.map((v) => {
+                const vt = vehicleTexts(v.id, L)
+                return (
+                  <tr key={v.id}>
+                    <th scope="row" className="board__rowhead">
+                      <span className="board__ship">{vt.short}</span>
+                      <span className="board__badge">{vt.badge}</span>
+                    </th>
+                    {WINDOWS.map((w) => {
+                      const c = cells.find((x) => x.vehicleId === v.id && x.windowId === w.id)
+                      if (!c) return <td key={w.id} />
+                      const { key, tone } = cellLabel(c)
+                      const crew = crewLine(c, L)
+                      const here = config.vehicleId === v.id && windowNow?.id === w.id && (current?.id === presetId || !v.refuelable)
+                      const headline = L.t(c.msg?.headline ?? c.headline)
+                      const detail = L.t(c.msg?.summary ?? c.detail)
+                      return (
+                        <td key={w.id}>
+                          <button
+                            className={`cell cell--${tone} ${here ? 'cell--here' : ''}`}
+                            onClick={() => flyMission(cellConfig(v.id, presetId, w.id), 'scoreboard')}
+                            title={B.cellTitle({ headline, detail, crew: crew ?? '' })}
+                          >
+                            <span className="cell__label">
+                              <span className="cell__dot" aria-hidden="true" />
+                              {B.cells[key]}
+                            </span>
+                            <span className="cell__detail">{detail}</span>
+                            {crew && <span className="cell__crew">{crew}</span>}
+                          </button>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
 
-        <p className="board__foot">
-          Crew of {BOARD.crew} where the ship carries one (fewer if its capsule seats fewer). The weather at Mars is drawn from the storm record for each arrival date. Computed {BOARD.generated}. Click a mission to fly it.
-        </p>
+        <p className="board__foot">{B.foot({ crew: BOARD.crew, date: L.n.date(BOARD.generated) })}</p>
       </div>
     </div>
   )

@@ -1,12 +1,15 @@
-export const fmtT = (t: number): string => {
+import type { Bundle } from '../i18n'
+
+/** the mission clock: T+m:ss, then T+hours, then the mission day */
+export const fmtT = (t: number, L: Bundle): string => {
   if (t < 0) t = 0
   if (t < 3600) {
     const m = Math.floor(t / 60)
     const s = Math.floor(t % 60)
     return `T+${m}:${s.toString().padStart(2, '0')}`
   }
-  if (t < 86_400 * 2) return `T+${(t / 3600).toFixed(1)} h`
-  return `day ${Math.floor(t / 86_400)}`
+  if (t < 86_400 * 2) return `T+${L.n.f(t / 3600, 1)} h`
+  return L.ui.clockDay({ n: Math.floor(t / 86_400) })
 }
 
 export const fmtDur = (s: number): string => {
@@ -16,7 +19,7 @@ export const fmtDur = (s: number): string => {
   return `${(s / 86_400).toFixed(0)} days`
 }
 
-export const tonnes = (kg: number, d = 0): string => `${(kg / 1000).toFixed(d)} t`
+export const tonnes = (kg: number, L: Bundle, d = 0): string => `${L.n.f(kg / 1000, d)} t`
 export const km = (m: number, d = 0): string => `${(m / 1000).toFixed(d)} km`
 export const ms = (v: number): string => `${v.toFixed(0)} m/s`
 export const kms = (v: number, d = 2): string => `${v.toFixed(d)} km/s`

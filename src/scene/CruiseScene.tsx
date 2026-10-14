@@ -9,10 +9,12 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { julianDate, planetPosition } from '../sim/ephemeris'
 import { useAppStore } from '../state/store'
+import { useT } from '../i18n'
 
 const U = 1e-6 // km → scene units
 
 export default function CruiseScene() {
+  const L = useT()
   const result = useAppStore((s) => s.result)
   const tr = result?.transfer ?? null
   const earth = useRef<THREE.Group>(null)
@@ -81,21 +83,21 @@ export default function CruiseScene() {
           <sphereGeometry args={[4.5, 24, 24]} />
           <meshStandardMaterial color="#3f7fd6" roughness={0.7} />
         </mesh>
-        <Html center distanceFactor={600} className="label3d">Earth</Html>
+        <Html center distanceFactor={600} className="label3d">{L.ui.scene.earth}</Html>
       </group>
       <group ref={mars}>
         <mesh>
           <sphereGeometry args={[3.6, 24, 24]} />
           <meshStandardMaterial color="#c8552f" roughness={0.9} />
         </mesh>
-        <Html center distanceFactor={600} className="label3d">Mars</Html>
+        <Html center distanceFactor={600} className="label3d">{L.ui.scene.mars}</Html>
       </group>
       <group ref={ship}>
         <mesh>
           <sphereGeometry args={[2.2, 12, 12]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
-        <Html center distanceFactor={600} className="label3d">Ship</Html>
+        <Html center distanceFactor={600} className="label3d">{L.ui.scene.ship}</Html>
       </group>
       <ambientLight intensity={0.25} />
     </group>
