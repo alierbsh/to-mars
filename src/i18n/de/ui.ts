@@ -219,7 +219,7 @@ export const UI: UiCatalog = {
     peopleAboard: 'People aboard',
     /** sc: the crew vehicle's name; days: its life support, 0 when sized from the cargo */
     crewNote: (p: { sc: string; max: number; days: number }) => `${p.sc}: up to ${p.max}${p.days > 0 ? `, ${p.days} days of life support` : ''}`,
-    noCrew: (p: { sc: string }) => `No crew vehicle exists for this rocket — it flies a ${p.sc.toLowerCase()}.`,
+    noCrew: (p: { sc: string }) => `No crew vehicle exists for this rocket — it flies a ${p.sc.charAt(0).toLowerCase()}${p.sc.slice(1)}.`,
     assumptions: 'Assumptions',
     assumptionsHint: 'Four numbers nobody has measured decide the verdict: propellant per tanker, boil-off, launch cadence, tile limit. Pick a set.',
     advanced: 'Advanced',
@@ -332,7 +332,7 @@ export const UI: UiCatalog = {
     starshipOnly: 'These assumptions only change Starship — it is the only ship here that refuels in orbit.',
     /** after the big number: "of 25 crewed missions land with the crew alive" */
     summary: (p: { n: number }) => `of ${p.n} crewed missions land with the crew alive`,
-    none: (p: { n: number; preset: string }) => `none of the ${p.n} rockets makes it under ${p.preset.toLowerCase()}`,
+    none: (p: { n: number; preset: string }) => `none of the ${p.n} rockets makes it under “${p.preset}”`,
     allOf: (p: { ship: string }) => `all of them ${p.ship}`,
     rocket: 'Rocket',
     /** under a window: the arrival speed at Mars */

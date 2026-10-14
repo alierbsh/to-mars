@@ -235,7 +235,7 @@ export const SIM = {
     `Peak heating ${f(p.q)} W/cm² — past the ${f(p.lim)} W/cm² the ${p.tps} are rated for${p.alt != null && p.v != null ? ` (first exceeded at ${f(p.alt)} km, ${f(p.v)} m/s)` : ''}.`,
   'v.tipped': (p: { ship: string }) => `${p.ship} lands on Mars — and tips over`,
   /** detail: how it tipped */
-  'v.tipped.s': (p: { detail: string }) => `${p.detail}. The crew likely survives the fall; the ship, the habitat and any return do not.`,
+  'v.tipped.s': (p: { detail: string }) => `${p.detail.charAt(0).toUpperCase()}${p.detail.slice(1)}. The crew likely survives the fall; the ship, the habitat and any return do not.`,
   'v.skipped': (p: { ship: string }) => `${p.ship} skips off the atmosphere`,
   'v.crashed': (p: { ship: string }) => `${p.ship} crashes on Mars`,
   /** what: 'v.what.capsule' or 'v.what.ship'; impact: speed at the ground, m/s */

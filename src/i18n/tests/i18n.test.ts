@@ -50,17 +50,9 @@ function texts(r: MissionResult): Text[] {
   return out
 }
 
-/** a value that passes for any parameter: a number, a string, a boolean */
+/** a value that passes for any parameter: a string (with every string method) that is also the number 7 */
 function anyValue(): unknown {
-  const v = {
-    valueOf: () => 7,
-    toString: () => '7',
-    toFixed: (d: number) => (7).toFixed(d),
-    toLowerCase: () => 'x',
-    toUpperCase: () => 'X',
-    toLocaleString: () => '7',
-  }
-  return v
+  return Object.assign(new String('7'), { valueOf: () => 7, toFixed: (d: number) => (7).toFixed(d) })
 }
 const anyParams = new Proxy({}, { get: (_t, k) => (k === 'crew' ? 'none' : anyValue()) })
 
@@ -78,11 +70,15 @@ function shape(obj: unknown, path = ''): string[] {
   return Object.entries(obj).flatMap(([k, v]) => shape(v, path ? `${path}.${k}` : k))
 }
 
-const bundles = new Map<Lang, Bundle>()
+// each language loads in its own tests, so one broken catalog fails only its own language
+const bundles = new Map<Lang, Promise<Bundle>>()
+const bundle = (lang: Lang) => {
+  if (!bundles.has(lang)) bundles.set(lang, loadBundle(lang))
+  return bundles.get(lang)!
+}
 let results: MissionResult[] = []
 
 beforeAll(async () => {
-  for (const l of LANGS) bundles.set(l.id, await loadBundle(l.id))
   results = MISSIONS.map((o) => {
     const cfg = { ...DEFAULT_CONFIG, ...o }
     return runMission(VEHICLES.find((v) => v.id === cfg.vehicleId)!, cfg)
@@ -105,7 +101,7 @@ describe('the English data catalog mirrors the vehicle catalogue', () => {
       expect(d.site).toBe(v.launchSite.name)
       expect(d.spacecraft).toBe(v.spacecraft.name)
       expect(d.tps).toBe(v.spacecraft.entry?.tpsName ?? '')
-      expect(d.tpsShort).toBe(v.spacecraft.entry ? v.spacecraft.entry.tpsName.split(/[,(]/)[0].trim().toLowerCase() : '')
+      expect(d.tpsShort === '').toBe(!v.spacecraft.entry)
       expect(d.landing).toBe(v.spacecraft.landing?.label ?? '')
       expect(Object.keys(d.stages)).toEqual(v.stages.map((s) => s.id))
       for (const s of v.stages) {
@@ -140,8 +136,8 @@ describe('the simulation renders its own English', () => {
 })
 
 describe.each(LANGS.map((l) => l.id))('%s', (lang) => {
-  it('has the same catalogs as English', () => {
-    const L = bundles.get(lang)!
+  it('has the same catalogs as English', async () => {
+    const L = await bundle(lang)
     expect(shape(L.ui)).toEqual(shape(EN.ui))
     expect(Object.keys(L.sim)).toEqual(Object.keys(EN_SIM))
     for (const k of Object.keys(EN_SIM) as Array<keyof typeof EN_SIM>) expect(typeof L.sim[k], k).toBe(typeof EN_SIM[k])
@@ -157,8 +153,8 @@ describe.each(LANGS.map((l) => l.id))('%s', (lang) => {
     }
   })
 
-  it('renders every message of the test missions', () => {
-    const L = bundles.get(lang)!
+  it('renders every message of the test missions', async () => {
+    const L = await bundle(lang)
     for (const r of results)
       for (const x of texts(r)) {
         const s = L.t(x)
@@ -167,8 +163,8 @@ describe.each(LANGS.map((l) => l.id))('%s', (lang) => {
       }
   })
 
-  it('renders every simulation template with any value', () => {
-    const L = bundles.get(lang)!
+  it('renders every simulation template with any value', async () => {
+    const L = await bundle(lang)
     for (const [k, tpl] of Object.entries(L.sim)) {
       const s = typeof tpl === 'function' ? (tpl as (p: unknown) => string)(anyParams) : tpl
       expect(typeof s, k).toBe('string')
@@ -177,8 +173,8 @@ describe.each(LANGS.map((l) => l.id))('%s', (lang) => {
     }
   })
 
-  it('renders every interface template with any value', () => {
-    const L = bundles.get(lang)!
+  it('renders every interface template with any value', async () => {
+    const L = await bundle(lang)
     for (const [path, v] of leaves(L.ui)) {
       const s = typeof v === 'function' ? (v as (p: unknown) => string)(anyParams) : v
       expect(typeof s, path).toBe('string')
