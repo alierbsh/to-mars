@@ -74,7 +74,7 @@ export const UI: UiCatalog = {
     crewLost: 'Équipage perdu',
     data: 'Données de la mission →',
     board: 'Toutes les fusées →',
-    share: 'Partagez',
+    share: 'Partager',
     shareAria: 'Partager cette mission',
     copied: 'Lien copié — collez-le où vous voulez',
     copyPrompt: 'Copiez ce lien',
