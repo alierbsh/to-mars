@@ -338,9 +338,10 @@ def region(args):
     road_c = np.array([0.62, 0.60, 0.56], dtype=np.float32)
     roads_on_land = roads * land
     img = img * (1 - 0.16 * roads_on_land[..., None]) + road_c * (0.16 * roads_on_land[..., None])
-    # the beaches: a pale line along the coast, strongest on the Atlantic side of Florida
+    # the beaches: a faint pale line along the coast — a real beach is tens of metres wide, a
+    # fraction of a pixel here; any stronger and the coasts read as drawn outlines from orbit
     sand = np.array([0.80, 0.76, 0.66], dtype=np.float32)
-    img = img * (1 - 0.45 * coast[..., None]) + sand * (0.45 * coast[..., None])
+    img = img * (1 - 0.12 * coast[..., None]) + sand * (0.12 * coast[..., None])
     # a faint overall grain so flat colour does not read as paint
     fine = value_noise(n, 1.0, 101)
     img *= (0.97 + 0.06 * fine)[..., None]

@@ -15,7 +15,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
-import { EARTH_R, Earth, SUN_DIR, earthFixed, earthState } from './Earth'
+import { EARTH_R, Earth, SUN_DIR, earthFixed, earthState, sunGlowTexture } from './Earth'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 import { view } from './viewControl'
@@ -57,12 +57,68 @@ const TMI_START = new THREE.Vector3(-1.0, 0.4, 0.34)
 const TMI_END = new THREE.Vector3(0.05, 1.05, 0.12)
 const TMI_END_TALL = new THREE.Vector3(-1.3, 0.3, 0.6)
 
+const N_PUFFS = 8
+
+/**
+ * The tanker's thrusters through the final approach: brief white puffs from the nose and the tail,
+ * fired together on one side as it trims its closing line — real-time flickers (the clock covers
+ * the approach in seconds). In the tanker's frame, km: +y the nose, the hull `len` long, `r` round.
+ */
+function RcsPuffs({ active, len, r }: { active: { current: number }; len: number; r: number }) {
+  const tex = useMemo(() => sunGlowTexture(), [])
+  const group = useRef<THREE.Group>(null)
+  const puffs = useMemo(() => Array.from({ length: N_PUFFS }, () => ({ age: 9, pos: new THREE.Vector3(), dir: new THREE.Vector3() })), [])
+  const next = useRef(0)
+  useFrame(({ clock }, rawDt) => {
+    const dt = Math.min(rawDt, 0.1)
+    const T = clock.elapsedTime
+    // a new pair every ~0.3 s while the approach is on
+    if (active.current > 0.5 && T > next.current) {
+      next.current = T + 0.18 + Math.random() * 0.3
+      // nose and tail thrusters on the same side together: a sideways trim of the closing line
+      const ang = Math.floor(Math.random() * 4) * (Math.PI / 2) + 0.4
+      for (const y of [0.36, -0.4]) {
+        const p = puffs.find((x) => x.age > 0.6)
+        if (!p) break
+        p.dir.set(Math.cos(ang), 0, Math.sin(ang))
+        p.pos.set(Math.cos(ang) * r, y * len, Math.sin(ang) * r)
+        p.age = 0
+      }
+    }
+    group.current?.children.forEach((c, i) => {
+      const p = puffs[i]
+      p.age += dt
+      const sp = c as THREE.Sprite
+      const on = p.age < 0.6
+      sp.visible = on
+      if (!on) return
+      const f = p.age / 0.6
+      // a bright jet that blooms and thins out within a few hull radii
+      sp.position.copy(p.pos).addScaledVector(p.dir, r * (0.5 + 3 * Math.sqrt(f)))
+      const size = r * (0.7 + 2.4 * Math.sqrt(f))
+      sp.scale.set(size, size, 1)
+      ;(sp.material as THREE.SpriteMaterial).opacity = 0.9 * (1 - f) * (1 - f) * Math.min(1, p.age * 30)
+    })
+  })
+  return (
+    <group ref={group}>
+      {puffs.map((_, i) => (
+        <sprite key={i} visible={false}>
+          <spriteMaterial map={tex} color="#eef4ff" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </sprite>
+      ))}
+    </group>
+  )
+}
+
 export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
   const vehicle = VEHICLES.find((v) => v.id === vehicleId)!
   const L = SPACECRAFT_LENGTH[vehicleId] ?? 30
   const SCALE = 0.012 // model metres → km, exaggerated ×12 so the ship is visible against Earth
   const ship = useRef<THREE.Group>(null)
   const tanker = useRef<THREE.Group>(null)
+  /** the tanker's thrusters: on through its final approach */
+  const rcs = useRef(0)
   const bounce = useRef<THREE.DirectionalLight>(null)
   const sunLight = useRef<THREE.DirectionalLight>(null)
   const { scene } = useThree()
@@ -171,9 +227,13 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
           .add(velDir.clone().multiplyScalar(-0.5 * off))
           .add(upv.clone().multiplyScalar(-0.15 * off))
         tanker.current.visible = true
+        rcs.current = dDays > -1.3 && dDays < -0.01 ? 1 : 0
         tanker.current.position.copy(tankerPos)
         tanker.current.quaternion.copy(ship.current!.quaternion)
-      } else tanker.current.visible = false
+      } else {
+        tanker.current.visible = false
+        rcs.current = 0
+      }
     }
     const vel = velDir.clone()
     const side = upv.clone().cross(vel).normalize()
@@ -267,6 +327,7 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
           <group scale={SCALE} position={[0, -((SPACECRAFT_BASE[vehicleId] ?? 0) + L / 2) * SCALE, 0]}>
             <VehicleRig id={vehicleId} mode="orbit" />
           </group>
+          <RcsPuffs active={rcs} len={L * SCALE} r={4.6 * SCALE} />
         </group>
       )}
       <directionalLight ref={sunLight} position={sun.toArray()} intensity={3.2} color="#fff6e8" />

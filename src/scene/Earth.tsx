@@ -109,25 +109,27 @@ function applyOrbitGround(material: THREE.MeshStandardMaterial, u: { night: { va
 /**
  * The cloud shell: the cover shaped into opacity; close up, its edges broken by noise in the
  * shell's own space (two or three octaves by tier); thinned over the regional tile, whose deck is
- * sharper.
+ * sharper. On the night side the thick cloud of a storm cell now and then lights from within —
+ * lightning, flickering in real time.
  */
-function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }; regionK: { value: number } }, octaves: number): THREE.MeshStandardMaterial {
+function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }; regionK: { value: number }; time: { value: number } }, octaves: number): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: '#ffffff', alphaMap: map, transparent: true, depthWrite: false, roughness: 1, metalness: 0, envMapIntensity: 0.12 })
   m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, { uRegion: u.region, uRegionK: u.regionK })
+    Object.assign(shader.uniforms, { uRegion: u.region, uRegionK: u.regionK, uTime: u.time, uSunDir: { value: SUN_DIR } })
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vShell; varying float vNear;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vShell; varying float vNear; varying vec3 vUp;')
       .replace(
         '#include <project_vertex>',
         `#include <project_vertex>
         vShell = position;
+        vUp = mat3(modelMatrix) * position;
         vNear = 1.0 - smoothstep(500.0, 2200.0, length(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz));`,
       )
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
-        uniform vec3 uRegion; uniform float uRegionK; varying vec3 vShell; varying float vNear;
+        uniform vec3 uRegion; uniform float uRegionK; uniform float uTime; uniform vec3 uSunDir; varying vec3 vShell; varying float vNear; varying vec3 vUp;
         ${CLOUD_SHAPE}
         float hash3(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
         float vnoise(vec3 x) {
@@ -147,6 +149,27 @@ function cloudMaterial(map: THREE.Texture, u: { region: { value: THREE.Vector3 }
         }
         float region = smoothstep(cos(950.0 / ${EARTH_R.toFixed(1)}), cos(700.0 / ${EARTH_R.toFixed(1)}), dot(normalize(vShell), uRegion));
         diffuseColor.a *= cloudShape(cov) * (1.0 - 0.82 * region * uRegionK);`,
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+        {
+          // lightning: about one ~90 km cell in four is a storm, its thick cloud lit from within by
+          // a short flicker every few seconds; night side only, within ~45° of the equator
+          float nightL = smoothstep(-0.04, -0.22, dot(normalize(vUp), uSunDir)) * step(abs(normalize(vShell).y), 0.7);
+          if (nightL > 0.0) {
+            vec3 cp = vShell / 90.0;
+            vec3 ci = floor(cp);
+            float h = hash3(ci + 7.31);
+            float ph = fract(uTime * (0.22 + 0.4 * hash3(ci + 2.1)) + h * 13.0);
+            float flash = step(0.74, h) * smoothstep(0.0, 0.006, ph) * (1.0 - smoothstep(0.012, 0.06, ph)) * (0.55 + 0.45 * sin(uTime * 57.0 + h * 40.0));
+            // the glow around the stroke: a disc about the cell's centre, measured along the shell
+            vec3 fo = fract(cp) - 0.5 + (vec3(hash3(ci + 1.7), hash3(ci + 4.2), hash3(ci + 9.9)) - 0.5) * 0.3;
+            vec3 rad = normalize(vShell);
+            float spot = 1.0 - smoothstep(0.06, 0.4, length(fo - dot(fo, rad) * rad));
+            totalEmissiveRadiance += vec3(0.78, 0.84, 1.0) * flash * spot * nightL * smoothstep(0.3, 0.65, cov) * 3.0;
+          }
+        }`,
       )
   }
   m.customProgramCacheKey = () => `orbitclouds|${octaves}`
@@ -370,7 +393,7 @@ export function Earth({ sky = true, far = false, detail = true, root }: { sky?: 
     for (const t of [region, regionRough, regionClouds]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
   }, [day, night, clouds, region, regionRough, regionClouds, q.anisotropy])
 
-  const u = useMemo(() => ({ night: { value: night as THREE.Texture | null }, clouds: { value: clouds as THREE.Texture | null }, cloudShift: { value: 0 }, region: { value: new THREE.Vector3() }, regionSun: { value: new THREE.Vector3(0, 1, 0) }, regionDeck: { value: regionClouds as THREE.Texture | null }, regionK: { value: 1 }, roughMin: { value: far ? 0.5 : 0 } }), [night, clouds, regionClouds, far])
+  const u = useMemo(() => ({ night: { value: night as THREE.Texture | null }, clouds: { value: clouds as THREE.Texture | null }, cloudShift: { value: 0 }, region: { value: new THREE.Vector3() }, regionSun: { value: new THREE.Vector3(0, 1, 0) }, regionDeck: { value: regionClouds as THREE.Texture | null }, regionK: { value: 1 }, roughMin: { value: far ? 0.5 : 0 }, time: { value: 0 } }), [night, clouds, regionClouds, far])
 
   const mats = useMemo(() => {
     // the globe pushed back in the depth buffer under the regional tile and the clouds (the low
@@ -445,8 +468,9 @@ export function Earth({ sky = true, far = false, detail = true, root }: { sky?: 
     }
   }, [atmo, tmp])
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
     u.regionK.value = detail ? 1 : 0
+    u.time.value = clock.elapsedTime
     const { spin, clouds: cloudSpin } = earthState
     if (earth.current) earth.current.rotation.y = spin
     if (cloud.current) cloud.current.rotation.y = cloudSpin
