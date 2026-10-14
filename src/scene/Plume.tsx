@@ -10,6 +10,8 @@
  * overexposes to white the way it does on camera. A warm point light goes with it.
  *
  * `throttle` 0–1 switches and scales it; `expansion` 1 (sea level) → 4 (vacuum) widens it.
+ * `lights` false drops the point lights: a light's falloff is in world units, so in a scene
+ * drawn in kilometres (the orbit) a flame light a few model metres from the hull burns it white.
  */
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
@@ -39,6 +41,9 @@ interface Look {
   alpha: number
   /** sooty darkening of the tail (kerosene) */
   soot: number
+  /** how much of the opacity is left in vacuum: a methalox or hydrolox plume in space is a faint
+   *  translucent bell you see the planet through; kerosene's soot keeps a Merlin's visible */
+  vacAlpha: number
   /** length multiplier */
   length: number
   /** light colour */
@@ -46,13 +51,13 @@ interface Look {
 }
 
 const LOOK: Record<PlumeKind, Look> = {
-  methalox: { core: new THREE.Color(1.0, 0.97, 0.9), mid: new THREE.Color(1.0, 0.64, 0.22), outer: new THREE.Color(1.0, 0.36, 0.08), vac: new THREE.Color(0.55, 0.62, 1.0), gain: 1.0, alpha: 0.92, soot: 0.0, length: 1.35, light: '#ffb070' },
-  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, length: 1.7, light: '#ff9a40' },
-  hydrolox: { core: new THREE.Color(0.92, 0.96, 1.0), mid: new THREE.Color(0.75, 0.86, 1.0), outer: new THREE.Color(0.6, 0.75, 1.0), vac: new THREE.Color(0.5, 0.62, 1.0), gain: 0.75, alpha: 0.32, soot: 0.0, length: 0.9, light: '#bcd2ff' },
-  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.15, alpha: 1.0, soot: 0.35, length: 2.6, light: '#ffc080' },
-  hypergolic: { core: new THREE.Color(1.0, 0.92, 0.82), mid: new THREE.Color(1.0, 0.8, 0.6), outer: new THREE.Color(0.95, 0.68, 0.5), vac: new THREE.Color(0.9, 0.8, 0.9), gain: 0.8, alpha: 0.6, soot: 0.0, length: 1.0, light: '#ffd0b0' },
+  methalox: { core: new THREE.Color(1.0, 0.97, 0.9), mid: new THREE.Color(1.0, 0.64, 0.22), outer: new THREE.Color(1.0, 0.36, 0.08), vac: new THREE.Color(0.55, 0.62, 1.0), gain: 1.0, alpha: 0.92, soot: 0.0, vacAlpha: 0.16, length: 1.35, light: '#ffb070' },
+  kerolox: { core: new THREE.Color(1.0, 0.92, 0.72), mid: new THREE.Color(1.0, 0.64, 0.2), outer: new THREE.Color(0.92, 0.32, 0.06), vac: new THREE.Color(0.95, 0.62, 0.4), gain: 1.0, alpha: 0.95, soot: 0.55, vacAlpha: 0.42, length: 1.7, light: '#ff9a40' },
+  hydrolox: { core: new THREE.Color(0.92, 0.96, 1.0), mid: new THREE.Color(0.75, 0.86, 1.0), outer: new THREE.Color(0.6, 0.75, 1.0), vac: new THREE.Color(0.5, 0.62, 1.0), gain: 0.75, alpha: 0.32, soot: 0.0, vacAlpha: 0.12, length: 0.9, light: '#bcd2ff' },
+  solid: { core: new THREE.Color(1.0, 0.96, 0.88), mid: new THREE.Color(1.0, 0.82, 0.52), outer: new THREE.Color(1.0, 0.56, 0.24), vac: new THREE.Color(1.0, 0.7, 0.5), gain: 1.15, alpha: 1.0, soot: 0.35, vacAlpha: 0.6, length: 2.6, light: '#ffc080' },
+  hypergolic: { core: new THREE.Color(1.0, 0.92, 0.82), mid: new THREE.Color(1.0, 0.8, 0.6), outer: new THREE.Color(0.95, 0.68, 0.5), vac: new THREE.Color(0.9, 0.8, 0.9), gain: 0.8, alpha: 0.6, soot: 0.0, vacAlpha: 0.3, length: 1.0, light: '#ffd0b0' },
   // the ionised wake of an entry: white-pink at the body, magenta and violet trailing off
-  plasma: { core: new THREE.Color(1.0, 0.93, 0.96), mid: new THREE.Color(1.0, 0.62, 0.8), outer: new THREE.Color(0.85, 0.32, 0.62), vac: new THREE.Color(0.7, 0.35, 0.9), gain: 0.9, alpha: 0.55, soot: 0.0, length: 1.0, light: '#ff8ab0' },
+  plasma: { core: new THREE.Color(1.0, 0.93, 0.96), mid: new THREE.Color(1.0, 0.62, 0.8), outer: new THREE.Color(0.85, 0.32, 0.62), vac: new THREE.Color(0.7, 0.35, 0.9), gain: 0.9, alpha: 0.55, soot: 0.0, vacAlpha: 1.0, length: 1.0, light: '#ff8ab0' },
 }
 
 /** value noise and its fbm; the low tier drops the third octave (the finest grain) */
@@ -136,6 +141,7 @@ uniform float uSeed;
 uniform float uGain;
 uniform float uAlpha;
 uniform float uSoot;
+uniform float uVacAlpha;
 uniform vec3 uCore;
 uniform vec3 uMid;
 uniform vec3 uOuter;
@@ -173,7 +179,7 @@ void main() {
   // colour: core → yellow → orange along the plume and outward; cooler and thinner in vacuum
   vec3 col = mix(uCore, uMid, smoothstep(0.0, 0.25, vS + 0.25 * (1.0 - facing)));
   col = mix(col, uOuter, smoothstep(0.2, 0.8, vS + 0.35 * (1.0 - facing)));
-  col = mix(col, uVac, k * (0.5 + 0.5 * smoothstep(0.0, 0.4, vS)));
+  col = mix(col, uVac, k * (0.75 + 0.25 * smoothstep(0.0, 0.4, vS)));
   // cooler gas between the lumps toward the tail; kerosene tails darken in sooty streaks
   col *= 1.0 - 0.35 * smoothstep(0.45, 1.0, vS) * (1.0 - lumps) * (1.0 - k);
   col *= 1.0 - uSoot * smoothstep(0.35, 0.95, vS) * smoothstep(0.4, 0.8, streak);
@@ -181,9 +187,9 @@ void main() {
   if (uLayer < 0.5) {
     I = 0.16 * (1.0 - 0.85 * k) * (0.7 + 0.6 * lumps);              // glow: faint halo
   } else if (uLayer < 1.5) {
-    I = (1.5 * exp(-vS * 2.6) + 0.38) * (1.0 - 0.65 * k) * lit;      // body: yellow-orange, turbulent
+    I = (1.5 * exp(-vS * 2.6) + 0.38) * (1.0 - 0.8 * k) * lit;       // body: yellow-orange, turbulent; dim in vacuum
   } else {
-    I = (3.0 * exp(-vS * 3.0) + 0.35) * (1.0 - 0.6 * k) * (0.8 + 0.3 * lumps); // core: overexposes near the nozzle
+    I = (3.0 * exp(-vS * 3.0) + 0.35) * (1.0 - 0.85 * k) * (0.8 + 0.3 * lumps); // core: overexposes near the nozzle (at sea level)
   }
   I *= uGain * uThrottle * dia;
   float fogK = 0.0;
@@ -194,10 +200,11 @@ void main() {
     gl_FragColor = vec4(col * I * d * (1.0 - fogK), 1.0);                  // additive glow
   } else if (uLayer < 1.5) {
     // the body: solid behind the nozzle, opening into tongues down the tail
-    float a = clamp(d * (1.5 + 1.4 * exp(-vS * 4.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.55 * k) * (1.0 - fogK);
+    float a = clamp(d * (1.5 + 1.4 * exp(-vS * 4.0)), 0.0, 1.0) * uAlpha * mix(1.0, uVacAlpha, k) * (1.0 - fogK);
     gl_FragColor = vec4(col * I, a);
   } else {
-    float a = clamp(d * (1.1 + 1.3 * exp(-vS * 5.0)), 0.0, 1.0) * uAlpha * (1.0 - 0.6 * k) * (1.0 - fogK);
+    // in vacuum the core shrinks to the first lengths behind the nozzle exit
+    float a = clamp(d * (1.1 + 1.3 * exp(-vS * 5.0)), 0.0, 1.0) * uAlpha * mix(1.0, min(1.0, uVacAlpha * 1.6) * exp(-vS * 6.0), k) * (1.0 - fogK);
     gl_FragColor = vec4(col * I, a);                                         // the core
   }
   #include <tonemapping_fragment>
@@ -218,6 +225,7 @@ function plumeMaterial(look: Look, layer: number, seed = 0, octaves: 2 | 3 = 3):
       uGain: { value: look.gain },
       uAlpha: { value: look.alpha },
       uSoot: { value: look.soot },
+      uVacAlpha: { value: look.vacAlpha },
       uCore: { value: look.core },
       uMid: { value: look.mid },
       uOuter: { value: look.outer },
@@ -299,7 +307,7 @@ const N_TONGUES = 14
  * flight): the flame is cut there and bursts out sideways as a ring of tongues while the vehicle
  * is low — the fireball under the launch mount.
  */
-export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1, expansion = 1, floor }: { kind: PlumeKind; radius: number; length: number; y?: number; x?: number; z?: number; throttle?: number; expansion?: number; floor?: { current: number } }) {
+export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1, expansion = 1, floor, lights = true }: { kind: PlumeKind; radius: number; length: number; y?: number; x?: number; z?: number; throttle?: number; expansion?: number; floor?: { current: number }; lights?: boolean }) {
   const look = LOOK[kind]
   const group = useRef<THREE.Group>(null)
   const light = useRef<THREE.PointLight>(null)
@@ -347,7 +355,8 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
       u.uExp.value = expansion
       u.uThrottle.value = throttle
     })
-    if (light.current) light.current.intensity = on ? 9 * throttle * radius * radius * f * (1 - 0.7 * k) : 0
+    // a vacuum plume is too thin to light much of anything: the light all but goes out in space
+    if (light.current) light.current.intensity = on ? 9 * throttle * radius * radius * f * (1 - 0.95 * k) : 0
     // seen along its axis the hull is all silhouette and nearly vanishes: a glow at the throat
     // stands in for the fire you look into (the landing burn from below, the booster from the pad)
     if (endGlow.current && group.current) {
@@ -360,7 +369,7 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
         const endOn = Math.abs(tmpV.axis.dot(tmpV.toCam))
         const w = Math.max(0, (endOn - 0.45) / 0.55)
         const m = sp.material as THREE.SpriteMaterial
-        m.opacity = 0.9 * throttle * w * w * (1 - 0.6 * k) * (0.9 + 0.1 * Math.sin(T * 37))
+        m.opacity = 0.9 * throttle * w * w * (1 - 0.85 * k) * (0.9 + 0.1 * Math.sin(T * 37))
         const sz = radius * (2.6 + 0.6 * k) * (0.95 + 0.05 * f)
         sp.scale.set(sz, sz, 1)
         sp.position.set(0, -radius * 1.2, 0)
@@ -419,7 +428,7 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
           </group>
         ))}
       </group>
-      {q.plumeLights && (
+      {q.plumeLights && lights && (
         <>
           <pointLight ref={light} color={look.light} distance={radius * 60} decay={2} position={[0, -radius * 1.5, 0]} />
           <pointLight ref={splashLight} color={look.light} distance={radius * 90} decay={2} intensity={0} />

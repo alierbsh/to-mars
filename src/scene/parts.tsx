@@ -20,7 +20,7 @@ export const MAT = {
   bell: new THREE.MeshStandardMaterial({ color: '#4a4c50', metalness: 0.7, roughness: 0.45, side: THREE.DoubleSide }),
   bellHot: new THREE.MeshStandardMaterial({ color: '#6b5a4a', metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide }),
   /** a bell at full power: the regen-cooled wall glowing orange, brightest at the throat */
-  bellGlow: new THREE.MeshStandardMaterial({ color: '#5a4034', emissive: '#ff6a1a', emissiveIntensity: 1.6, metalness: 0.5, roughness: 0.5, side: THREE.DoubleSide }),
+  bellGlow: new THREE.MeshStandardMaterial({ color: '#3a2a22', emissive: '#ff5a12', emissiveIntensity: 1.15, metalness: 0.3, roughness: 0.6, envMapIntensity: 0.4, side: THREE.DoubleSide }),
   glass: new THREE.MeshStandardMaterial({ color: '#0d1a2b', metalness: 0.4, roughness: 0.15 }),
   titanium: new THREE.MeshStandardMaterial({ color: '#5a5450', metalness: 0.8, roughness: 0.45 }),
   carbon: new THREE.MeshStandardMaterial({ color: '#1d1f23', metalness: 0.3, roughness: 0.5 }),

@@ -100,7 +100,7 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       if (scGroup !== 'fairing') hidden.add('fairing')
       const tmi = result.phases.find((x) => x.phase === 'tmi')
       if (tmi && t >= tmi.start && t < tmi.end) burning.add(vehicle.refuelable ? finalStage : finalStage)
-      expansion.current = 3
+      expansion.current = 4 // vacuum
     } else if (result && mode === 'entry') {
       for (const st of vehicle.stages) {
         if (st.id !== scGroup) {
@@ -180,14 +180,14 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
     <group ref={root} scale={scale}>
       <VehicleModel id={id} />
       {anchors.map((a, i) => (
-        <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} floor={floor} />
+        <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} floor={floor} lights={mode !== 'orbit'} />
       ))}
     </group>
   )
 }
 
 /** Renders a plume as a child of the anchor object, so it moves with its stage. */
-function PlumeAt({ anchor, throttles, expansion, floor }: { anchor: Anchor; throttles: React.MutableRefObject<Record<string, number>>; expansion: React.MutableRefObject<number>; floor: React.MutableRefObject<number> }) {
+function PlumeAt({ anchor, throttles, expansion, floor, lights }: { anchor: Anchor; throttles: React.MutableRefObject<Record<string, number>>; expansion: React.MutableRefObject<number>; floor: React.MutableRefObject<number>; lights: boolean }) {
   const [thr, setThr] = useState(0)
   const [exp, setExp] = useState(1)
   const fl = useRef(Infinity)
@@ -199,7 +199,7 @@ function PlumeAt({ anchor, throttles, expansion, floor }: { anchor: Anchor; thro
     // the deck below the nozzle (only the first stage ever gets near it)
     fl.current = floor.current + anchor.obj.position.y
   })
-  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 18} throttle={thr} expansion={exp} floor={fl} />, anchor.obj)
+  return createPortal(<Plume kind={anchor.kind} radius={anchor.radius} length={anchor.radius * 18} throttle={thr} expansion={exp} floor={fl} lights={lights} />, anchor.obj)
 }
 
 export function useResultAndT(): { result: MissionResult | null; t: number } {

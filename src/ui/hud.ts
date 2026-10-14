@@ -396,7 +396,7 @@ export function momentsAt(r: MissionResult): Moment[] {
     else if (k === 'asc.seco' || k === 'asc.seco1') out.push({ t: e.t, key: 'seco', before: 3, after: 2.5, rate: 1 })
     else if (k === 'asc.circ') out.push({ t: e.t, key: 'circ', before: 2, after: 3, rate: 1 })
     else if (k === 'leo.tanker') out.push({ t: e.t, key: 'docking', n: param(e.msg?.label, 'n'), before: 1.5 * DAY_S, after: 0.8 * DAY_S, rate: 0.35 * DAY_S })
-    else if (k === 'tmi.burn') out.push({ t: e.t, key: 'tmi', before: 2, after: 7, rate: 1 })
+    else if (k === 'tmi.burn') out.push({ t: e.t, key: 'tmi', before: 3, after: 14, rate: 1 })
     else if (k === 'en.peakHeat') out.push({ t: e.t, key: 'peakHeat', before: 3, after: 4, rate: 1 })
     else if (e.severity === 'fail' && e.phase === 'ascent') out.push({ t: e.t, key: null, event: e.msg?.label ?? e.label, before: 3, after: 4, rate: 1 })
   }
