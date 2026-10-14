@@ -24,6 +24,7 @@ import type { MissionResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { APPROACH_SHOT_S, DEPART_SHOT_S } from '../ui/hud'
 import { EARTH_R, Earth, SUN_DIR, earthState, moonTexture, starField, sunGlowTexture } from './Earth'
+import { limbCamera, marsLimbMaterial } from './marsLimb'
 import { SITE_LON } from './marsSite'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
@@ -314,52 +315,10 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
     m.customProgramCacheKey = () => 'marsglobe'
     return m
   }, [tex, veil])
-  const limbMat = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: { sunDir: { value: SUN_DIR }, radius: { value: R_MARS_KM }, uCam: { value: new THREE.Vector3() }, uDust: { value: dust } },
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide,
-        vertexShader: `
-          #include <common>
-          #include <logdepthbuf_pars_vertex>
-          varying vec3 vLocal;
-          void main() {
-            vLocal = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            #include <logdepthbuf_vertex>
-          }`,
-        fragmentShader: `
-          #include <common>
-          #include <logdepthbuf_pars_fragment>
-          uniform vec3 sunDir; uniform float radius; uniform vec3 uCam; uniform float uDust; varying vec3 vLocal;
-          void main() {
-            #include <logdepthbuf_fragment>
-            vec3 d = normalize(vLocal - uCam);
-            float tc = max(0.0, -dot(uCam, d));
-            vec3 pc = uCam + d * tc;
-            float h = length(pc) - radius;
-            if (h < 0.0) discard;
-            float day = smoothstep(-0.15, 0.25, dot(normalize(pc), sunDir));
-            // a thin butterscotch haze (scale height ~11 km; a storm lifts dust far higher), a hint
-            // of blue low down in clear air
-            float H = mix(11.0, 24.0, uDust);
-            vec3 col = vec3(0.95, 0.6, 0.38) * exp(-h / H) * (0.45 + 0.55 * uDust) + vec3(0.45, 0.58, 0.9) * exp(-h / 5.0) * 0.18 * (1.0 - uDust);
-            gl_FragColor = vec4(col * day, 1.0);
-          }`,
-      }),
-    [dust],
-  )
-  const inv = useMemo(() => new THREE.Matrix4(), [])
+  const limbMat = useMemo(() => marsLimbMaterial(R_MARS_KM, 1, SUN_DIR, dust), [dust])
   useEffect(() => {
-    const m = limb.current
-    if (!m) return
-    m.onBeforeRender = (_r, _s, camera) => {
-      limbMat.uniforms.uCam.value.copy(camera.position).applyMatrix4(inv.copy(m.matrixWorld).invert())
-    }
-  }, [limbMat, inv])
+    if (limb.current) limbCamera(limb.current, limbMat)
+  }, [limbMat])
   return (
     <group ref={root}>
       <group ref={spin}>

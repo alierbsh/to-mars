@@ -8,13 +8,14 @@
  * curtain, a scorch on the ground and a camera shake. A break-up throws fragments down-track.
  */
 import { useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
 import { entryAt } from '../ui/hud'
 import { FirstSteps } from './FirstSteps'
 import { cloudPuffTexture, dustTexture, fragmentAt, makeFragments, makePuffs } from './impact'
+import { limbCamera, marsLimbMaterial } from './marsLimb'
 import { MarsSurface } from './MarsSurface'
 import { Plume } from './Plume'
 import { SkyDome, setSky } from './SkyDome'
@@ -29,6 +30,7 @@ const SKY_STORM = new THREE.Color('#9c6236')
 const SKY_ZENITH = new THREE.Color('#5c4029')
 const SKY_STORM_ZENITH = new THREE.Color('#6a3f22')
 const R_MARS = 3_389_500
+const Z_AXIS = new THREE.Vector3(0, 0, 1)
 const DUST = '#c69a6c'
 const DUST_DARK = '#8a6244'
 const N_PUFFS = 24
@@ -82,6 +84,7 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const shock = useRef<THREE.Mesh>(null)
   const dust = useRef<THREE.Group>(null)
   const debris = useRef<THREE.InstancedMesh>(null)
+  const limb = useRef<THREE.Mesh>(null)
   const { scene } = useThree()
   const st = useMemo(() => ({ az: 0.4, flip: 0, init: false, heat: 0, dist: 0, el: 0, azHold: 0, shot: '' }), [])
   const heatMats = useRef<THREE.MeshStandardMaterial[] | null>(null)
@@ -114,6 +117,14 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const puffs = useMemo(() => makePuffs(5, nPuffs), [nPuffs])
   const fragments = useMemo(() => makeFragments(9, N_FRAGMENTS, isShip ? 45 : 75, isShip ? 6 : 1.7), [isShip])
   const tmp = useMemo(() => ({ o: new THREE.Object3D(), origin: new THREE.Vector3() }), [])
+  // the limb seen from above the air, as on the approach: the planet's centre is R below the
+  // touchdown point in the ground group's frame
+  const stormDust = useAppStore((s) => (s.result?.weather?.storm === 'global' ? 1 : s.result?.weather?.storm === 'regional' ? 0.4 : 0))
+  // (its ground sphere a little under the surface map, which sits 2.5 km low far out: no dark seam between them)
+  const limbMat = useMemo(() => marsLimbMaterial(R_MARS - 3000, 1000, new THREE.Vector3(), stormDust), [stormDust])
+  useEffect(() => {
+    if (limb.current) limbCamera(limb.current, limbMat)
+  }, [limbMat])
 
   useFrame(({ camera }, rawDt) => {
     // a background tab hands back a huge delta on return: never let one frame jump far
@@ -170,6 +181,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       const d = range / R_MARS
       ground.current.position.set(R_MARS * Math.sin(d), groundY - R_MARS * (1 - Math.cos(d)), 0)
       ground.current.rotation.z = -d
+      // the limb: the sun brought into the ground's turned frame; gone once inside the haze
+      limbMat.uniforms.sunDir.value.copy(sunDir).applyAxisAngle(Z_AXIS, d)
+      limbMat.uniforms.uGain.value = THREE.MathUtils.smoothstep(alt, 40_000, 75_000)
     }
     // heating: a sheath on the windward side, the tiles glowing, a plasma wake streaming behind,
     // sparks of ablating material — all scaled by the heat flux
@@ -327,9 +341,10 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     // sky: black above the atmosphere, butterscotch dust haze near the ground; the haze thins with
     // altitude and thickens with the dust: a storm turns the sky brown and closes the horizon in
     const storm = result?.weather?.storm === 'global' ? 1 : result?.weather?.storm === 'regional' ? 0.45 : 0
-    const f = Math.min(1, Math.max(0, 1 - alt / (70_000 + 40_000 * storm)))
+    // (a global storm's dust reaches ~60–80 km; above it the sky is black, the haze a band at the limb)
+    const f = Math.min(1, Math.max(0, 1 - alt / (70_000 + 15_000 * storm)))
     skyLow.copy(SKY_LOW).lerp(SKY_STORM, storm)
-    bg.copy(SKY_HIGH).lerp(skyLow, Math.min(1, f * f * (1 + 0.6 * storm)))
+    bg.copy(SKY_HIGH).lerp(skyLow, Math.min(1, f * f * f * (1 + 0.6 * storm)))
     scene.background = bg
     if (scene.fog) {
       const fog = scene.fog as THREE.Fog
@@ -502,6 +517,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
         <Suspense fallback={null}>
           <MarsSurface />
         </Suspense>
+        <mesh ref={limb} material={limbMat} position={[0, -R_MARS, 0]} frustumCulled={false}>
+          <sphereGeometry args={[R_MARS + 90_000, 128, 64]} />
+        </mesh>
       </group>
       {isShip && <FirstSteps groundY={-L / 2 - 2.7} hatchY={2.7 + 19.4} shipR={4.5} crew={crew} />}
       {/* the sun: low in the west; its shadow map follows the ship (always at the origin) */}
