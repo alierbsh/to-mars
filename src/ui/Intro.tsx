@@ -41,6 +41,9 @@ function Start() {
       >
         Start the physics, motors and engines
       </button>
+      <button className="intro__alt" onClick={() => useAppStore.getState().openBoard()}>
+        Or see how all six rockets do first →
+      </button>
       <p className="intro__foot">Simulation runs in your browser. Drag to look around, scroll to zoom.</p>
     </section>
   )
@@ -49,16 +52,16 @@ function Start() {
 function Pick() {
   const current = useAppStore((s) => s.config.vehicleId)
   const config = useAppStore((s) => s.config)
-  const shared = useAppStore((s) => s.shared)
+  const pickFrom = useAppStore((s) => s.pickFrom)
   const launch = useAppStore((s) => s.launch)
   const [vehicleId, setVehicleId] = useState(current)
   const [speed, setSpeed] = useState(RECOMMENDED)
   const v = VEHICLES.find((x) => x.id === vehicleId)!
   return (
     <section className="intro__panel intro__panel--pick">
-      {shared ? (
+      {pickFrom ? (
         <>
-          <p className="label label--rust">Someone sent you a mission</p>
+          <p className="label label--rust">{pickFrom === 'shared' ? 'Someone sent you a mission' : 'From the scoreboard'}</p>
           <h1 className="intro__title">{describeMission(config)}</h1>
           <p className="intro__shared">Launch it to see what happens — or pick another ship.</p>
         </>

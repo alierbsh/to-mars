@@ -179,7 +179,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     if (qdot > peakQ) peakQ = qdot
     if (!tpsFailed && qdot > o.entry.tpsLimit) {
       tpsFailed = true
-      ev('Heat shield limit exceeded', `${fmt(qdot)} W/cm² > ${fmt(o.entry.tpsLimit)} W/cm² (${o.entry.tpsName}) at ${fmt(h / 1000)} km, ${fmt(V)} m/s`, 'fail')
+      ev('Heat shield limit exceeded', `${qdot.toFixed(1)} W/cm² > ${fmt(o.entry.tpsLimit)} W/cm² (${o.entry.tpsName}) at ${fmt(h / 1000)} km, ${fmt(V)} m/s`, 'fail')
     }
 
     // landing burn logic

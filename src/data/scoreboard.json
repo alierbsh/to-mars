@@ -1,0 +1,2286 @@
+{
+ "generated": "2026-10-14",
+ "crew": 4,
+ "cells": [
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 905 m/s landing burn using 62.7 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "626 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 840 m/s landing burn using 58.7 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "626 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "burned-up",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 burns up in the Martian atmosphere",
+   "detail": "Peak heating 68 W/cm² — past the 50 W/cm² the hexagonal silica tiles are rated for (first exceeded at 45 km, 7306 m/s).",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "478 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak heating",
+     "value": "68 W/cm²",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "burned-up",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 burns up in the Martian atmosphere",
+   "detail": "Peak heating 52 W/cm² — past the 50 W/cm² the hexagonal silica tiles are rated for (first exceeded at 38 km, 6296 m/s).",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "479 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak heating",
+     "value": "52 W/cm²",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 866 m/s landing burn using 59.7 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "628 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 857 m/s landing burn using 55.1 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "546 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 793 m/s landing burn using 51.5 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "546 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "burned-up",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 burns up in the Martian atmosphere",
+   "detail": "Peak heating 71 W/cm² — past the 50 W/cm² the hexagonal silica tiles are rated for (first exceeded at 45 km, 7327 m/s).",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "546 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak heating",
+     "value": "71 W/cm²",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "burned-up",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 burns up in the Martian atmosphere",
+   "detail": "Peak heating 55 W/cm² — past the 50 W/cm² the hexagonal silica tiles are rated for (first exceeded at 39 km, 6374 m/s).",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "547 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak heating",
+     "value": "55 W/cm²",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "landed",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 lands on Mars with its crew alive",
+   "detail": "Touchdown at 2.0 m/s after a 819 m/s landing burn using 52.4 t.",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "548 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "failed-tmi",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 is stuck in Earth orbit",
+   "detail": "Launch window missed. 723-day campaign is longer than the 300-day limit around the opportunity — the next window is 26 months away",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "373 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Δv for Mars",
+     "value": "2.87 / 3.76 km/s",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "failed-tmi",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 is stuck in Earth orbit",
+   "detail": "Launch window missed. 723-day campaign is longer than the 300-day limit around the opportunity — the next window is 26 months away",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "373 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Δv for Mars",
+     "value": "2.86 / 3.75 km/s",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "failed-tmi",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 is stuck in Earth orbit",
+   "detail": "Launch window missed. 723-day campaign is longer than the 300-day limit around the opportunity — the next window is 26 months away",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "373 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Δv for Mars",
+     "value": "2.86 / 3.72 km/s",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "failed-tmi",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 is stuck in Earth orbit",
+   "detail": "Launch window missed. 723-day campaign is longer than the 300-day limit around the opportunity — the next window is 26 months away",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "373 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Δv for Mars",
+     "value": "2.87 / 3.70 km/s",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "starship-v3",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "failed-tmi",
+   "crewed": true,
+   "crewAlive": true,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "Starship V3 is stuck in Earth orbit",
+   "detail": "Launch window missed. 723-day campaign is longer than the 300-day limit around the opportunity — the next window is 26 months away",
+   "stats": [
+    {
+     "label": "Propellant at departure",
+     "value": "373 t",
+     "severity": "warn"
+    },
+    {
+     "label": "Δv for Mars",
+     "value": "2.88 / 3.80 km/s",
+     "severity": "fail"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "745 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "447 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "686 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "487 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "774 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "490 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "755 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "419 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "717 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "303 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "745 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "447 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "686 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "487 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "774 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "490 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "755 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "419 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "717 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "303 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "745 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "447 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "686 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "487 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "774 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "490 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "755 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "419 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "sls-orion",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "SLS + Orion crashes on Mars",
+   "detail": "717 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "303 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 292,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.66 km up at 775 m/s; the capsule hit the ground at 716 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.9 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 318,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.70 km up at 678 m/s; the capsule hit the ground at 637 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 320,
+   "headline": "Falcon Heavy skips off the atmosphere",
+   "detail": "Vehicle left the atmosphere at 4001 m/s — entry too shallow",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 274,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 2.02 km up at 790 m/s; the capsule hit the ground at 724 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 198,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.64 km up at 733 m/s; the capsule hit the ground at 683 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 292,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.66 km up at 775 m/s; the capsule hit the ground at 716 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.9 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 318,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.70 km up at 678 m/s; the capsule hit the ground at 637 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 320,
+   "headline": "Falcon Heavy skips off the atmosphere",
+   "detail": "Vehicle left the atmosphere at 4001 m/s — entry too shallow",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 274,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 2.02 km up at 790 m/s; the capsule hit the ground at 724 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 198,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.64 km up at 733 m/s; the capsule hit the ground at 683 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 292,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.66 km up at 775 m/s; the capsule hit the ground at 716 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.9 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 318,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.70 km up at 678 m/s; the capsule hit the ground at 637 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 320,
+   "headline": "Falcon Heavy skips off the atmosphere",
+   "detail": "Vehicle left the atmosphere at 4001 m/s — entry too shallow",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 274,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 2.02 km up at 790 m/s; the capsule hit the ground at 724 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "falcon-heavy-dragon",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 7,
+   "tripDays": 198,
+   "headline": "Falcon Heavy crashes on Mars",
+   "detail": "The landing engines ran dry 1.64 km up at 733 m/s; the capsule hit the ground at 683 m/s.",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "7 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.8 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "new-glenn",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "flyby",
+   "crewed": false,
+   "crewAlive": false,
+   "crewLostDay": null,
+   "tripDays": null,
+   "headline": "New Glenn reaches Mars — and flies past it",
+   "detail": "No entry or capture system aboard. Uncrewed.",
+   "stats": []
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "664 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "611 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "688 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "671 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "639 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.5 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "664 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "611 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "688 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "671 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "639 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.5 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 292,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "664 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.3 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 318,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "611 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 320,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "688 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 274,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "671 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.4 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "long-march-10",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 21,
+   "tripDays": 198,
+   "headline": "Long March 10 crashes on Mars",
+   "detail": "639 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "21 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.5 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "claims",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 292,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "719 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "claims",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 318,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "661 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "claims",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 320,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "743 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "claims",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 274,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "726 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "claims",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 198,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "691 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "independent",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 292,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "719 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "independent",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 318,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "661 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "independent",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 320,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "743 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "independent",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 274,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "726 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "independent",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 198,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "691 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "demonstrated",
+   "windowId": "w2026",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 292,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "719 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 292 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "526 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "demonstrated",
+   "windowId": "w2028",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 318,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "661 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 318 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "572 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Weather at Mars",
+     "value": "Global dust storm",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "demonstrated",
+   "windowId": "w2031",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 320,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "743 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 320 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "576 mSv",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "demonstrated",
+   "windowId": "w2033",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 274,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "726 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 274 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "493 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.0 g",
+     "severity": "warn"
+    }
+   ]
+  },
+  {
+   "vehicleId": "saturn-v-apollo",
+   "presetId": "demonstrated",
+   "windowId": "w2035",
+   "outcome": "crashed",
+   "crewed": true,
+   "crewAlive": false,
+   "crewLostDay": 14,
+   "tripDays": 198,
+   "headline": "Saturn V crashes on Mars",
+   "detail": "691 m/s at the surface — no landing propulsion",
+   "stats": [
+    {
+     "label": "Life support",
+     "value": "14 of 198 days",
+     "severity": "fail"
+    },
+    {
+     "label": "Radiation (outbound)",
+     "value": "356 mSv",
+     "severity": "warn"
+    },
+    {
+     "label": "Peak deceleration",
+     "value": "4.2 g",
+     "severity": "warn"
+    }
+   ]
+  }
+ ]
+}

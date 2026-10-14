@@ -308,7 +308,11 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
     outcome = 'burned-up'
     crewAlive = false
     headline = `${vehicle.short} burns up in the Martian atmosphere`
-    summary = tpsFail.detail
+    // the peak, not the moment of crossing (which reads "50.4 > 50"): how far past the rating it went
+    const tps = vehicle.spacecraft.entry!
+    const tpsShort = tps.tpsName.split(/[,(]/)[0].trim().toLowerCase()
+    const where = tpsFail.detail.match(/at ([\d.]+ km, \d+ m\/s)$/)?.[1]
+    summary = `Peak heating ${fmt(entry.peakHeatFlux)} W/cm² — past the ${fmt(tps.tpsLimit)} W/cm² the ${tpsShort} are rated for${where ? ` (first exceeded at ${where})` : ''}.`
   } else if (entry.tipped) {
     outcome = 'crashed'
     headline = `${vehicle.short} lands on Mars — and tips over`
@@ -317,7 +321,12 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
     outcome = entry.events.some((e) => e.label === 'Skipped out') ? 'flyby' : 'crashed'
     if (outcome === 'crashed') crewAlive = false
     headline = outcome === 'flyby' ? `${vehicle.short} skips off the atmosphere` : `${vehicle.short} crashes on Mars`
-    summary = entry.events.find((e) => e.severity === 'fail')?.detail ?? entry.reason ?? ''
+    const dry = entry.events.find((e) => e.label === 'Propellant exhausted mid-burn')
+    const impact = entry.events.find((e) => e.label === 'Impact')
+    const at = dry?.detail.match(/^([\d.]+ km), (\d+ m\/s)/)
+    const what = vehicle.spacecraft.entry?.kind === 'capsule' ? 'the capsule' : 'the ship'
+    if (dry && impact && at) summary = `The landing engines ran dry ${at[1]} up at ${at[2]}; ${what} hit the ground at ${impact.detail.split(' at the surface')[0]}.`
+    else summary = entry.events.find((e) => e.severity === 'fail')?.detail ?? entry.reason ?? ''
   } else {
     outcome = 'landed'
     reached.surface = true

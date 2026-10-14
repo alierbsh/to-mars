@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from './state/store'
 import DetailsSheet from './ui/DetailsSheet'
 import Intro from './ui/Intro'
@@ -7,6 +7,9 @@ import Stage from './ui/Stage'
 import TopBar from './ui/TopBar'
 import VerdictCard from './ui/VerdictCard'
 import Toast from './ui/Toast'
+
+// the scoreboard (and its 90 precomputed missions) loads when it is first opened
+const Scoreboard = lazy(() => import('./ui/Scoreboard'))
 import Wiki from './ui/Wiki'
 
 /** ?clean=1: the scene alone, no overlays (for the link preview image and other stills) */
@@ -30,8 +33,9 @@ export default function App() {
   const intro = useAppStore((s) => s.intro)
   const wiki = useAppStore((s) => s.wiki)
   const quality = useAppStore((s) => s.quality)
+  const board = useAppStore((s) => s.board)
   return (
-    <div className={`app app--q-${quality} ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''} ${wiki ? 'app--wiki' : ''} ${CLEAN ? 'app--clean' : ''}`}>
+    <div className={`app app--q-${quality} ${drawer ? `app--${drawer}` : ''} ${intro ? `app--intro app--intro-${intro}` : ''} ${wiki ? 'app--wiki' : ''} ${board ? 'app--board' : ''} ${CLEAN ? 'app--clean' : ''}`}>
       <Stage />
       <TopBar />
       <VerdictCard />
@@ -40,6 +44,11 @@ export default function App() {
       {drawer && <button className="scrim" aria-label="Close panel" onClick={() => setDrawer(drawer)} />}
       <Wiki />
       <Intro />
+      {board && (
+        <Suspense fallback={null}>
+          <Scoreboard />
+        </Suspense>
+      )}
       <Toast />
     </div>
   )

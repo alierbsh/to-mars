@@ -64,9 +64,14 @@ export default function VerdictCard() {
         ))}
       </dl>
       <div className="verdict__actions">
-        <button className="verdict__more" onClick={() => setDrawer('details')}>
-          Timeline, telemetry and trajectory →
-        </button>
+        <span className="verdict__links">
+          <button className="verdict__more" onClick={() => setDrawer('details')}>
+            Mission data →
+          </button>
+          <button className="verdict__more" onClick={() => useAppStore.getState().openBoard()}>
+            All rockets →
+          </button>
+        </span>
         <button
           className="verdict__share"
           onClick={async () => {

@@ -41,8 +41,10 @@ export interface AppState {
   quality: Quality
   /** true once the viewer chose a tier themselves (no automatic stepping down then) */
   qualityPinned: boolean
-  /** the page was opened from a shared mission link (the pick step says so) */
-  shared: boolean
+  /** where the pick step's preselected mission came from (it says so), or null */
+  pickFrom: 'shared' | 'scoreboard' | null
+  /** the scoreboard overlay is open */
+  board: boolean
   /** a short message at the bottom of the screen ("Link copied") */
   toast: { text: string; id: number } | null
 
@@ -60,6 +62,10 @@ export interface AppState {
   /** set the graphics tier; `pin` records it as the viewer's choice (null clears the choice) */
   setQuality: (q: Quality, pin?: boolean) => void
   showToast: (text: string) => void
+  openBoard: () => void
+  closeBoard: () => void
+  /** start a new mission with this configuration: the pick step, the ship preselected */
+  flyMission: (cfg: MissionConfig, from: 'shared' | 'scoreboard') => void
   /** from the picker: set the ship and the clock, then count down */
   launch: (vehicleId: string, speed: number) => void
   /** the countdown reached zero: ignition */
@@ -120,7 +126,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   countdown: 5,
   openSeq: 0,
   wiki: initialWiki,
-  shared: !!sharedMission,
+  pickFrom: sharedMission ? 'shared' : null,
+  board: new URLSearchParams(location.search).get('board') === '1',
   toast: null,
   quality: detectQuality(),
   qualityPinned: (typeof location !== 'undefined' && new URLSearchParams(location.search).has('quality')) || (typeof localStorage !== 'undefined' && !!localStorage.getItem('occupy-mars:quality')),
@@ -161,15 +168,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   setTab: (tab) => set({ tab, drawer: 'details' }),
   setDrawer: (drawer) => set((s) => ({ drawer: s.drawer === drawer ? null : drawer })),
   setIntro: (intro) => set({ intro }),
-  openWiki: (id) => set({ wiki: id ?? 'why', drawer: null }),
+  openWiki: (id) => set({ wiki: id ?? 'why', drawer: null, board: false }),
   closeWiki: () => set({ wiki: null }),
   setQuality: (quality, pin = false) => {
     if (pin) saveQuality(quality)
     set({ quality, qualityPinned: pin })
   },
   showToast: (text) => set((s) => ({ toast: { text, id: (s.toast?.id ?? 0) + 1 } })),
+  openBoard: () => set({ board: true, wiki: null, drawer: null }),
+  closeBoard: () => set({ board: false }),
+  flyMission: (cfg, from) => {
+    set({ playing: false, board: false, wiki: null, drawer: null, intro: 'pick', pickFrom: from })
+    get().setConfig(cfg)
+  },
   launch: (vehicleId, speed) => {
-    if (get().shared && typeof history !== 'undefined') {
+    if (get().pickFrom === 'shared' && typeof history !== 'undefined') {
       const p = new URLSearchParams(location.search)
       p.delete('mission')
       history.replaceState(null, '', `${location.pathname}${p.toString() ? `?${p}` : ''}`)
@@ -177,7 +190,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
     const crew = vehicle ? Math.min(cur.crew, Math.max(vehicle.spacecraft.crewCapacity, 0)) || cur.crew : cur.crew
-    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null, shared: false })
+    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null, pickFrom: null })
     if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
   },
   ignite: () => set((s) => ({ intro: null, t: 0, playing: true, openSeq: s.openSeq + 1 })),

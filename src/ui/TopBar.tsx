@@ -15,6 +15,9 @@ export default function TopBar() {
   const wiki = useAppStore((s) => s.wiki)
   const openWiki = useAppStore((s) => s.openWiki)
   const closeWiki = useAppStore((s) => s.closeWiki)
+  const board = useAppStore((s) => s.board)
+  const openBoard = useAppStore((s) => s.openBoard)
+  const closeBoard = useAppStore((s) => s.closeBoard)
   const vehicle = VEHICLES.find((v) => v.id === vehicleId) ?? VEHICLES[0]
 
   return (
@@ -71,6 +74,9 @@ export default function TopBar() {
         </button>
         <button className={`pill ${drawer === 'details' ? 'pill--on' : ''}`} onClick={() => setDrawer('details')}>
           Data
+        </button>
+        <button className={`pill pill--board ${board ? 'pill--on' : ''}`} onClick={() => (board ? closeBoard() : openBoard())}>
+          Scoreboard
         </button>
         <button className={`pill ${wiki ? 'pill--on' : ''}`} onClick={() => (wiki ? closeWiki() : openWiki())}>
           Wiki
