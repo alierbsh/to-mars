@@ -52,6 +52,8 @@ export const UI: UiCatalog = {
     recommended: 'Conseillé',
     speedHint:
       "Pour l'orbite et la croisière. Le décollage se joue toujours à 1×, et l'horloge revient au temps réel pour les moments clés — séparation des étages, mise en orbite, amarrages, allumage de départ, pic d'échauffement — avant de réaccélérer. Entrée, descente et atterrissage : jamais plus vite que 2×.",
+    graphicsHint: (p: { q: string; auto: boolean }) =>
+      `${p.auto ? `Auto : qualité ${p.q.toLowerCase()} pour cet appareil. ` : ''}Si l'image saccade ou si le téléphone chauffe, baissez la qualité ; vous pourrez la changer plus tard dans les Réglages.`,
     launch: (p: { ship: string }) => `Lancez ${p.ship}`,
     running: 'Calcul de la physique…',
     /** the end of the countdown */

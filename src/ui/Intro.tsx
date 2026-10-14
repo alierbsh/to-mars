@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { describeMission } from './share'
 import { sound } from '../audio/sound'
+import GraphicsPicker from './GraphicsPicker'
 import { LangList } from './LangPicker'
 import { nameLang, vehicleTexts } from './texts'
 
@@ -64,6 +65,8 @@ function Pick() {
   const config = useAppStore((s) => s.config)
   const pickFrom = useAppStore((s) => s.pickFrom)
   const launch = useAppStore((s) => s.launch)
+  const quality = useAppStore((s) => s.quality)
+  const qualityPinned = useAppStore((s) => s.qualityPinned)
   const [vehicleId, setVehicleId] = useState(current)
   const [speed, setSpeed] = useState(RECOMMENDED)
   const v = VEHICLES.find((x) => x.id === vehicleId)!
@@ -97,16 +100,23 @@ function Pick() {
         })}
       </ul>
       <div className="intro__row">
-        <div>
-          <p className="label">{I.timeSpeed}</p>
-          <div className="speedpick" role="group" aria-label={I.timeSpeed}>
-            {SPEEDS.map((sp) => (
-              <button key={sp} className={`speedpick__item ${sp === speed ? 'speedpick__item--on' : ''}`} onClick={() => setSpeed(sp)}>
-                {L.n.n(sp)}×{sp === RECOMMENDED && <span className="speedpick__tag">{I.recommended}</span>}
-              </button>
-            ))}
+        <div className="intro__opts">
+          <div className="intro__opt intro__opt--speed">
+            <p className="label">{I.timeSpeed}</p>
+            <div className="speedpick" role="group" aria-label={I.timeSpeed}>
+              {SPEEDS.map((sp) => (
+                <button key={sp} className={`speedpick__item ${sp === speed ? 'speedpick__item--on' : ''}`} onClick={() => setSpeed(sp)}>
+                  {L.n.n(sp)}×{sp === RECOMMENDED && <span className="speedpick__tag">{I.recommended}</span>}
+                </button>
+              ))}
+            </div>
+            <p className="hint">{I.speedHint}</p>
           </div>
-          <p className="hint">{I.speedHint}</p>
+          <div className="intro__opt intro__opt--gfx">
+            <p className="label">{L.ui.settings.graphics}</p>
+            <GraphicsPicker className="speedpick" itemClass="speedpick__item" onClass="speedpick__item--on" />
+            <p className="hint">{I.graphicsHint({ q: L.ui.settings.quality[quality], auto: !qualityPinned })}</p>
+          </div>
         </div>
         <button
           className="intro__cta"

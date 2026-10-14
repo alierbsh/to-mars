@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { LANGS, useT } from '../i18n'
-import { detectQuality, saveQuality } from '../scene/quality'
 import { PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import { useAppStore } from '../state/store'
+import GraphicsPicker from './GraphicsPicker'
 import { LangList } from './LangPicker'
 import { presetTexts, vehicleTexts, windowTexts } from './texts'
 
@@ -44,7 +44,6 @@ export default function MissionDrawer() {
   const setPlaying = useAppStore((s) => s.setPlaying)
   const quality = useAppStore((s) => s.quality)
   const qualityPinned = useAppStore((s) => s.qualityPinned)
-  const setQuality = useAppStore((s) => s.setQuality)
   const [advanced, setAdvanced] = useState(false)
   const vehicle = VEHICLES.find((v) => v.id === config.vehicleId)!
   const vt = vehicleTexts(vehicle.id, L)
@@ -68,22 +67,7 @@ export default function MissionDrawer() {
       <div className="drawer__body">
         <section className="section">
           <p className="label">{S.graphics}</p>
-          <div className="chips">
-            {(['auto', 'high', 'medium', 'low'] as const).map((id) => (
-              <button
-                key={id}
-                className={`chip ${(id === 'auto' ? !qualityPinned : qualityPinned && quality === id) ? 'chip--on' : ''}`}
-                onClick={() => {
-                  if (id === 'auto') {
-                    saveQuality(null)
-                    setQuality(detectQuality(), false)
-                  } else setQuality(id, true)
-                }}
-              >
-                {S.quality[id]}
-              </button>
-            ))}
-          </div>
+          <GraphicsPicker className="chips" itemClass="chip" onClass="chip--on" />
           <p className="hint">{S.qualityNow({ q: S.quality[quality], auto: !qualityPinned })}</p>
         </section>
         {LANGS.length > 1 && (

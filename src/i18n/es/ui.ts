@@ -52,6 +52,8 @@ export const UI: UiCatalog = {
     recommended: 'Recomendada',
     speedHint:
       'Para la órbita y el crucero. El despegue siempre se reproduce a 1×, y el reloj vuelve al tiempo real en los momentos clave —separación de etapas, inserción en órbita, acoplamientos, encendido de salida, calentamiento máximo— y después acelera de nuevo. La entrada, el descenso y el aterrizaje nunca van a más de 2×.',
+    graphicsHint: (p: { q: string; auto: boolean }) =>
+      `${p.auto ? `Automática: calidad ${p.q.toLowerCase()} para este dispositivo. ` : ''}Si la imagen va a tirones o el móvil se calienta, baja la calidad; puedes cambiarla luego en Ajustes.`,
     launch: (p: { ship: string }) => `Lanza ${p.ship}`,
     running: 'Calculando la física…',
     /** the end of the countdown */
