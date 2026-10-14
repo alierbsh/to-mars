@@ -155,10 +155,11 @@ export default function Scene() {
     return phase === 'ascent' ? 'ascent' : phase === 'leo' || phase === 'tmi' ? 'orbit' : phase === 'cruise' ? 'cruise' : 'entry'
   })
 
+  // Mars's maps (two DEMs decoded, the ground rasterised in a worker) are needed at entry: start
+  // on them once the climb is over, not while a phone is still loading the opening
   useEffect(() => {
-    const id = window.setTimeout(prewarmMars, 400)
-    return () => window.clearTimeout(id)
-  }, [])
+    if (view !== 'ascent') prewarmMars()
+  }, [view])
 
   return (
     <>

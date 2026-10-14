@@ -156,10 +156,9 @@ export function LaunchClouds({ deck, trenchAxis = 'z' }: { deck: number; trenchA
     const tau = phase && t < phase.end && !intro ? t - phase.start : -1
     const on = tau >= 0 && tau < 60
     g.visible = on
-    if (light.current) {
-      light.current.visible = tau >= 0 && tau < 20
-      light.current.intensity = tau >= 0 ? 40_000 * Math.max(0, 1 - tau / 20) : 0
-    }
+    // at zero rather than invisible outside its 20 s: a change in the number of lights would
+    // recompile every lit material at ignition
+    if (light.current) light.current.intensity = tau >= 0 && tau < 20 ? 40_000 * (1 - tau / 20) : 0
     if (!on) return
     const fade = tau < 18 ? 1 : Math.max(0, 1 - (tau - 18) / 40)
     g.children.forEach((c, i) => {

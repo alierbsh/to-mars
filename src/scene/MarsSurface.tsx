@@ -121,7 +121,7 @@ function requestMaps(gusev: Heightmap, victoria: Heightmap, globe: Uint8ClampedA
 }
 
 let prewarmed = false
-/** Start decoding the DEMs and rasterising the maps early (at app start), so the EDL scene opens textured. */
+/** Start decoding the DEMs and rasterising the maps early (Scene calls it once the climb is over), so the EDL scene opens textured. */
 export function prewarmMars() {
   if (prewarmed) return
   prewarmed = true

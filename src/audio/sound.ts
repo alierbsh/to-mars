@@ -55,6 +55,14 @@ class SoundEngine {
     } catch {
       /* private mode */
     }
+    // a hidden tab (another app on a phone, a locked screen) stops the frames, which would leave the
+    // mix frozen where it was — the roar running on: the context sleeps until the page is back
+    if (typeof document !== 'undefined')
+      document.addEventListener('visibilitychange', () => {
+        if (!this.ctx) return
+        if (document.hidden) void this.ctx.suspend()
+        else if (!this.muted) void this.ctx.resume()
+      })
   }
 
   /** create (or resume) the context — call from a click handler */
@@ -68,7 +76,9 @@ class SoundEngine {
       this.master.connect(this.ctx.destination)
       this.build()
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume()
+    // muted, the synthesis (noise sources, filters) would still run on the audio thread: let it sleep
+    if (this.muted) void this.ctx.suspend()
+    else if (this.ctx.state === 'suspended') void this.ctx.resume()
   }
 
   setMuted(m: boolean) {
@@ -78,7 +88,11 @@ class SoundEngine {
     } catch {
       /* ignore */
     }
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.05)
+    const ctx = this.ctx
+    if (!this.master || !ctx) return
+    this.master.gain.setTargetAtTime(m ? 0 : 1, ctx.currentTime, 0.05)
+    if (m) window.setTimeout(() => this.muted && void ctx.suspend(), 300)
+    else if (!document.hidden) void ctx.resume()
   }
 
   private makeNoise(seconds: number, brown: boolean): AudioBuffer {

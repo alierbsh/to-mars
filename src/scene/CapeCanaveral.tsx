@@ -63,6 +63,8 @@ function waterAt(mask: HTMLImageElement, half: number, x: number, z: number): bo
  * `depthPush` pushes the tile back in the depth buffer (polygon offset units): the coarser
  * tiers sit a few metres under the finer ones, which the depth buffer cannot resolve at a
  * distance without the logarithmic depth buffer — the push settles who wins where they overlap.
+ * Top to bottom: the pad 0, the complex 1, the Cape 2, the sea 3, then EarthBelow's regional
+ * tile 4 and the globe 5 (each layer its own, or two of them fight).
  */
 function groundMaterial(map: THREE.Texture, alpha: THREE.Texture | null, edgeFade = 0, depthPush = 0): THREE.MeshStandardMaterial {
   map.colorSpace = THREE.SRGBColorSpace
@@ -98,7 +100,9 @@ function Water({ y, bounds, map, segments, tile }: { y: number; bounds: { x0: nu
     normalMap.needsUpdate = true
     map.colorSpace = THREE.SRGBColorSpace
     map.anisotropy = 8
-    const m = new THREE.MeshStandardMaterial({ map, color: '#ffffff', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35 })
+    // pushed back past the Cape tile (2) in the depth buffer, or without the logarithmic depth
+    // buffer (the low tier) the sea a metre below wins over the land from a few kilometres up
+    const m = new THREE.MeshStandardMaterial({ map, color: '#ffffff', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 6 })
     applyAerialPerspective(m)
     applyCloudShadow(m)
     return m

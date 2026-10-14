@@ -135,7 +135,7 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
 
   const globe = useMemo(() => {
     const geo = new THREE.SphereGeometry(R_EARTH_M, Math.round(256 * q.mesh), Math.round(128 * q.mesh))
-    const mat = new THREE.MeshStandardMaterial({ map: day, roughnessMap: rough, roughness: 1, metalness: 0, envMapIntensity: 0.25, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 })
+    const mat = new THREE.MeshStandardMaterial({ map: day, roughnessMap: rough, roughness: 1, metalness: 0, envMapIntensity: 0.25, polygonOffset: true, polygonOffsetFactor: 5, polygonOffsetUnits: 10 })
     applyAerialPerspective(mat)
     const [lat, lon] = padLatLon(pad)
     return { geo, mat, q: globeQuaternion(lat, lon) }
@@ -144,7 +144,7 @@ export function EarthBelow({ pad, groundY }: { pad: PadId; groundY: number }) {
   const tile = useMemo(() => {
     const b = { x0: -origin[0] - REGION_HALF, x1: -origin[0] + REGION_HALF, z0: -origin[1] - REGION_HALF, z1: -origin[1] + REGION_HALF }
     const geo = capGeometry(R_EARTH_M, b, Math.round(200 * q.mesh))
-    const mat = new THREE.MeshStandardMaterial({ map: region, roughnessMap: regionRough, roughness: 1, metalness: 0, envMapIntensity: 0.25, transparent: true, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 6 })
+    const mat = new THREE.MeshStandardMaterial({ map: region, roughnessMap: regionRough, roughness: 1, metalness: 0, envMapIntensity: 0.25, transparent: true, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 })
     applyAerialPerspective(mat)
     applyCloudShadow(mat)
     applyEdgeFade(mat, 0.04)

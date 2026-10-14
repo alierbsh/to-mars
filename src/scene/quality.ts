@@ -27,6 +27,12 @@ export interface QualitySettings {
   plumeGlow: boolean
   tongues: number
   fbmOctaves: 2 | 3
+  /** flame hull resolution (around × along) for the column and for a tongue: the shape is set in
+   *  the vertex shader, and a 33-engine liftoff with its tongues was ~300k triangles at 48 × 72 */
+  plumeMesh: [number, number]
+  tongueMesh: [number, number]
+  /** the flames light the vehicle, the pad and the steam (point lights: every lit surface pays per light) */
+  plumeLights: boolean
   /** steam and dust sprite counts, as a fraction of the full set */
   sprites: number
   /** terrain mesh density, as a fraction of the full segment counts */
@@ -41,9 +47,9 @@ export interface QualitySettings {
 }
 
 export const QUALITY: Record<Quality, QualitySettings> = {
-  high: { dpr: 1.5, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, sprites: 1, mesh: 1, textures: 'full', anisotropy: 16, fps: 60, fpsIdle: 30 },
-  medium: { dpr: 1.25, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, sprites: 0.7, mesh: 0.75, textures: 'full', anisotropy: 8, fps: 60, fpsIdle: 24 },
-  low: { dpr: 1, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, sprites: 0.5, mesh: 0.5, textures: 'half', anisotropy: 4, fps: 30, fpsIdle: 15 },
+  high: { dpr: 1.5, antialias: true, shadowMap: 2048, logDepth: true, skySamples: [16, 4], plumeGlow: true, tongues: 14, fbmOctaves: 3, plumeMesh: [48, 72], tongueMesh: [24, 36], plumeLights: true, sprites: 1, mesh: 1, textures: 'full', anisotropy: 16, fps: 60, fpsIdle: 30 },
+  medium: { dpr: 1.25, antialias: true, shadowMap: 1024, logDepth: true, skySamples: [10, 3], plumeGlow: true, tongues: 10, fbmOctaves: 3, plumeMesh: [40, 60], tongueMesh: [20, 30], plumeLights: true, sprites: 0.7, mesh: 0.75, textures: 'full', anisotropy: 8, fps: 60, fpsIdle: 24 },
+  low: { dpr: 1, antialias: false, shadowMap: 0, logDepth: false, skySamples: [6, 2], plumeGlow: false, tongues: 7, fbmOctaves: 2, plumeMesh: [28, 44], tongueMesh: [14, 20], plumeLights: false, sprites: 0.5, mesh: 0.5, textures: 'half', anisotropy: 4, fps: 30, fpsIdle: 15 },
 }
 
 const KEY = 'occupy-mars:quality'

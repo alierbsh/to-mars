@@ -236,12 +236,12 @@ function plumeMaterial(look: Look, layer: number, seed = 0, octaves: 2 | 3 = 3):
   })
 }
 
-let hullCache: THREE.BufferGeometry | null = null
-/** unit hull: uv.x angle (0..1), uv.y station (0 nozzle → 1 tip); positions are set in the shader */
-function hull(): THREE.BufferGeometry {
-  if (hullCache) return hullCache
-  const ra = 48
-  const along = 72
+const hullCache = new Map<string, THREE.BufferGeometry>()
+/** unit hull, `ra` around × `along` stations: uv.x angle (0..1), uv.y station (0 nozzle → 1 tip); positions are set in the shader */
+function hull([ra, along]: [number, number]): THREE.BufferGeometry {
+  const key = `${ra}x${along}`
+  const hit = hullCache.get(key)
+  if (hit) return hit
   const pos: number[] = []
   const uv: number[] = []
   const idx: number[] = []
@@ -268,7 +268,7 @@ function hull(): THREE.BufferGeometry {
   g.computeVertexNormals()
   // the shader moves the vertices well beyond the unit hull: never cull it
   g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, -0.5, 0), 1e6)
-  hullCache = g
+  hullCache.set(key, g)
   return g
 }
 
@@ -307,7 +307,8 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
   const splashLight = useRef<THREE.PointLight>(null)
   const q = useQuality()
   const mats = useMemo(() => [plumeMaterial(look, 0, 0, q.fbmOctaves), plumeMaterial(look, 1, 0, q.fbmOctaves), plumeMaterial(look, 2, 0, q.fbmOctaves)], [look, q.fbmOctaves])
-  const geo = useMemo(() => hull(), [])
+  const geo = useMemo(() => hull(q.plumeMesh), [q.plumeMesh])
+  const tongueGeo = useMemo(() => hull(q.tongueMesh), [q.tongueMesh])
   const endGlow = useRef<THREE.Sprite>(null)
   const glowTex = useMemo(() => glowTexture(), [])
   const tmpV = useMemo(() => ({ axis: new THREE.Vector3(), origin: new THREE.Vector3(), toCam: new THREE.Vector3() }), [])
@@ -392,10 +393,11 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
         })
       }
     }
+    // the light stays in the scene at zero rather than going invisible: a change in the number of
+    // lights recompiles every lit material, and this one switches on at liftoff
     if (splashLight.current) {
-      splashLight.current.visible = hit > 0.01
-      splashLight.current.position.y = -floorDist + radius
-      splashLight.current.intensity = 30 * hit * radius * radius * throttle * f
+      splashLight.current.position.y = hit > 0.01 ? -floorDist + radius : 0
+      splashLight.current.intensity = hit > 0.01 ? 30 * hit * radius * radius * throttle * f : 0
     }
   })
   // drawn after clouds and dust (transparent, lower renderOrder), so the flame shows through steam
@@ -412,13 +414,17 @@ export function Plume({ kind, radius, length, y = 0, x = 0, z = 0, throttle = 1,
       <group ref={splash} visible={false}>
         {tongues.map((tg, i) => (
           <group key={i}>
-            <mesh geometry={geo} material={tg.mats[0]} renderOrder={7} frustumCulled={false} />
-            <mesh geometry={geo} material={tg.mats[1]} renderOrder={8} frustumCulled={false} />
+            <mesh geometry={tongueGeo} material={tg.mats[0]} renderOrder={7} frustumCulled={false} />
+            <mesh geometry={tongueGeo} material={tg.mats[1]} renderOrder={8} frustumCulled={false} />
           </group>
         ))}
       </group>
-      <pointLight ref={light} color={look.light} distance={radius * 60} decay={2} position={[0, -radius * 1.5, 0]} />
-      <pointLight ref={splashLight} color={look.light} distance={radius * 90} decay={2} visible={false} />
+      {q.plumeLights && (
+        <>
+          <pointLight ref={light} color={look.light} distance={radius * 60} decay={2} position={[0, -radius * 1.5, 0]} />
+          <pointLight ref={splashLight} color={look.light} distance={radius * 90} decay={2} intensity={0} />
+        </>
+      )}
     </group>
   )
 }
