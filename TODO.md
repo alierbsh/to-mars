@@ -29,7 +29,7 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **A wiki.** 14 chapters in plain language (`wiki/chapters.ts`), a reading overlay (`ui/Wiki.tsx`) opened from the Wiki pill, from the timeline's event marks, or `?wiki=<chapter>`.
 
 ## Muhammet's list, 14 Oct — in this order
-- [ ] **Sharing.** A link preview image (og:image), a Share button that puts the mission's settings in the link, and a shared link that opens on the ship choice with that mission ready to launch.
+- [x] **Sharing.** A link preview image (og:image, rendered from the site itself), a Share button on the verdict card that puts the mission's settings in the link (share sheet on phones, clipboard elsewhere), and a shared link that opens on the ship choice with that mission ready to launch.
 - [ ] **Scoreboard.** Every rocket × departure window × assumption set at a glance — 90 missions precomputed — with the number that decided each one; a cell starts that mission.
 - [ ] **Compressed textures (KTX2 / Basis Universal).** The ground and Earth maps stay compressed on the GPU: 4–8× less video memory and bandwidth, the biggest lever left for phones.
 - [ ] **Languages — last, after everything else.** The whole site in Turkish, Chinese, Hindi, Spanish, French and German besides English: the UI, the intro, the verdicts, the event texts, the scoreboard and the wiki, with a language picker.

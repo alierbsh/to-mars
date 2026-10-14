@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
+import { describeMission } from './share'
 import { sound } from '../audio/sound'
 
 const BASE_URL = import.meta.env.BASE_URL
@@ -47,14 +48,26 @@ function Start() {
 
 function Pick() {
   const current = useAppStore((s) => s.config.vehicleId)
+  const config = useAppStore((s) => s.config)
+  const shared = useAppStore((s) => s.shared)
   const launch = useAppStore((s) => s.launch)
   const [vehicleId, setVehicleId] = useState(current)
   const [speed, setSpeed] = useState(RECOMMENDED)
   const v = VEHICLES.find((x) => x.id === vehicleId)!
   return (
     <section className="intro__panel intro__panel--pick">
-      <p className="label">Step 1 of 2</p>
-      <h1 className="intro__title">Choose your ship</h1>
+      {shared ? (
+        <>
+          <p className="label label--rust">Someone sent you a mission</p>
+          <h1 className="intro__title">{describeMission(config)}</h1>
+          <p className="intro__shared">Launch it to see what happens — or pick another ship.</p>
+        </>
+      ) : (
+        <>
+          <p className="label">Step 1 of 2</p>
+          <h1 className="intro__title">Choose your ship</h1>
+        </>
+      )}
       <ul className="ships">
         {VEHICLES.map((s) => (
           <li key={s.id}>

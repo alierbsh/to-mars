@@ -7,6 +7,7 @@ import type { MissionConfig, MissionResult, Phase } from '../sim/types'
 import type { PorkchopGrid, WorkerRequest, WorkerResponse } from '../sim/worker'
 import { CHAPTERS } from '../wiki/chapters'
 import { detectQuality, saveQuality, type Quality } from '../scene/quality'
+import { missionFromLocation } from '../ui/share'
 
 export type Tab = 'timeline' | 'telemetry' | 'trajectory' | 'model'
 export type Drawer = 'mission' | 'details' | null
@@ -40,6 +41,10 @@ export interface AppState {
   quality: Quality
   /** true once the viewer chose a tier themselves (no automatic stepping down then) */
   qualityPinned: boolean
+  /** the page was opened from a shared mission link (the pick step says so) */
+  shared: boolean
+  /** a short message at the bottom of the screen ("Link copied") */
+  toast: { text: string; id: number } | null
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -54,6 +59,7 @@ export interface AppState {
   closeWiki: () => void
   /** set the graphics tier; `pin` records it as the viewer's choice (null clears the choice) */
   setQuality: (q: Quality, pin?: boolean) => void
+  showToast: (text: string) => void
   /** from the picker: set the ship and the clock, then count down */
   launch: (vehicleId: string, speed: number) => void
   /** the countdown reached zero: ignition */
@@ -86,10 +92,13 @@ function getWorker(set: (p: Partial<AppState>) => void, get: () => AppState): Wo
   return worker
 }
 
+/** a mission shared by link (?mission=…): it opens on the ship choice, ready to launch */
+const sharedMission = missionFromLocation()
+
 /** ?vehicle=<id>&preset=<id>&window=<id> preselect a configuration (used by the screenshot scripts too) */
 function initialConfig(): MissionConfig {
   const params = new URLSearchParams(location.search)
-  let cfg = { ...DEFAULT_CONFIG }
+  let cfg = sharedMission ?? { ...DEFAULT_CONFIG }
   const vehicle = params.get('vehicle')
   if (vehicle) cfg.vehicleId = vehicle
   const preset = PRESETS.find((p) => p.id === params.get('preset'))
@@ -107,10 +116,12 @@ const initialWiki = wikiParam && CHAPTERS.some((c) => c.id === wikiParam) ? wiki
 
 export const useAppStore = create<AppState>((set, get) => ({
   config: initialConfig(),
-  intro: hasParams ? null : 'start',
+  intro: hasParams ? null : sharedMission ? 'pick' : 'start',
   countdown: 5,
   openSeq: 0,
   wiki: initialWiki,
+  shared: !!sharedMission,
+  toast: null,
   quality: detectQuality(),
   qualityPinned: (typeof location !== 'undefined' && new URLSearchParams(location.search).has('quality')) || (typeof localStorage !== 'undefined' && !!localStorage.getItem('occupy-mars:quality')),
   result: null,
@@ -156,11 +167,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (pin) saveQuality(quality)
     set({ quality, qualityPinned: pin })
   },
+  showToast: (text) => set((s) => ({ toast: { text, id: (s.toast?.id ?? 0) + 1 } })),
   launch: (vehicleId, speed) => {
+    if (get().shared && typeof history !== 'undefined') {
+      const p = new URLSearchParams(location.search)
+      p.delete('mission')
+      history.replaceState(null, '', `${location.pathname}${p.toString() ? `?${p}` : ''}`)
+    }
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
     const crew = vehicle ? Math.min(cur.crew, Math.max(vehicle.spacecraft.crewCapacity, 0)) || cur.crew : cur.crew
-    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null })
+    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null, shared: false })
     if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
   },
   ignite: () => set((s) => ({ intro: null, t: 0, playing: true, openSeq: s.openSeq + 1 })),

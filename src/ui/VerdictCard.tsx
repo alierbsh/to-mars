@@ -1,5 +1,6 @@
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
+import { shareMission } from './share'
 
 const MILESTONES = [
   ['leo', 'Orbit'],
@@ -62,9 +63,26 @@ export default function VerdictCard() {
           </div>
         ))}
       </dl>
-      <button className="verdict__more" onClick={() => setDrawer('details')}>
-        Timeline, telemetry and trajectory →
-      </button>
+      <div className="verdict__actions">
+        <button className="verdict__more" onClick={() => setDrawer('details')}>
+          Timeline, telemetry and trajectory →
+        </button>
+        <button
+          className="verdict__share"
+          onClick={async () => {
+            const { config, result: r, showToast } = useAppStore.getState()
+            const { outcome, url } = await shareMission(config, r)
+            if (outcome === 'copied') showToast('Link copied — paste it anywhere')
+            else if (outcome === 'failed') window.prompt('Copy this link', url)
+          }}
+          aria-label="Share this mission"
+        >
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+            <path d="M8 1.5v8.5M4.8 4.6 8 1.5l3.2 3.1M3 8.5v5h10v-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Share
+        </button>
+      </div>
     </section>
   )
 }

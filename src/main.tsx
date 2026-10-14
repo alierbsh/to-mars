@@ -1,5 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// the typeface ships with the site (no request to Google's servers before the first paint);
+// latin and latin-ext subsets, picked by unicode-range
+import '@fontsource/instrument-sans/400.css'
+import '@fontsource/instrument-sans/500.css'
+import '@fontsource/instrument-sans/600.css'
+import '@fontsource/instrument-sans/700.css'
 import './styles/global.css'
 import App from './App'
 import ModelViewer from './scene/ModelViewer'
