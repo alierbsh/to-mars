@@ -365,6 +365,17 @@ export const UI: UiCatalog = {
     foot: (p: { crew: number; date: string }) =>
       `Équipage de ${p.crew} quand le véhicule en emporte un (moins si sa capsule a moins de places). La météo martienne est tirée des archives des tempêtes pour chaque date d'arrivée. Calculé le ${p.date}. Cliquez sur une mission pour la lancer.`,
   },
+  feedback: {
+    button: 'Donnez-nous votre avis',
+    label: 'Votre avis',
+    title: 'Donnez-nous votre avis',
+    text: 'Un bug, un chiffre qui semble faux, une idée pour la prochaine mission : écrivez-nous. Nous lisons tout.',
+    write: 'Écrire un e-mail',
+    copy: "Copier l'adresse",
+    copied: 'Adresse copiée',
+    subject: 'Occupy Mars Simulation — avis',
+    close: 'Fermer',
+  },
   wiki: {
     aria: 'Comprendre !',
     nav: 'Comprendre ! · comment fonctionne une mission vers Mars',

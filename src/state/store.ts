@@ -47,6 +47,8 @@ export interface AppState {
   board: boolean
   /** a short message at the bottom of the screen ("Link copied") */
   toast: { text: string; id: number } | null
+  /** the feedback panel is open */
+  feedback: boolean
 
   setConfig: (patch: Partial<MissionConfig>) => void
   run: () => void
@@ -62,6 +64,7 @@ export interface AppState {
   /** set the graphics tier; `pin` records it as the viewer's choice (null clears the choice) */
   setQuality: (q: Quality, pin?: boolean) => void
   showToast: (text: string) => void
+  setFeedback: (open: boolean) => void
   openBoard: () => void
   closeBoard: () => void
   /** start a new mission with this configuration: the pick step, the ship preselected */
@@ -129,6 +132,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   pickFrom: sharedMission ? 'shared' : null,
   board: new URLSearchParams(location.search).get('board') === '1',
   toast: null,
+  feedback: false,
   quality: detectQuality(),
   qualityPinned: (typeof location !== 'undefined' && new URLSearchParams(location.search).has('quality')) || (typeof localStorage !== 'undefined' && !!localStorage.getItem('occupy-mars:quality')),
   result: null,
@@ -175,6 +179,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ quality, qualityPinned: pin })
   },
   showToast: (text) => set((s) => ({ toast: { text, id: (s.toast?.id ?? 0) + 1 } })),
+  setFeedback: (feedback) => set({ feedback }),
   openBoard: () => set({ board: true, wiki: null, drawer: null }),
   closeBoard: () => set({ board: false }),
   flyMission: (cfg, from) => {

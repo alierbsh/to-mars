@@ -365,6 +365,17 @@ export const UI: UiCatalog = {
     foot: (p: { crew: number; date: string }) =>
       `Mürettebat taşıyabilen araçlarda ${p.crew} kişilik mürettebat (kapsülün koltuğu daha azsa daha az). Mars'taki hava, her varış tarihi için fırtına kayıtlarından çekilir. Hesaplama tarihi: ${p.date}. Başlatmak için bir göreve tıkla.`,
   },
+  feedback: {
+    button: 'Geri bildirim ver',
+    label: 'Geri bildirim',
+    title: 'Bize geri bildirim ver',
+    text: 'Bir hata, yanlış görünen bir sayı, bir sonraki görev için bir fikir — bize yaz. Hepsini okuyoruz.',
+    write: 'E-posta yaz',
+    copy: 'Adresi kopyala',
+    copied: 'Adres kopyalandı',
+    subject: 'Occupy Mars Simulation — geri bildirim',
+    close: 'Kapat',
+  },
   wiki: {
     aria: 'Anla!',
     nav: 'Anla! · bir Mars görevi nasıl işler',

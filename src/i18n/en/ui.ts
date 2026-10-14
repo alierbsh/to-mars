@@ -374,6 +374,19 @@ export const UI = {
     foot: (p: { crew: number; date: string }) =>
       `Crew of ${p.crew} where the ship carries one (fewer if its capsule seats fewer). The weather at Mars is drawn from the storm record for each arrival date. Computed ${p.date}. Click a mission to fly it.`,
   },
+  feedback: {
+    /** the link by the byline and on the opening screen; the panel it opens */
+    button: 'Give us feedback',
+    label: 'Feedback',
+    title: 'Give us feedback',
+    text: 'A bug, a number that looks wrong, an idea for the next mission — write to us. We read everything.',
+    write: 'Write an email',
+    copy: 'Copy address',
+    copied: 'Address copied',
+    /** the email's subject line */
+    subject: 'Occupy Mars Simulation — feedback',
+    close: 'Close',
+  },
   wiki: {
     aria: 'Understand!',
     nav: 'Understand! · how a Mars mission works',

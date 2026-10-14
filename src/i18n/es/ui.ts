@@ -365,6 +365,17 @@ export const UI: UiCatalog = {
     foot: (p: { crew: number; date: string }) =>
       `Tripulación de ${p.crew} cuando la nave puede llevarla (menos si su cápsula tiene menos plazas). La meteorología en Marte se sortea a partir del registro histórico de tormentas para cada fecha de llegada. Calculado el ${p.date}. Haz clic en una misión para lanzarla.`,
   },
+  feedback: {
+    button: 'Danos tu opinión',
+    label: 'Tu opinión',
+    title: 'Danos tu opinión',
+    text: 'Un fallo, un número que no cuadra, una idea para la próxima misión: escríbenos. Lo leemos todo.',
+    write: 'Escribir un correo',
+    copy: 'Copiar la dirección',
+    copied: 'Dirección copiada',
+    subject: 'Occupy Mars Simulation — opinión',
+    close: 'Cerrar',
+  },
   wiki: {
     aria: '¡Entiende!',
     nav: '¡Entiende! · cómo funciona una misión a Marte',

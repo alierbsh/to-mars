@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from './state/store'
 import DetailsSheet from './ui/DetailsSheet'
+import FeedbackPanel from './ui/Feedback'
 import Intro from './ui/Intro'
 import MissionDrawer from './ui/MissionDrawer'
 import Stage from './ui/Stage'
@@ -49,6 +50,7 @@ export default function App() {
           <Scoreboard />
         </Suspense>
       )}
+      <FeedbackPanel />
       <Toast />
     </div>
   )

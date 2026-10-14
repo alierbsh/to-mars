@@ -382,6 +382,17 @@ export const UI: UiCatalog = {
     foot: (p: { crew: number; date: string }) =>
       zh`飞船能载人时，乘组按 ${p.crew} 人计（太空舱座位更少时按其座位数）。火星天气按每个到达日期从沙尘暴历史记录中抽取。计算日期：${p.date}。点击任一任务即可飞行。`,
   },
+  feedback: {
+    button: '给我们反馈',
+    label: '反馈',
+    title: '给我们反馈',
+    text: '发现了错误、看起来不对的数字，或者对下一次任务有想法？写信告诉我们，每一封我们都会读。',
+    write: '写邮件',
+    copy: '复制地址',
+    copied: '地址已复制',
+    subject: 'Occupy Mars Simulation — 反馈',
+    close: '关闭',
+  },
   wiki: {
     aria: '看懂！',
     nav: '看懂！· 火星任务如何进行',

@@ -3,6 +3,7 @@ import { VEHICLES } from '../data/vehicles'
 import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { sound } from '../audio/sound'
+import { FeedbackLink } from './Feedback'
 import { LangMenu } from './LangPicker'
 import { nameLang, vehicleTexts } from './texts'
 
@@ -33,9 +34,12 @@ export default function TopBar() {
           <span className="wordmark__dot" aria-hidden="true" />
           Occupy Mars Simulation
         </div>
-        <a className="byline" href="https://alierbash.com" target="_blank" rel="noreferrer">
-          {T.byline}
-        </a>
+        <div className="brand__links">
+          <a className="byline" href="https://alierbash.com" target="_blank" rel="noreferrer">
+            {T.byline}
+          </a>
+          <FeedbackLink className="byline byline--fb" />
+        </div>
       </div>
       <div className="craft" aria-label={T.shipAria}>
         <span className="craft__name" title={vt.name} lang={nameLang(vehicle.id, L)}>
