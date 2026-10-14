@@ -18,16 +18,17 @@ import { CapeCanaveral } from './CapeCanaveral'
 import { R_EARTH } from './capeSite'
 import { AscentSky } from './EarthBelow'
 import { dustTexture } from './impact'
-import { VehicleRig } from './VehicleRig'
+import { VehicleRig, rigAttitude, stageDrop } from './VehicleRig'
+import { ASCENT_ROLL, STAGING } from './vehicles'
 import { autoOrbit, view } from './viewControl'
 import { useQuality } from './useQuality'
 
 /** the sun: ~50° up in the south-east (a late Florida morning); shared by the lights and the sky */
 const SUN = new THREE.Vector3(180, 260, 120).normalize()
-
-/** roll about the vehicle's own axis for the climb: Starship rides with its tiled side toward +X,
- * i.e. earthward once it has pitched over, so the chase camera sees steel, not black tiles */
-const ASCENT_ROLL: Record<string, number> = { 'starship-v3': Math.PI / 2 }
+/** the fastest the vehicle is shown to turn (° per mission second): the sim's steering can step —
+ * the upper stage's guidance takes over at staging with the nose some 30° higher — and a rocket
+ * comes round over a few seconds, not in one */
+const MAX_PITCH_RATE = 3
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
@@ -43,7 +44,7 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const sun = useRef<THREE.Sprite>(null)
   const sunTex = useMemo(() => dustTexture(), [])
   const { scene } = useThree()
-  const camState = useMemo(() => ({ az: 1.0, init: false }), [])
+  const camState = useMemo(() => ({ az: 1.0, init: false, pitch: 0, pitchT: -1 }), [])
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
   const tmp = useMemo(() => new THREE.Vector3(), [])
 
@@ -66,10 +67,16 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const { result, t, playing } = useAppStore.getState()
     const s = result ? ascentAt(result, t) : undefined
     const alt = s?.alt ?? 0
-    const pitch = s ? (s.pitch * Math.PI) / 180 : 0
+    // the shown attitude follows the sim's pitch at a rocket's turn rate (a seek jumps to it)
+    const dts = t - camState.pitchT
+    const want = s?.pitch ?? 0
+    if (camState.pitchT < 0 || Math.abs(dts) > 4) camState.pitch = want
+    else camState.pitch += THREE.MathUtils.clamp(want - camState.pitch, -MAX_PITCH_RATE * Math.abs(dts), MAX_PITCH_RATE * Math.abs(dts))
+    camState.pitchT = t
+    rigAttitude.pitch = camState.pitch
     if (rig.current) {
       // tilt toward +X (downrange); keep the pivot near the vehicle's centre of mass
-      rig.current.rotation.z = -pitch
+      rig.current.rotation.z = (-camState.pitch * Math.PI) / 180
     }
     if (ground.current) {
       // the pad is behind by the downrange distance: swing it back about the Earth's centre
@@ -96,10 +103,16 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
       let acc = 0
       for (const st of cores) {
         const sep = result.ascent.stageTimes.find((x) => x.id === st.id)
-        if (sep && ta > sep.sep + 6) {
-          acc += st.length
-          bottom = acc
-        } else break
+        if (!sep || ta <= sep.sep) break
+        const dt = ta - sep.sep
+        if (STAGING[vehicleId]?.boostback?.stage === st.id) {
+          // pull back to hold the booster as it falls away, flips and lights for home; then let it go
+          const w = smooth(7, 11, dt)
+          bottom = (acc - stageDrop(dt, true)) * (1 - w) + (acc + st.length) * w
+          if (w < 1) break
+        } else if (dt > 6) bottom = acc + st.length
+        else break
+        acc += st.length
       }
     }
     const size = Math.max(h - bottom, 12)

@@ -102,9 +102,12 @@ function Water({ y, bounds, map, segments, tile }: { y: number; bounds: { x0: nu
     map.anisotropy = 8
     // pushed back past the Cape tile (2) in the depth buffer, or without the logarithmic depth
     // buffer (the low tier) the sea a metre below wins over the land from a few kilometres up
-    const m = new THREE.MeshStandardMaterial({ map, color: '#ffffff', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 6 })
+    // its square fades out at the edges into the regional tile's sea (the painted lagoons and
+    // shallows would otherwise end in a straight line across the water)
+    const m = new THREE.MeshStandardMaterial({ map, color: '#ffffff', roughness: 0.42, metalness: 0.0, normalMap, normalScale: new THREE.Vector2(0.35, 0.35), envMapIntensity: 0.35, transparent: true, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 6 })
     applyAerialPerspective(m)
     applyCloudShadow(m)
+    applyEdgeFade(m, 0.09)
     return m
   }, [bounds, tile, map])
   useFrame((_, dt) => {
@@ -112,7 +115,8 @@ function Water({ y, bounds, map, segments, tile }: { y: number; bounds: { x0: nu
     m.offset.x = (m.offset.x + dt * 0.012) % 1
     m.offset.y = (m.offset.y + dt * 0.007) % 1
   })
-  return <mesh geometry={geo} material={mat} position={[0, y, 0]} receiveShadow />
+  // drawn after the regional tile (1), before the Cape's land (3)
+  return <mesh geometry={geo} material={mat} position={[0, y, 0]} receiveShadow renderOrder={2} />
 }
 
 /** low coastal scrub around the pad: instanced flattened blobs, two greens */
@@ -184,7 +188,7 @@ function CapeTiles({ pad, groundY }: { pad: PadId; groundY: number }) {
     const complexGeo = capGeometry(R_EARTH, 4 * KM, seg(64))
     const padGeo = capGeometry(R_EARTH, 1000, seg(160), (x, z) => padHeight(pad, x, z))
     // the finer tiles fade out at their edges into the coarser one beneath
-    return { bounds, capeGeo, complexGeo, padGeo, capeMat: groundMaterial(capeMap, capeAlpha, 0.03, 2), complexMat: groundMaterial(complexMap, complexAlpha, 0.06, 1), padMat: groundMaterial(padMap, padAlpha, 0.08) }
+    return { bounds, capeGeo, complexGeo, padGeo, capeMat: groundMaterial(capeMap, capeAlpha, 0.09, 2), complexMat: groundMaterial(complexMap, complexAlpha, 0.06, 1), padMat: groundMaterial(padMap, padAlpha, 0.08) }
   }, [pad, cfg, origin, capeMap, capeAlpha, complexMap, complexAlpha, padMap, padAlpha, q.mesh])
   return (
     <group>
