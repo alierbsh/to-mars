@@ -7,6 +7,8 @@
 import { earthAtmosphere, marsAtmosphere, type AtmoState } from './atmosphere'
 import { G0, MU_EARTH, MU_MARS, R_EARTH_MEAN, R_MARS_EQ, SUTTON_GRAVES_EARTH, SUTTON_GRAVES_MARS } from './constants'
 import { ENTRY_INTERFACE_KM } from './transfer'
+import type { Msg } from '../i18n/msg'
+import { en, event, tx, vref } from './text'
 import type { EntryModel, EntryResult, EntrySample, LandingModel, SimEvent } from './types'
 
 export interface PlanetEntryModel {
@@ -58,6 +60,8 @@ export interface EntryOptions {
   stormDensity?: number
   /** blind-landing hazard: [chance, seeded roll]; a landing fails when roll < chance */
   hazard?: [number, number]
+  /** the vehicle, for its heat shield's and landing engines' names in the event texts */
+  vehicleId?: string
 }
 
 /**
@@ -79,10 +83,9 @@ export function runEntry(o: EntryOptions): EntryResult {
   const events: SimEvent[] = []
   const telemetry: EntrySample[] = []
   const telEvery = o.telemetryEvery ?? 1
-  const fmt = (v: number, d = 0) => v.toFixed(d)
   let t = 0
-  const ev = (label: string, detail: string, severity: SimEvent['severity'] = 'info') =>
-    events.push({ t, phase: 'entry', label, detail, severity })
+  const ev = (label: Msg, detail: Msg, severity: SimEvent['severity'] = 'info') => events.push(event(t, 'entry', label, detail, severity))
+  const tps = vref(o.vehicleId, 'tps', o.entry.tpsName)
 
   const cdA = o.entry.cd * o.entry.refArea
   const beta0 = o.mass / cdA
@@ -117,7 +120,7 @@ export function runEntry(o: EntryOptions): EntryResult {
   let lastTel = -1
   const aMax = o.landing ? o.landing.thrust / m : 0
 
-  ev('Entry interface', `${fmt(P.interfaceAlt / 1000)} km, ${fmt(o.entryVel)} m/s, γ ${o.fpaDeg.toFixed(1)}°, ${fmt(m / 1000, 1)} t, β ${fmt(beta0)} kg/m²`, 'info')
+  ev(tx('en.interface'), tx('en.interface.d', { alt: P.interfaceAlt / 1000, v: o.entryVel, fpa: o.fpaDeg, mass: m / 1000, beta: beta0 }), 'info')
 
   let dt = 0.1
   const tMax = 2400
@@ -136,17 +139,17 @@ export function runEntry(o: EntryOptions): EntryResult {
       if (burning && V < 12) {
         landed = true
         touchdownVel = V
-        ev('Touchdown', `${fmt(V, 1)} m/s, ${fmt(m / 1000, 1)} t landed, ${fmt(prop / 1000, 1)} t propellant left`, 'ok')
+        ev(tx('en.touchdown'), tx('en.touchdown.d', { v: V, mass: m / 1000, prop: prop / 1000 }), 'ok')
       } else {
         crashed = true
         touchdownVel = V
-        ev('Impact', `${fmt(V)} m/s at the surface${o.landing ? ' (landing burn could not stop it)' : ' — no landing propulsion'}`, 'fail')
+        ev(tx('en.impact'), tx('en.impact.d', { v: V, landing: !!o.landing }), 'fail')
       }
       break
     }
     if (h > P.interfaceAlt + 2000 && vr > 0) {
       skipped = true
-      ev('Skipped out', `Vehicle left the atmosphere at ${fmt(V)} m/s — entry too shallow`, 'fail')
+      ev(tx('en.skip'), tx('en.skip.d', { v: V }), 'fail')
       break
     }
 
@@ -155,7 +158,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     if (o.autoBank && !burning) {
       if (!pulledOut && vr > -60 && h < P.interfaceAlt - 15_000) {
         pulledOut = true
-        ev('Pull-out', `descent rate arrested at ${fmt(h / 1000)} km, ${fmt(V)} m/s — rolling lift down to stay in the atmosphere`, 'info')
+        ev(tx('en.pullout'), tx('en.pullout.d', { alt: h / 1000, v: V }), 'info')
       }
       // after pull-out: fly lift-neutral; lift-down only if actually climbing, lift-up if sinking fast
       bank = pulledOut ? (vr > 20 ? -1 : vr < -250 ? 1 : 0) : 1
@@ -179,7 +182,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     if (qdot > peakQ) peakQ = qdot
     if (!tpsFailed && qdot > o.entry.tpsLimit) {
       tpsFailed = true
-      ev('Heat shield limit exceeded', `${qdot.toFixed(1)} W/cm² > ${fmt(o.entry.tpsLimit)} W/cm² (${o.entry.tpsName}) at ${fmt(h / 1000)} km, ${fmt(V)} m/s`, 'fail')
+      ev(tx('en.tps'), tx('en.tps.d', { q: qdot, lim: o.entry.tpsLimit, tps, alt: h / 1000, v: V }), 'fail')
     }
 
     // landing burn logic
@@ -198,7 +201,7 @@ export function runEntry(o: EntryOptions): EntryResult {
       if ((afterPullOut && dragSpent && descending && aReq >= 0.5 * aMax) || h < 1200) {
         burning = true
         dt = 0.05
-        ev('Landing burn ignition', `${fmt(h / 1000, 1)} km, ${fmt(V)} m/s, Mach ${fmt(mach, 1)}, sink rate ${fmt(-vr)} m/s; needs ${fmt(aReq / G_MARS, 1)} g${P.name === 'Mars' ? ' (Mars)' : ''} of ${fmt(aMax / G_MARS, 1)} available; ${o.landing.label}`, aReq > aMax ? 'warn' : 'info')
+        ev(tx('en.burn'), tx('en.burn.d', { alt: h / 1000, v: V, mach, sink: -vr, need: aReq / G_MARS, mars: P.name === 'Mars', avail: aMax / G_MARS, landing: vref(o.vehicleId, 'landing', o.landing.label) }), aReq > aMax ? 'warn' : 'info')
       }
     }
     if (burning && prop > 0) {
@@ -217,17 +220,17 @@ export function runEntry(o: EntryOptions): EntryResult {
           landed = true
           touchdownVel = 2
           t += h / vd
-          ev('Touchdown', `vertical descent from ${fmt(h)} m; ${fmt(m / 1000, 1)} t landed, ${fmt(prop / 1000, 1)} t propellant left`, 'ok')
+          ev(tx('en.touchdown'), tx('en.touchdownVert.d', { h, mass: m / 1000, prop: prop / 1000 }), 'ok')
           if (o.hazard && o.hazard[1] < o.hazard[0]) {
             tipped = true
             landed = false
             crashed = true
-            ev('Tipped over', `a leg came down on a rock the landing could not see — the ship is on its side (hazard chance ${fmt(o.hazard[0] * 100)} %)`, 'fail')
+            ev(tx('en.tipped'), tx('en.tipped.d', { pct: o.hazard[0] * 100 }), 'fail')
           }
         } else {
           crashed = true
           touchdownVel = Math.sqrt(2 * G_MARS * h)
-          ev('Propellant exhausted', `${fmt(h)} m above the surface — fell at ${fmt(touchdownVel)} m/s`, 'fail')
+          ev(tx('en.propOut'), tx('en.propOut.d', { h, v: touchdownVel }), 'fail')
         }
         break
       }
@@ -242,7 +245,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     } else if (burning && prop <= 0) {
       // out of propellant mid-burn: ballistic to impact
       burning = false
-      ev('Propellant exhausted mid-burn', `${fmt(h / 1000, 2)} km, ${fmt(V)} m/s — now falling`, 'fail')
+      ev(tx('en.propOutBurn'), tx('en.propOutBurn.d', { alt: h / 1000, v: V }), 'fail')
     }
 
     // accelerations (semi-implicit Euler at small dt — forces vary smoothly)
@@ -254,7 +257,7 @@ export function runEntry(o: EntryOptions): EntryResult {
     if (gLoad > peakG) peakG = gLoad
     if (o.crewed && !gFailed && gLoad > o.gLimit) {
       gFailed = true
-      ev('Crew g-limit exceeded', `${fmt(gLoad, 1)} g sustained > ${fmt(o.gLimit, 1)} g limit for a deconditioned crew, at ${fmt(h / 1000)} km`, 'fail')
+      ev(tx('en.g'), tx('en.g.d', { g: gLoad, lim: o.gLimit, alt: h / 1000 }), 'fail')
     }
 
     vx += ax * dt
@@ -271,15 +274,15 @@ export function runEntry(o: EntryOptions): EntryResult {
     // announce peaks when they pass
     if (!peakHeatAnnounced && lastQ > 0.2 && qdot < lastQ && qdot > 0.5 * peakQ && peakQ > 1 && h < 100_000) {
       peakHeatAnnounced = true
-      ev('Peak heating', `${fmt(peakQ)} W/cm² at ${fmt(h / 1000)} km (limit ${fmt(o.entry.tpsLimit)}, ${o.entry.tpsName}); heat load so far ${fmt(heatLoad)} J/cm²`, peakQ > o.entry.tpsLimit ? 'fail' : peakQ > 0.8 * o.entry.tpsLimit ? 'warn' : 'info')
+      ev(tx('en.peakHeat'), tx('en.peakHeat.d', { q: peakQ, alt: h / 1000, lim: o.entry.tpsLimit, tps, load: heatLoad }), peakQ > o.entry.tpsLimit ? 'fail' : peakQ > 0.8 * o.entry.tpsLimit ? 'warn' : 'info')
     }
     if (!peakGAnnounced && lastG > 0.5 && gLoad < lastG && gLoad > 0.5 * peakG && peakG > 1 && !burning) {
       peakGAnnounced = true
-      ev('Peak deceleration', `${fmt(peakG, 1)} g at ${fmt(h / 1000)} km, ${fmt(V)} m/s`, peakG > o.gLimit && o.crewed ? 'fail' : peakG > 0.8 * o.gLimit && o.crewed ? 'warn' : 'info')
+      ev(tx('en.peakG'), tx('en.peakG.d', { g: peakG, alt: h / 1000, v: V }), peakG > o.gLimit && o.crewed ? 'fail' : peakG > 0.8 * o.gLimit && o.crewed ? 'warn' : 'info')
     }
     if (!mach2Done && mach < 2 && h < 60_000) {
       mach2Done = true
-      ev('Mach 2', `${fmt(h / 1000, 1)} km, ${fmt(V)} m/s — below this a parachute would be usable for ~1 t, not ${fmt(m / 1000)} t`, 'info')
+      ev(tx('en.mach2'), tx('en.mach2.d', { alt: h / 1000, v: V, mass: m / 1000 }), 'info')
     }
     lastQ = qdot
     lastG = gLoad
@@ -303,15 +306,16 @@ export function runEntry(o: EntryOptions): EntryResult {
     }
   }
   const ok = landed && !tpsFailed
-  let reason: string | undefined
-  if (tpsFailed) reason = 'Heat shield exceeded its limit'
-  else if (skipped) reason = 'Skipped out of the atmosphere'
-  else if (tipped) reason = 'Tipped over on landing'
-  else if (crashed) reason = 'Crashed'
-  else if (!landed) reason = 'Did not reach the surface in time'
+  let reason: Msg | undefined
+  if (tpsFailed) reason = tx('en.reason.tps')
+  else if (skipped) reason = tx('en.reason.skip')
+  else if (tipped) reason = tx('en.reason.tipped')
+  else if (crashed) reason = tx('en.reason.crashed')
+  else if (!landed) reason = tx('en.reason.slow')
   return {
     ok,
-    reason,
+    reason: reason ? en(reason) : undefined,
+    reasonMsg: reason,
     events,
     telemetry,
     peakG,

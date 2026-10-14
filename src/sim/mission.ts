@@ -8,6 +8,8 @@ import { runEntry } from './entry'
 import { runLeo } from './leo'
 import { computeTransfer } from './transfer'
 import { marsWeather, type MarsWeather } from './weather'
+import type { KeyMsg, Msg, Text } from '../i18n/msg'
+import { en, event, sref, stat, tx, vref } from './text'
 import type { CruiseResult, EntryResult, LeoResult, MissionConfig, MissionResult, Phase, SimEvent, TransferResult, Vehicle, Verdict } from './types'
 
 const CREW_MASS_EACH = 100 // kg: person + suit + personal effects
@@ -27,7 +29,9 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
   const crewMass = crew * CREW_MASS_EACH
   const events: SimEvent[] = []
   const phases: MissionResult['phases'] = []
-  const fmt = (v: number, d = 0) => v.toFixed(d)
+  const phase = (p: Phase, start: number, end: number, label: Msg) => phases.push({ phase: p, start, end, label: en(label), msg: label })
+  const upper = sref(vehicle.id, vehicle.stages[vehicle.stages.length - 1].id)
+  const scName = vref(vehicle.id, 'spacecraft', sc.name)
 
   // --- payload sizing ---
   let consumablesCarried = 0
@@ -50,7 +54,7 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
     boosterDryMass: vehicle.refuelable ? cfg.boosterDryMass : undefined,
   })
   events.push(...ascent.events)
-  phases.push({ phase: 'ascent', start: 0, end: ascent.duration, label: 'Launch' })
+  phase('ascent', 0, ascent.duration, tx('phase.launch'))
   let tCursor = ascent.duration
 
   let leo: LeoResult | null = null
@@ -83,7 +87,7 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
   // --- 3. LEO: refuelling campaign / parking orbit ---
   leo = runLeo(vehicle, cfg, ascent, tCursor, propTarget)
   events.push(...leo.events)
-  phases.push({ phase: 'leo', start: tCursor, end: tCursor + leo.campaignDays * DAY_S, label: vehicle.refuelable ? 'Refuelling in orbit' : 'Parking orbit' })
+  phase('leo', tCursor, tCursor + leo.campaignDays * DAY_S, tx(vehicle.refuelable ? 'phase.refuel' : 'phase.parking'))
   tCursor += leo.campaignDays * DAY_S
   let dvAvailable = 0
   let massAtDeparture = 0
@@ -104,8 +108,8 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
       const used = m0 * (1 - Math.exp((-need * 1000) / (isp * G0)))
       propAfterTmi = leo.propAtDeparture - used
       const burnTime = used / (vehicle.stages[vehicle.stages.length - 1].engines.reduce((a, e) => a + (e.thrustVac * e.count) / (e.ispVac * G0), 0))
-      events.push({ t: tCursor, phase: 'tmi', label: 'Trans-Mars injection burn', detail: `Δv ${need.toFixed(2)} km/s (C3 ${transfer.c3.toFixed(1)} + mid-course), ${fmt(used / 1000)} t propellant, ${fmt(burnTime)} s burn; ${fmt(propAfterTmi / 1000)} t left for landing`, severity: 'ok' })
-      phases.push({ phase: 'tmi', start: tCursor, end: tCursor + burnTime, label: 'TMI burn' })
+      events.push(event(tCursor, 'tmi', tx('tmi.burn'), tx('tmi.burn.d', { need, c3: transfer.c3, used: used / 1000, burn: burnTime, left: propAfterTmi / 1000 }), 'ok'))
+      phase('tmi', tCursor, tCursor + burnTime, tx('phase.tmi'))
       tCursor += burnTime
     }
   } else {
@@ -120,30 +124,30 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
     leo.dvAvailable = dvAvailable
     leo.massAtDeparture = massAtDeparture
     if (dvAvailable >= need) {
-      let detail = ''
+      let detail: Msg
       let scPropLeft = sc.propMass
       if (dv1 >= need) {
-        detail = `${vehicle.stages[vehicle.stages.length - 1].name} burns Δv ${need.toFixed(2)} km/s (had ${dv1.toFixed(2)})`
+        detail = tx('tmi.stage.d', { stage: upper, need, had: dv1 })
       } else {
         const rest = need - dv1
         const usedSc = (scDryAll + sc.propMass) * (1 - Math.exp((-rest * 1000) / (sc.isp * G0)))
         scPropLeft = sc.propMass - usedSc
-        detail = `${vehicle.stages[vehicle.stages.length - 1].name} gives ${dv1.toFixed(2)} km/s, ${sc.name} adds ${rest.toFixed(2)} km/s from its own tanks (${fmt(usedSc / 1000, 1)} t); ${fmt(scPropLeft / 1000, 1)} t left`
+        detail = tx('tmi.both.d', { stage: upper, dv1, sc: scName, rest, used: usedSc / 1000, left: scPropLeft / 1000 })
       }
       propAfterTmi = scPropLeft
-      events.push({ t: tCursor, phase: 'tmi', label: 'Trans-Mars injection burn', detail, severity: 'ok' })
-      phases.push({ phase: 'tmi', start: tCursor, end: tCursor + 600, label: 'TMI burn' })
+      events.push(event(tCursor, 'tmi', tx('tmi.burn'), detail, 'ok'))
+      phase('tmi', tCursor, tCursor + 600, tx('phase.tmi'))
       tCursor += 600
     }
   }
 
   const stats: Verdict['stats'] = []
   if (dvAvailable < need || missionMissed) {
-    const label = missionMissed ? 'Departure window missed' : 'Not enough Δv for trans-Mars injection'
+    const label = tx(missionMissed ? 'tmi.missed' : 'tmi.short')
     const detail = missionMissed
-      ? `The propellant campaign did not finish in time; the ship stays in Earth orbit.`
-      : `${dvAvailable.toFixed(2)} km/s available vs ${need.toFixed(2)} km/s needed (C3 ${transfer.c3.toFixed(1)} km²/s² from ${cfg.parkingOrbitKm} km). ${vehicle.refuelable ? `${fmt(leo.propAtDeparture / 1000)} t propellant aboard, ${fmt(massAtDeparture / 1000)} t total.` : 'Upper stage and spacecraft propellant combined.'}`
-    events.push({ t: tCursor, phase: 'tmi', label, detail, severity: 'fail' })
+      ? tx('tmi.missed.d')
+      : tx('tmi.short.d', { avail: dvAvailable, need, c3: transfer.c3, orbit: cfg.parkingOrbitKm, refuel: vehicle.refuelable, ...(vehicle.refuelable ? { prop: leo.propAtDeparture / 1000, mass: massAtDeparture / 1000 } : {}) })
+    events.push(event(tCursor, 'tmi', label, detail, 'fail'))
     verdict = makeVerdict(vehicle, cfg, crew, { ascent, leo, transfer, cruise, entry, weather, events, stats })
     return finish()
   }
@@ -151,15 +155,16 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
   // --- 4. cruise ---
   cruise = runCruise(vehicle, cfg, transfer, tCursor, crew, consumablesCarried)
   events.push(...cruise.events)
-  phases.push({ phase: 'cruise', start: tCursor, end: tCursor + transfer.transitDays * DAY_S, label: 'Cruise to Mars' })
+  phase('cruise', tCursor, tCursor + transfer.transitDays * DAY_S, tx('phase.cruise'))
   tCursor += transfer.transitDays * DAY_S
 
   // --- 5. entry, descent, landing ---
   weather = marsWeather(transfer.arrivalJD, cfg.dustStorm, cfg.surfaceWind)
   {
     const w = weather
-    const stormText = w.storm === 'global' ? `a planet-encircling dust storm is under way (τ ≈ ${w.tau}): entry density up ~${fmt((w.densityFactor - 1) * 100)} % at altitude, nothing to see below the dust, surface winds ~${fmt(w.wind)} m/s` : w.storm === 'regional' ? `a regional dust storm (τ ≈ ${w.tau}): entry density up ~${fmt((w.densityFactor - 1) * 100)} % at altitude, poor visibility, winds ~${fmt(w.wind)} m/s` : `clear skies (τ ≈ ${w.tau}), winds ~${fmt(w.wind)} m/s`
-    events.push({ t: tCursor, phase: 'entry', label: 'Weather at Mars', detail: `Ls ${fmt(w.ls)}°, ${w.season}; ${stormText}`, severity: w.storm === 'global' ? 'warn' : 'info' })
+    const density = (w.densityFactor - 1) * 100
+    const storm = w.storm === 'global' ? tx('wx.global', { tau: w.tau, density, wind: w.wind }) : w.storm === 'regional' ? tx('wx.regional', { tau: w.tau, density, wind: w.wind }) : tx('wx.clear', { tau: w.tau, wind: w.wind })
+    events.push(event(tCursor, 'entry', tx('wx.event'), tx('wx.event.d', { ls: w.ls, season: tx(`season.${w.seasonKey}`), storm }), w.storm === 'global' ? 'warn' : 'info'))
   }
   if (sc.entry) {
     if (vehicle.refuelable) {
@@ -186,32 +191,33 @@ export function runMission(vehicle: Vehicle, cfg: MissionConfig): MissionResult 
       crewed: crew > 0 && (cruise?.lifeSupportOk ?? true),
       stormDensity: weather.densityFactor,
       hazard: [weather.hazardChance, weather.roll],
+      vehicleId: vehicle.id,
     })
     for (const e of entry.events) events.push({ ...e, t: tCursor + e.t })
-    phases.push({ phase: 'entry', start: tCursor, end: tCursor + entry.duration, label: 'Entry, descent & landing' })
+    phase('entry', tCursor, tCursor + entry.duration, tx('phase.edl'))
     tCursor += entry.duration
     // the aftermath: dust settling after a touchdown, debris after an impact (nothing is simulated here)
     const burned = entry.events.some((e) => e.label.startsWith('Heat shield'))
     const skipped = entry.events.some((e) => e.label === 'Skipped out')
     const aftermath = burned || skipped ? 12 : 24
-    phases.push({ phase: 'landing', start: tCursor, end: tCursor + aftermath, label: entry.landed ? 'On the surface' : skipped ? 'Lost to space' : burned ? 'Break-up' : 'Impact' })
+    phase('landing', tCursor, tCursor + aftermath, tx(entry.landed ? 'phase.surface' : skipped ? 'phase.lost' : burned ? 'phase.breakup' : 'phase.impact'))
     tCursor += aftermath
     // a ship that lands with its crew alive: the first steps — hatch, elevator, boots on the
     // ground, the flag, the first habitat and power (a closing sequence; nothing is simulated)
     const crewAlive = crew > 0 && (cruise?.lifeSupportOk ?? true) && (cruise ? cruise.doseMsv <= 1000 : true)
     if (entry.landed && sc.entry?.kind === 'ship' && crewAlive) {
       const t1 = tCursor
-      events.push({ t: t1 + 30, phase: 'done', label: 'Hatch opens', detail: 'cabin pressure equalised to 0.6 kPa outside; the crew elevator deploys', severity: 'info' })
-      events.push({ t: t1 + 75, phase: 'done', label: 'First boots on Mars', detail: `${Math.min(crew, 6)} of the crew down the elevator; the surface holds`, severity: 'ok' })
-      events.push({ t: t1 + 120, phase: 'done', label: 'The flag', detail: 'planted 25 m from the ship, in the lee of the landing legs', severity: 'info' })
-      events.push({ t: t1 + 190, phase: 'done', label: 'Habitat inflated', detail: 'the first inflatable module up, airlock mated', severity: 'info' })
-      events.push({ t: t1 + 245, phase: 'done', label: 'Power on', detail: 'three roll-out solar blankets, ~40 kW at noon in clear air', severity: 'ok' })
-      phases.push({ phase: 'done', start: t1, end: t1 + 300, label: 'First steps' })
+      events.push(event(t1 + 30, 'done', tx('surf.hatch'), tx('surf.hatch.d'), 'info'))
+      events.push(event(t1 + 75, 'done', tx('surf.boots'), tx('surf.boots.d', { n: Math.min(crew, 6) }), 'ok'))
+      events.push(event(t1 + 120, 'done', tx('surf.flag'), tx('surf.flag.d'), 'info'))
+      events.push(event(t1 + 190, 'done', tx('surf.habitat'), tx('surf.habitat.d'), 'info'))
+      events.push(event(t1 + 245, 'done', tx('surf.power'), tx('surf.power.d'), 'ok'))
+      phase('done', t1, t1 + 300, tx('phase.firstSteps'))
       tCursor += 300
     }
   } else {
-    events.push({ t: tCursor, phase: 'entry', label: 'Mars flyby', detail: `${sc.name} has no entry system; it passes Mars at ${transfer.vInfArr.toFixed(2)} km/s and stays in solar orbit`, severity: 'warn' })
-    phases.push({ phase: 'entry', start: tCursor, end: tCursor + 3600, label: 'Mars flyby' })
+    events.push(event(tCursor, 'entry', tx('flyby'), tx('flyby.d', { sc: scName, v: transfer.vInfArr }), 'warn'))
+    phase('entry', tCursor, tCursor + 3600, tx('phase.flyby'))
     tCursor += 3600
   }
 
@@ -239,39 +245,52 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
   const { ascent, leo, transfer, cruise, entry, weather } = r
   const fails = r.events.filter((e) => e.severity === 'fail').sort((a, b) => a.t - b.t)
   const firstFailure = fails[0] ?? null
-  const fmt = (v: number, d = 0) => v.toFixed(d)
   const stats: Verdict['stats'] = []
   const reached = { leo: ascent.ok, tmi: false, mars: false, surface: false }
   let crewAlive = crew > 0
   let outcome: Verdict['outcome']
-  let headline: string
-  let summary: string
+  let headline: Text
+  let summary: Text
   const hasAbort = vehicle.spacecraft.entry?.kind === 'capsule'
+  const ship = vref(vehicle.id, 'short', vehicle.short)
+  // an event's name and detail as messages; a numeric parameter of its detail
+  const label = (e: SimEvent): Text => e.msg?.label ?? e.label
+  const detail = (e: SimEvent): Text => e.msg?.detail ?? e.detail
+  const param = (e: SimEvent | undefined, k: string): number | undefined => {
+    const d = e?.msg?.detail as KeyMsg | undefined
+    const v = d?.p?.[k]
+    return typeof v === 'number' ? v : undefined
+  }
+  const done = (): Verdict => ({ outcome, crewAlive, headline: en(headline), summary: en(summary), firstFailure, reached, stats, msg: { headline, summary } })
 
-  stats.push({ label: 'Launch', value: ascent.ok ? `${fmt(ascent.orbit!.rp)} × ${fmt(ascent.orbit!.ra)} km` : 'failed', note: ascent.ok ? `${fmt(ascent.massInOrbit / 1000)} t in orbit at T+${fmt(ascent.duration)} s` : ascent.reason, severity: ascent.ok ? 'ok' : 'fail' })
+  stats.push(
+    ascent.ok
+      ? stat(tx('st.launch'), tx('st.launch.v', { rp: ascent.orbit!.rp, ra: ascent.orbit!.ra }), tx('st.launch.n', { mass: ascent.massInOrbit / 1000, t: ascent.duration }), 'ok')
+      : stat(tx('st.launch'), tx('st.launch.fail'), ascent.reasonMsg, 'fail'),
+  )
 
   if (!ascent.ok) {
     outcome = 'failed-launch'
     crewAlive = crew > 0 && hasAbort
-    headline = `${vehicle.short} never made orbit`
-    summary = `${ascent.reason}. ${crew > 0 ? (hasAbort ? 'The capsule has a launch abort system — the crew gets out.' : 'Starship has no launch abort system.') : ''}`
-    return { outcome, crewAlive, headline, summary, firstFailure, reached, stats }
+    headline = tx('v.noOrbit', { ship })
+    summary = tx('v.noOrbit.s', { reason: ascent.reasonMsg ?? '', crew: crew > 0 ? (hasAbort ? 'abort' : 'noAbort') : 'none' })
+    return done()
   }
 
   if (leo && vehicle.refuelable) {
-    stats.push({ label: 'Propellant at departure', value: `${fmt(leo.propAtDeparture / 1000)} t`, note: `${leo.tankersLaunched} tankers over ${fmt(leo.campaignDays)} days, ${fmt(leo.boiloffLost / 1000, 1)} t boiled off`, severity: leo.propAtDeparture < 0.5 * (vehicle.refuelCapacity ?? 1) ? 'warn' : 'info' })
+    stats.push(stat(tx('st.prop'), tx('st.prop.v', { prop: leo.propAtDeparture / 1000 }), tx('st.prop.n', { n: leo.tankersLaunched, days: leo.campaignDays, boil: leo.boiloffLost / 1000 }), leo.propAtDeparture < 0.5 * (vehicle.refuelCapacity ?? 1) ? 'warn' : 'info'))
   }
   if (transfer && leo) {
     const need = transfer.dvTmi + MCC_DV
-    stats.push({ label: 'Δv for Mars', value: `${leo.dvAvailable.toFixed(2)} / ${need.toFixed(2)} km/s`, note: `available / needed (C3 ${transfer.c3.toFixed(1)} km²/s², ${fmt(transfer.transitDays)} days)`, severity: leo.dvAvailable >= need ? 'ok' : 'fail' })
+    stats.push(stat(tx('st.dv'), tx('st.dv.v', { avail: leo.dvAvailable, need }), tx('st.dv.n', { c3: transfer.c3, days: transfer.transitDays }), leo.dvAvailable >= need ? 'ok' : 'fail'))
   }
 
   const tmiFail = fails.find((e) => e.phase === 'tmi' || (e.phase === 'leo' && e.label.includes('window')))
   if (tmiFail || !cruise) {
     outcome = 'failed-tmi'
-    headline = `${vehicle.short} is stuck in Earth orbit`
-    summary = tmiFail ? `${tmiFail.label}. ${tmiFail.detail}` : 'The transfer could not be computed.'
-    return { outcome, crewAlive, headline, summary, firstFailure, reached, stats }
+    headline = tx('v.stuck', { ship })
+    summary = tmiFail ? tx('v.stuck.s', { label: label(tmiFail), detail: detail(tmiFail) }) : tx('v.stuck.none')
+    return done()
   }
   reached.tmi = true
 
@@ -279,26 +298,27 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
     if (crew > 0) {
       if (!cruise.lifeSupportOk) {
         crewAlive = false
-        stats.push({ label: 'Life support', value: `${fmt(cruise.consumablesRunOutDay ?? 0)} of ${fmt(cruise.days)} days`, note: 'crew lost in transit', severity: 'fail' })
+        stats.push(stat(tx('st.life'), tx('st.life.lost', { day: cruise.consumablesRunOutDay ?? 0, days: cruise.days }), tx('st.life.lost.n'), 'fail'))
       } else {
-        stats.push({ label: 'Life support', value: 'sufficient', note: vehicle.spacecraft.lifeSupportDays > 0 ? `${vehicle.spacecraft.lifeSupportDays}-day capability` : `${fmt(cruise.consumablesCarried / 1000, 1)} t consumables for ${crew}`, severity: 'ok' })
+        stats.push(stat(tx('st.life'), tx('st.life.ok'), vehicle.spacecraft.lifeSupportDays > 0 ? tx('st.life.cap.n', { days: vehicle.spacecraft.lifeSupportDays }) : tx('st.life.cons.n', { t: cruise.consumablesCarried / 1000, crew }), 'ok'))
       }
-      stats.push({ label: 'Radiation (outbound)', value: `${fmt(cruise.doseMsv)} mSv`, note: 'NASA career limit 600 mSv; return doubles it', severity: cruise.doseMsv > 600 ? 'fail' : cruise.doseMsv > 300 ? 'warn' : 'info' })
+      stats.push(stat(tx('st.rad'), tx('st.rad.v', { dose: cruise.doseMsv }), tx('st.rad.n'), cruise.doseMsv > 600 ? 'fail' : cruise.doseMsv > 300 ? 'warn' : 'info'))
     }
   }
   reached.mars = true
 
   if (!entry) {
     outcome = 'flyby'
-    headline = `${vehicle.short} reaches Mars — and flies past it`
-    summary = `No entry or capture system aboard. ${crew > 0 ? '' : 'Uncrewed.'}`
-    return { outcome, crewAlive, headline, summary, firstFailure, reached, stats }
+    headline = tx('v.flyby', { ship })
+    summary = tx('v.flyby.s', { crewed: crew > 0 })
+    return done()
   }
 
-  if (transfer) stats.push({ label: 'Entry', value: `${transfer.entryVel.toFixed(2)} km/s`, note: `β ${fmt(entry.beta)} kg/m², γ ${cfg.entryFpaDeg}°, ${fmt(entry.entryMass / 1000)} t`, severity: 'info' })
-  if (weather) stats.push({ label: 'Weather at Mars', value: weather.storm === 'global' ? 'Global dust storm' : weather.storm === 'regional' ? 'Regional dust storm' : 'Clear', note: `Ls ${fmt(weather.ls)}°, ${weather.season.split(' — ')[0]}; winds ${fmt(weather.wind)} m/s`, severity: weather.storm === 'global' ? 'warn' : 'info' })
-  stats.push({ label: 'Peak heating', value: `${fmt(entry.peakHeatFlux)} W/cm²`, note: `limit ${fmt(vehicle.spacecraft.entry!.tpsLimit)} (${vehicle.spacecraft.entry!.tpsName}); load ${fmt(entry.heatLoad)} J/cm²`, severity: entry.peakHeatFlux > vehicle.spacecraft.entry!.tpsLimit ? 'fail' : entry.peakHeatFlux > 0.8 * vehicle.spacecraft.entry!.tpsLimit ? 'warn' : 'ok' })
-  stats.push({ label: 'Peak deceleration', value: `${entry.peakG.toFixed(1)} g`, note: `crew limit ${cfg.gLimit} g`, severity: crew > 0 && entry.peakG > cfg.gLimit ? 'fail' : crew > 0 && entry.peakG > 0.8 * cfg.gLimit ? 'warn' : 'ok' })
+  const tps = vehicle.spacecraft.entry!
+  if (transfer) stats.push(stat(tx('st.entry'), tx('st.entry.v', { v: transfer.entryVel }), tx('st.entry.n', { beta: entry.beta, fpa: cfg.entryFpaDeg, mass: entry.entryMass / 1000 }), 'info'))
+  if (weather) stats.push(stat(tx('st.wx'), tx(weather.storm === 'global' ? 'st.wx.global' : weather.storm === 'regional' ? 'st.wx.regional' : 'st.wx.clear'), tx('st.wx.n', { ls: weather.ls, season: tx(`season.${weather.seasonKey}.short`), wind: weather.wind }), weather.storm === 'global' ? 'warn' : 'info'))
+  stats.push(stat(tx('st.heat'), tx('st.heat.v', { q: entry.peakHeatFlux }), tx('st.heat.n', { lim: tps.tpsLimit, tps: vref(vehicle.id, 'tps', tps.tpsName), load: entry.heatLoad }), entry.peakHeatFlux > tps.tpsLimit ? 'fail' : entry.peakHeatFlux > 0.8 * tps.tpsLimit ? 'warn' : 'ok'))
+  stats.push(stat(tx('st.g'), tx('st.g.v', { g: entry.peakG }), tx('st.g.n', { lim: cfg.gLimit }), crew > 0 && entry.peakG > cfg.gLimit ? 'fail' : crew > 0 && entry.peakG > 0.8 * cfg.gLimit ? 'warn' : 'ok'))
 
   const tpsFail = entry.events.find((e) => e.label.startsWith('Heat shield'))
   const gFail = entry.events.find((e) => e.label.startsWith('Crew g-limit'))
@@ -307,47 +327,36 @@ function makeVerdict(vehicle: Vehicle, cfg: MissionConfig, crew: number, r: Verd
   if (tpsFail) {
     outcome = 'burned-up'
     crewAlive = false
-    headline = `${vehicle.short} burns up in the Martian atmosphere`
+    headline = tx('v.burned', { ship })
     // the peak, not the moment of crossing (which reads "50.4 > 50"): how far past the rating it went
-    const tps = vehicle.spacecraft.entry!
-    const tpsShort = tps.tpsName.split(/[,(]/)[0].trim().toLowerCase()
-    const where = tpsFail.detail.match(/at ([\d.]+ km, \d+ m\/s)$/)?.[1]
-    summary = `Peak heating ${fmt(entry.peakHeatFlux)} W/cm² — past the ${fmt(tps.tpsLimit)} W/cm² the ${tpsShort} are rated for${where ? ` (first exceeded at ${where})` : ''}.`
+    summary = tx('v.burned.s', { q: entry.peakHeatFlux, lim: tps.tpsLimit, tps: vref(vehicle.id, 'tpsShort', tps.tpsName.split(/[,(]/)[0].trim().toLowerCase()), alt: param(tpsFail, 'alt'), v: param(tpsFail, 'v') })
   } else if (entry.tipped) {
     outcome = 'crashed'
-    headline = `${vehicle.short} lands on Mars — and tips over`
-    summary = `${entry.events.find((e) => e.label === 'Tipped over')?.detail ?? ''}. The crew likely survives the fall; the ship, the habitat and any return do not.`
+    headline = tx('v.tipped', { ship })
+    const tip = entry.events.find((e) => e.label === 'Tipped over')
+    summary = tx('v.tipped.s', { detail: tip ? detail(tip) : '' })
   } else if (entry.crashed && !entry.landed) {
     outcome = entry.events.some((e) => e.label === 'Skipped out') ? 'flyby' : 'crashed'
     if (outcome === 'crashed') crewAlive = false
-    headline = outcome === 'flyby' ? `${vehicle.short} skips off the atmosphere` : `${vehicle.short} crashes on Mars`
+    headline = tx(outcome === 'flyby' ? 'v.skipped' : 'v.crashed', { ship })
     const dry = entry.events.find((e) => e.label === 'Propellant exhausted mid-burn')
     const impact = entry.events.find((e) => e.label === 'Impact')
-    const at = dry?.detail.match(/^([\d.]+ km), (\d+ m\/s)/)
-    const what = vehicle.spacecraft.entry?.kind === 'capsule' ? 'the capsule' : 'the ship'
-    if (dry && impact && at) summary = `The landing engines ran dry ${at[1]} up at ${at[2]}; ${what} hit the ground at ${impact.detail.split(' at the surface')[0]}.`
-    else summary = entry.events.find((e) => e.severity === 'fail')?.detail ?? entry.reason ?? ''
+    const what = tx(vehicle.spacecraft.entry?.kind === 'capsule' ? 'v.what.capsule' : 'v.what.ship')
+    const dryAlt = param(dry, 'alt')
+    const dryV = param(dry, 'v')
+    const impactV = param(impact, 'v')
+    if (dryAlt !== undefined && dryV !== undefined && impactV !== undefined) summary = tx('v.crashed.dry', { alt: dryAlt, v: dryV, what, impact: impactV })
+    else {
+      const fail = entry.events.find((e) => e.severity === 'fail')
+      summary = fail ? detail(fail) : (entry.reasonMsg ?? '')
+    }
   } else {
     outcome = 'landed'
     reached.surface = true
-    headline = crewAlive ? `${vehicle.short} lands on Mars with its crew alive` : `${vehicle.short} lands on Mars — ${crew > 0 ? 'the crew did not survive the trip' : 'uncrewed'}`
-    summary = `Touchdown at ${entry.touchdownVel.toFixed(1)} m/s after a ${fmt(entry.landingDv)} m/s landing burn using ${fmt(entry.landingPropUsed / 1000, 1)} t.`
-    stats.push({ label: 'Landing burn', value: `${fmt(entry.landingDv)} m/s`, note: `${fmt(entry.landingPropUsed / 1000, 1)} t propellant`, severity: 'ok' })
+    headline = crewAlive ? tx('v.landed', { ship }) : tx('v.landedLost', { ship, crewed: crew > 0 })
+    summary = tx('v.landed.s', { v: entry.touchdownVel, dv: entry.landingDv, prop: entry.landingPropUsed / 1000 })
+    stats.push(stat(tx('st.landing'), tx('st.landing.v', { dv: entry.landingDv }), tx('st.landing.n', { prop: entry.landingPropUsed / 1000 }), 'ok'))
   }
-  if (crew > 0 && !crewAlive && outcome === 'landed') {
-    // keep headline
-  }
-  const firstFail = firstFailure
-  if (crew > 0 && !crewAlive && firstFail && outcome === 'landed') summary = `${summary} First failure: ${firstFail.label} — ${firstFail.detail}`
-  return { outcome, crewAlive, headline, summary, firstFailure, reached, stats }
-}
-
-export const PHASE_LABEL: Record<Phase, string> = {
-  ascent: 'Launch',
-  leo: 'Earth orbit',
-  tmi: 'TMI',
-  cruise: 'Cruise',
-  entry: 'Entry & landing',
-  landing: 'Landing',
-  done: 'Done',
+  if (crew > 0 && !crewAlive && firstFailure && outcome === 'landed') summary = tx('v.firstFail', { summary, label: label(firstFailure), detail: detail(firstFailure) })
+  return done()
 }

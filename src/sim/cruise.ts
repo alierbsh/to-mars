@@ -4,6 +4,8 @@
  * drinking water 2.79 kg; MSL RAD cruise dose 1.8 mSv/day; NASA career limit 600 mSv.
  */
 import { DAY_S } from './constants'
+import type { Msg } from '../i18n/msg'
+import { event, tx, vref } from './text'
 import type { CruiseResult, MissionConfig, SimEvent, TransferResult, Vehicle } from './types'
 
 export const O2_PER_DAY = 0.89
@@ -19,16 +21,15 @@ export function consumablesRate(cfg: MissionConfig): number {
 
 export function runCruise(vehicle: Vehicle, cfg: MissionConfig, transfer: TransferResult, t0: number, crew: number, consumablesCarried: number): CruiseResult {
   const events: SimEvent[] = []
-  const fmt = (v: number, d = 0) => v.toFixed(d)
   const days = transfer.transitDays
-  const ev = (tDays: number, label: string, detail: string, severity: SimEvent['severity'] = 'info') =>
-    events.push({ t: t0 + tDays * DAY_S, phase: 'cruise', label, detail, severity })
+  const ev = (tDays: number, label: Msg, detail: Msg, severity: SimEvent['severity'] = 'info') => events.push(event(t0 + tDays * DAY_S, 'cruise', label, detail, severity))
+  const sc = vref(vehicle.id, 'spacecraft', vehicle.spacecraft.name)
 
   const shieldFactor = vehicle.spacecraft.shielding >= 20 ? 0.85 : 1
   const dose = CRUISE_DOSE_MSV_PER_DAY * days * shieldFactor
 
-  ev(0, 'Trans-Mars injection complete', `C3 ${transfer.c3.toFixed(1)} km²/s², ${fmt(days)}-day transfer, arrival v∞ ${transfer.vInfArr.toFixed(2)} km/s`, 'ok')
-  ev(3, 'Leaving Earth\'s sphere of influence', '~0.92 million km out', 'info')
+  ev(0, tx('cr.tmi'), tx('cr.tmi.d', { c3: transfer.c3, days, vinf: transfer.vInfArr }), 'ok')
+  ev(3, tx('cr.earthSoi'), tx('cr.earthSoi.d'), 'info')
 
   let lifeSupportOk = true
   let runOut: number | null = null
@@ -41,9 +42,9 @@ export function runCruise(vehicle: Vehicle, cfg: MissionConfig, transfer: Transf
       if (cap < days) {
         runOut = cap
         lifeSupportOk = false
-        ev(cap, 'Life support exhausted', `${vehicle.spacecraft.name} supports ${cap} days of free flight; the transfer takes ${fmt(days)} — crew lost ${fmt(days - cap)} days short of Mars`, 'fail')
+        ev(cap, tx('cr.lifeOut'), tx('cr.lifeOut.d', { sc, cap, days, short: days - cap }), 'fail')
       } else {
-        ev(days, 'Life support', `${cap}-day capability covers the ${fmt(days)}-day transfer`, 'ok')
+        ev(days, tx('cr.life'), tx('cr.life.d', { cap, days }), 'ok')
       }
     } else {
       const rate = consumablesRate(cfg)
@@ -52,16 +53,16 @@ export function runCruise(vehicle: Vehicle, cfg: MissionConfig, transfer: Transf
       if (daysCovered < days) {
         runOut = daysCovered
         lifeSupportOk = false
-        ev(daysCovered, 'Consumables exhausted', `${fmt(consumablesCarried / 1000, 1)} t covers ${fmt(daysCovered)} days for ${crew} crew at ${rate.toFixed(1)} kg/person/day`, 'fail')
+        ev(daysCovered, tx('cr.consOut'), tx('cr.consOut.d', { t: consumablesCarried / 1000, days: daysCovered, crew, rate }), 'fail')
       } else {
-        ev(days / 2, 'Halfway', `consumables margin ${fmt(daysCovered - days)} days (${fmt(consumablesCarried / 1000, 1)} t carried, ${rate.toFixed(1)} kg/person/day with ${fmt(cfg.waterRecovery * 100)} % water / ${fmt(cfg.oxygenRecovery * 100)} % O₂ recovery)`, daysCovered - days < 30 ? 'warn' : 'info')
+        ev(days / 2, tx('cr.half'), tx('cr.half.d', { margin: daysCovered - days, t: consumablesCarried / 1000, rate, water: cfg.waterRecovery * 100, o2: cfg.oxygenRecovery * 100 }), daysCovered - days < 30 ? 'warn' : 'info')
       }
     }
     const doseSev = dose > CAREER_LIMIT_MSV ? 'fail' : dose > CAREER_LIMIT_MSV / 2 ? 'warn' : 'info'
-    ev(days * 0.75, 'Radiation', `${fmt(dose)} mSv accumulated so far on the way out (MSL RAD rate 1.8 mSv/day${shieldFactor < 1 ? ', 15 % shielding credit' : ', no dedicated shielding'}); NASA career limit 600 mSv — the return leg doubles it`, doseSev)
+    ev(days * 0.75, tx('cr.rad'), tx('cr.rad.d', { dose, shield: shieldFactor < 1 }), doseSev)
   } else {
-    ev(days / 2, 'Halfway', 'uncrewed — no consumables to track', 'info')
+    ev(days / 2, tx('cr.half'), tx('cr.half.uncrewed'), 'info')
   }
-  ev(days - 2, "Entering Mars' sphere of influence", `~0.58 million km from Mars, closing at ${transfer.vInfArr.toFixed(2)} km/s`, 'info')
+  ev(days - 2, tx('cr.marsSoi'), tx('cr.marsSoi.d', { v: transfer.vInfArr }), 'info')
   return { events, days, consumablesNeeded, consumablesCarried, consumablesRunOutDay: runOut, doseMsv: dose, lifeSupportOk }
 }

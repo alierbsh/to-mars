@@ -31,9 +31,11 @@ function main() {
         const r = runMission(v, cfg)
         const verdict = r.verdict
         const crewed = cfg.crew > 0 && v.spacecraft.crewCapacity > 0
-        // "21 of 318 days": the day the consumables ran out, and the length of the trip
+        // the day the consumables ran out, and the length of the trip
         const lifeSupport = verdict.stats.find((s) => s.label === 'Life support' && s.severity === 'fail')
-        const lost = lifeSupport?.value.match(/^(\d+) of (\d+)/)
+        const lifeValue = lifeSupport?.msg?.value
+        const lp = typeof lifeValue === 'object' && 'k' in lifeValue ? lifeValue.p : undefined
+        const lost = lp && typeof lp.day === 'number' && typeof lp.days === 'number' ? [Math.round(lp.day), Math.round(lp.days)] : null
         cells.push({
           vehicleId: v.id,
           presetId: p.id,
@@ -41,10 +43,11 @@ function main() {
           outcome: verdict.outcome,
           crewed,
           crewAlive: crewed && verdict.crewAlive,
-          crewLostDay: lost ? Number(lost[1]) : null,
-          tripDays: lost ? Number(lost[2]) : null,
+          crewLostDay: lost ? lost[0] : null,
+          tripDays: lost ? lost[1] : null,
           headline: verdict.headline,
           detail: clip(verdict.summary),
+          msg: verdict.msg ?? { headline: verdict.headline, summary: verdict.summary },
           stats: verdict.stats.filter((s) => s.severity === 'fail' || s.severity === 'warn').slice(0, 3).map((s) => ({ label: s.label, value: s.value, severity: s.severity as 'fail' | 'warn' })),
         })
       }

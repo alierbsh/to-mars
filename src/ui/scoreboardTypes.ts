@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG, PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
+import type { Text } from '../i18n/msg'
 import type { MissionConfig, Verdict } from '../sim/types'
 
 /** the configuration of one scoreboard cell: the defaults, the assumption set, the window, the ship */
@@ -23,6 +24,8 @@ export interface ScoreCell {
   headline: string
   /** the verdict's summary (clipped): what decided it */
   detail: string
+  /** headline and summary as messages, for the reader's language */
+  msg: { headline: Text; summary: Text }
   /** the failing and marginal numbers, at most three */
   stats: Array<{ label: string; value: string; severity: 'fail' | 'warn' }>
 }

@@ -6,6 +6,8 @@
 import { earthAtmosphere, marsAtmosphere, rocketCd, type AtmoState } from './atmosphere'
 import { EARTH_OMEGA, G0, MARS_OMEGA, MU_EARTH, MU_MARS, R_EARTH_MEAN, R_MARS_MEAN } from './constants'
 import { elementsFromState } from './orbit'
+import type { Msg } from '../i18n/msg'
+import { en, event, sref, tx, vref } from './text'
 import type { AscentResult, AscentSample, EngineGroup, SimEvent, Stage, Vehicle } from './types'
 
 /** the body being climbed away from */
@@ -156,8 +158,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
   const events: SimEvent[] = []
   const telemetry: AscentSample[] = []
   const stageTimes: Array<{ id: string; sep: number }> = []
-  const ev = (label: string, detail: string, severity: SimEvent['severity'] = 'info') =>
-    events.push({ t, phase: 'ascent', label, detail, severity })
+  const ev = (label: Msg, detail: Msg, severity: SimEvent['severity'] = 'info') => events.push(event(t, 'ascent', label, detail, severity))
 
   let maxQ = { q: 0, t: 0, alt: 0 }
   let maxG = 0
@@ -166,15 +167,13 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
   let dragLoss = 0
   let dvExpended = 0
   let ok = false
-  let reason: string | undefined
+  let reason: Msg | undefined
   let orbit: AscentResult['orbit'] = null
   let coastingToApo = false
   let coastDone = false
   let theta0 = 0 // launch-site angle for downrange
 
-  const fmt = (v: number, d = 0) => v.toFixed(d)
-
-  ev('Liftoff', `${vehicle.name} from ${vehicle.launchSite.name}, ${fmt(m / 1000)} t on the pad`, 'info')
+  ev(tx('asc.liftoff'), tx('asc.liftoff.d', { vehicle: vref(vehicle.id, 'name', vehicle.name), site: vref(vehicle.id, 'site', vehicle.launchSite.name), mass: m / 1000 }), 'info')
 
   type Mode = 'vertical' | 'kick' | 'gravityTurn' | 'closedLoop'
   let mode: Mode = 'vertical'
@@ -188,8 +187,8 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     const r = Math.hypot(x, y)
     const h = r - RE
     if (h < -5) {
-      reason = 'Impacted the surface'
-      ev('Impact', 'Vehicle hit the ground before reaching orbit', 'fail')
+      reason = tx('asc.reason.impact')
+      ev(tx('asc.impact'), tx('asc.impact.d'), 'fail')
       break
     }
     const rhatx = x / r
@@ -337,12 +336,12 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
     if (q > maxQ.q) maxQ = { q, t, alt: h }
     if (!mach1Done && mach >= 1) {
       mach1Done = true
-      ev('Mach 1', `${fmt(h / 1000, 1)} km, T+${fmt(t)} s`, 'info')
+      ev(tx('asc.mach1'), tx('asc.mach1.d', { alt: h / 1000, t }), 'info')
     }
     if (fairing > 0 && vehicle.fairingJettisonAlt != null && h > vehicle.fairingJettisonAlt) {
       fairing = 0
       m = totalMass()
-      ev('Fairing jettison', `${fmt(h / 1000)} km`, 'info')
+      ev(tx('asc.fairing'), tx('asc.fairing.d', { alt: h / 1000 }), 'info')
     }
     // booster burnout
     for (const b of boosters) {
@@ -352,7 +351,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
         b.separated = true
         b.sepT = t
         stageTimes.push({ id: b.def.id, sep: t })
-        ev(`${b.def.name} separation`, `${fmt(h / 1000)} km, ${fmt(v)} m/s, T+${fmt(t)} s`, 'info')
+        ev(tx('asc.boosterSep', { stage: sref(vehicle.id, b.def.id) }), tx('asc.sep.d', { alt: h / 1000, v, t }), 'info')
         m = totalMass()
       }
     }
@@ -365,20 +364,20 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
         cs.separated = true
         cs.sepT = t
         stageTimes.push({ id: cs.def.id, sep: t })
-        ev(`${cs.def.name} cutoff & separation`, `${fmt(h / 1000)} km, ${fmt(v)} m/s, T+${fmt(t)} s`, 'info')
+        ev(tx('asc.coreSep', { stage: sref(vehicle.id, cs.def.id) }), tx('asc.sep.d', { alt: h / 1000, v, t }), 'info')
         coreIdx++
         const nx = currentStage()
         nx.burning = true
         nx.ignitionT = t
-        ev(`${nx.def.name} ignition`, `T+${fmt(t)} s`, 'info')
+        ev(tx('asc.ignition', { stage: sref(vehicle.id, nx.def.id) }), tx('asc.ignition.d', { t }), 'info')
         m = totalMass()
       } else {
         // final stage exhausted without orbit
         const el = elementsFromState([x / 1000, y / 1000, 0], [vx / 1000, vy / 1000, 0], P.mu)
         const rpAlt = el.rp - P.radius
         const raAlt = el.ra === Infinity ? Infinity : el.ra - P.radius
-        reason = `Propellant exhausted: periapsis ${fmt(rpAlt)} km, apoapsis ${raAlt === Infinity ? '∞' : fmt(raAlt)} km`
-        ev('Propellant depleted before orbit', reason, 'fail')
+        reason = tx('asc.propOut.d', { rp: rpAlt, ra: raAlt === Infinity ? null : raAlt })
+        ev(tx('asc.propOut'), reason, 'fail')
         break
       }
     }
@@ -391,7 +390,7 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
         cs.burning = false
         ok = true
         orbit = { rp: el.rp - P.radius, ra: el.ra - P.radius, alt: h / 1000, vel: v }
-        ev('SECO — orbit', `${fmt(orbit.rp)} × ${fmt(orbit.ra)} km, ${fmt(v)} m/s, T+${fmt(t)} s; ${fmt(cs.prop / 1000, 1)} t propellant left`, 'ok')
+        ev(tx('asc.seco'), tx('asc.seco.d', { rp: orbit.rp, ra: orbit.ra, v, t, prop: cs.prop / 1000 }), 'ok')
         break
       }
       const lowThrust = (F * throttle) / m / G0 < 0.35
@@ -407,14 +406,14 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
           (cs.engines.reduce((acc, e) => acc + e.mdot * e.count, 0) * G0)
         const propNeeded = m * (1 - Math.exp(-dv / (isp * G0)))
         const tCoast = el.period / 2 // ~half an orbit from a low point to apoapsis (approximation)
-        ev('SECO-1', `${fmt(rpAlt / 1000)} × ${fmt(raAlt / 1000)} km, ${fmt(v)} m/s, T+${fmt(t)} s`, 'info')
+        ev(tx('asc.seco1'), tx('asc.seco1.d', { rp: rpAlt / 1000, ra: raAlt / 1000, v, t }), 'info')
         if (propNeeded <= cs.prop) {
           cs.prop -= propNeeded
           t += tCoast
           m = totalMass()
           ok = true
           orbit = { rp: el.ra - P.radius, ra: el.ra - P.radius, alt: el.ra - P.radius, vel: vCirc }
-          ev('Circularisation burn', `Δv ${fmt(dv)} m/s at apoapsis, ${fmt(orbit.alt)} km circular; ${fmt(cs.prop / 1000, 1)} t propellant left`, 'ok')
+          ev(tx('asc.circ'), tx('asc.circ.d', { dv, alt: orbit.alt, prop: cs.prop / 1000 }), 'ok')
           // move the state to the circular orbit for consistency
           const ang = Math.atan2(y, x) + Math.PI
           x = raM * Math.cos(ang)
@@ -422,8 +421,8 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
           vx = -vCirc * Math.sin(ang)
           vy = vCirc * Math.cos(ang)
         } else {
-          reason = `Not enough propellant to circularise (${fmt(dv)} m/s needed, ${fmt(propNeeded / 1000, 1)} t; ${fmt(cs.prop / 1000, 1)} t left)`
-          ev('Circularisation impossible', reason, 'fail')
+          reason = tx('asc.circFail.d', { dv, need: propNeeded / 1000, left: cs.prop / 1000 })
+          ev(tx('asc.circFail'), reason, 'fail')
         }
         break
       }
@@ -450,14 +449,15 @@ export function runAscent(vehicle: Vehicle, opts: AscentOptions): AscentResult {
       })
     }
   }
-  if (!ok && !reason) reason = 'Timed out'
+  if (!ok && !reason) reason = tx('asc.reason.timeout')
   const last = currentStage()
   const finalStageDry = last.dry
   const massInOrbit = ok ? m : 0
   void theta0
   return {
     ok,
-    reason,
+    reason: reason ? en(reason) : undefined,
+    reasonMsg: reason,
     events,
     telemetry,
     massInOrbit,

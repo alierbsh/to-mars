@@ -3,6 +3,8 @@
  * ship, or simply the residual upper-stage propellant for everything else.
  */
 import { DAY_S } from './constants'
+import type { Msg } from '../i18n/msg'
+import { event, sref, tx } from './text'
 import type { AscentResult, LeoResult, MissionConfig, SimEvent, Vehicle } from './types'
 
 export const WINDOW_LENGTH_DAYS = 150 // practical departure period around the minimum-C3 date (warn)
@@ -14,12 +16,10 @@ export const WINDOW_MISS_DAYS = 300 // campaign longer than this cannot make the
  */
 export function runLeo(vehicle: Vehicle, cfg: MissionConfig, ascent: AscentResult, t0: number, propTarget: number): LeoResult {
   const events: SimEvent[] = []
-  const fmt = (v: number, d = 0) => v.toFixed(d)
-  const ev = (tDays: number, label: string, detail: string, severity: SimEvent['severity'] = 'info') =>
-    events.push({ t: t0 + tDays * DAY_S, phase: 'leo', label, detail, severity })
+  const ev = (tDays: number, label: Msg, detail: Msg, severity: SimEvent['severity'] = 'info') => events.push(event(t0 + tDays * DAY_S, 'leo', label, detail, severity))
 
   if (!vehicle.refuelable) {
-    ev(0, 'Parking orbit', `${fmt(ascent.massInOrbit / 1000, 1)} t in orbit; ${fmt(ascent.residualProp / 1000, 1)} t propellant left in the ${vehicle.stages[vehicle.stages.length - 1].name}`, 'info')
+    ev(0, tx('leo.parking'), tx('leo.parking.d', { mass: ascent.massInOrbit / 1000, prop: ascent.residualProp / 1000, stage: sref(vehicle.id, vehicle.stages[vehicle.stages.length - 1].id) }), 'info')
     return {
       events,
       propAtDeparture: ascent.residualProp,
@@ -39,7 +39,7 @@ export function runLeo(vehicle: Vehicle, cfg: MissionConfig, ascent: AscentResul
   let delivered = 0
   let day = 0
   const checkout = 3
-  ev(0, 'Ship in parking orbit', `arrived with ${fmt(prop / 1000, 1)} t residual propellant; the mission needs ${fmt(target / 1000)} t aboard at departure (${fmt(Math.max(0, target - prop) / 1000)} t more)`, 'info')
+  ev(0, tx('leo.ship'), tx('leo.ship.d', { res: prop / 1000, target: target / 1000, more: Math.max(0, target - prop) / 1000 }), 'info')
   let launched = 0
   for (let i = 1; i <= cfg.tankers; i++) {
     // enough already (allowing for boil-off during checkout)?
@@ -52,24 +52,24 @@ export function runLeo(vehicle: Vehicle, cfg: MissionConfig, ascent: AscentResul
     prop += add
     delivered += add
     launched = i
-    ev(day, `Tanker ${i} docks`, `+${fmt(add / 1000)} t → ${fmt(prop / 1000)} t aboard (${fmt((100 * prop) / target)} % of what the mission needs)`, 'info')
+    ev(day, tx('leo.tanker', { n: i }), tx('leo.tanker.d', { add: add / 1000, aboard: prop / 1000, pct: (100 * prop) / target }), 'info')
   }
   // checkout before departure
   prop *= Math.pow(1 - r, checkout)
   day += checkout
   const lost = ascent.residualProp + delivered - prop
   const fill = prop / target
-  ev(day, 'Propellant campaign complete', `${fmt(prop / 1000)} t aboard (${fmt(fill * 100)} % of the ${fmt(target / 1000)} t needed) after ${launched} tankers over ${fmt(day)} days; boil-off lost ${fmt(lost / 1000, 1)} t`, fill < 0.98 ? 'warn' : 'info')
+  ev(day, tx('leo.done'), tx('leo.done.d', { aboard: prop / 1000, pct: fill * 100, target: target / 1000, n: launched, days: day, lost: lost / 1000 }), fill < 0.98 ? 'warn' : 'info')
   if (fill < 0.98) {
-    ev(day, 'Short of propellant', `${launched} tankers delivering ${fmt(cfg.propPerTanker / 1000)} t each could not reach the ${fmt(target / 1000)} t the mission needs`, 'warn')
+    ev(day, tx('leo.short'), tx('leo.short.d', { n: launched, each: cfg.propPerTanker / 1000, target: target / 1000 }), 'warn')
   }
   if (day > WINDOW_MISS_DAYS) {
-    ev(day, 'Launch window missed', `${fmt(day)}-day campaign is longer than the ${WINDOW_MISS_DAYS}-day limit around the opportunity — the next window is 26 months away`, 'fail')
+    ev(day, tx('leo.missed'), tx('leo.missed.d', { days: day, limit: WINDOW_MISS_DAYS }), 'fail')
   } else if (day > WINDOW_LENGTH_DAYS) {
-    ev(day, 'Campaign longer than the window', `${fmt(day)} days vs ~${WINDOW_LENGTH_DAYS}-day departure period; departure C3 will be worse than the minimum`, 'warn')
+    ev(day, tx('leo.long'), tx('leo.long.d', { days: day, limit: WINDOW_LENGTH_DAYS }), 'warn')
   }
   if (lost > 0.1 * delivered && delivered > 0) {
-    ev(day, 'Boil-off', `${fmt((100 * lost) / Math.max(delivered, 1))} % of the delivered propellant boiled away at ${(r * 100).toFixed(2)} %/day`, 'warn')
+    ev(day, tx('leo.boiloff'), tx('leo.boiloff.d', { pct: (100 * lost) / Math.max(delivered, 1), rate: r * 100 }), 'warn')
   }
   const reserve = vehicle.spacecraft.landing?.reserve ?? 0
   return {

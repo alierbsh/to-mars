@@ -2,6 +2,7 @@
  * Shared simulation types: vehicles, mission configuration, results.
  * Masses in kg, thrust in N, Isp in s, lengths in m unless stated.
  */
+import type { Msg, Text } from '../i18n/msg'
 import type { MarsWeather } from './weather'
 
 export interface EngineGroup {
@@ -173,9 +174,12 @@ export interface SimEvent {
   /** mission elapsed time, s */
   t: number
   phase: Phase
+  /** the event's name and detail in English (the simulation's own text) */
   label: string
   detail: string
   severity: Severity
+  /** the same as messages, for the interface to render in the reader's language */
+  msg?: { label: Text; detail: Text }
 }
 
 export type Phase = 'ascent' | 'leo' | 'tmi' | 'cruise' | 'entry' | 'landing' | 'done'
@@ -213,6 +217,7 @@ export interface EntrySample {
 export interface AscentResult {
   ok: boolean
   reason?: string
+  reasonMsg?: Msg
   events: SimEvent[]
   telemetry: AscentSample[]
   /** mass delivered to the parking orbit including the final stage and residuals */
@@ -270,6 +275,7 @@ export interface CruiseResult {
 export interface EntryResult {
   ok: boolean
   reason?: string
+  reasonMsg?: Msg
   events: SimEvent[]
   telemetry: EntrySample[]
   peakG: number
@@ -294,7 +300,17 @@ export interface Verdict {
   summary: string
   firstFailure: SimEvent | null
   reached: { leo: boolean; tmi: boolean; mars: boolean; surface: boolean }
-  stats: Array<{ label: string; value: string; note?: string; severity?: Severity }>
+  stats: VerdictStat[]
+  /** headline and summary as messages */
+  msg?: { headline: Text; summary: Text }
+}
+
+export interface VerdictStat {
+  label: string
+  value: string
+  note?: string
+  severity?: Severity
+  msg?: { label: Text; value: Text; note?: Text }
 }
 
 export interface MissionResult {
@@ -308,7 +324,7 @@ export interface MissionResult {
   weather: MarsWeather | null
   verdict: Verdict
   events: SimEvent[]
-  /** phase boundaries in mission time (s) */
-  phases: Array<{ phase: Phase; start: number; end: number; label: string }>
+  /** phase boundaries in mission time (s); label in English, msg for the interface */
+  phases: Array<{ phase: Phase; start: number; end: number; label: string; msg?: Msg }>
   computeMs: number
 }

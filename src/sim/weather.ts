@@ -15,14 +15,18 @@
  */
 import { J2000_JD } from './constants'
 import { hash2 } from '../scene/noise'
+import { en, tx } from './text'
 
 export type StormKind = 'none' | 'regional' | 'global'
 export type DustStormSetting = 'random' | StormKind
+export type SeasonKey = 'nSpring' | 'nSummer' | 'sSpring' | 'sSummer'
 
 export interface MarsWeather {
   /** areocentric solar longitude at arrival, degrees */
   ls: number
+  /** the season in English, and its key in the message catalogs (season.<key>, season.<key>.short) */
   season: string
+  seasonKey: SeasonKey
   storm: StormKind
   /** visible optical depth */
   tau: number
@@ -46,11 +50,15 @@ export function solarLongitude(jd: number): number {
   return ((ls % 360) + 360) % 360
 }
 
+export function seasonKey(ls: number): SeasonKey {
+  if (ls < 90) return 'nSpring'
+  if (ls < 180) return 'nSummer'
+  if (ls < 270) return 'sSpring'
+  return 'sSummer'
+}
+
 export function seasonName(ls: number): string {
-  if (ls < 90) return 'northern spring'
-  if (ls < 180) return 'northern summer'
-  if (ls < 270) return 'southern spring — dust-storm season'
-  return 'southern summer — dust-storm season'
+  return en(tx(`season.${seasonKey(ls)}`))
 }
 
 export function marsWeather(arrivalJd: number, setting: DustStormSetting, surfaceWind: number): MarsWeather {
@@ -70,5 +78,5 @@ export function marsWeather(arrivalJd: number, setting: DustStormSetting, surfac
   // hazard: with terrain-relative navigation and hazard avoidance (Perseverance-class) a few per
   // cent; blind in a regional storm a tenth; blind in a global storm, a quarter
   const hazardChance = storm === 'global' ? 0.25 : storm === 'regional' ? 0.1 : 0.02
-  return { ls, season: seasonName(ls), storm, tau, densityFactor, wind, gust, hazardChance, roll }
+  return { ls, season: seasonName(ls), seasonKey: seasonKey(ls), storm, tau, densityFactor, wind, gust, hazardChance, roll }
 }
