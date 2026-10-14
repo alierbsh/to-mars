@@ -32,7 +32,7 @@ The ground is painted offline (`scripts/cape-assets.py`) in the azimuthal-equidi
 
 The air is a physically based atmosphere (Rayleigh + Mie single scattering, `src/scene/atmosphere.ts`, injected into every ground material and the sky): blue sky and a pale horizon band at the pad, aerial perspective on distant ground, the thin blue limb and black sky above 100 km, the stars fading in on the way. The chase camera knows where the horizon is and frames the limb as the rocket pitches over.
 
-In orbit the Earth is the NASA Blue Marble at 4k (each tanker docking gets a close shot of the two ships in daylight, the limb above them) with a roughness map for the sun's glint on the oceans, a procedural cloud layer, a fresnel limb glow, the Hipparcos star map as the sky, and the Moon at its true angular size (`scripts/earth-assets.py` builds the clouds and the star map).
+In orbit the Earth is the NASA Blue Marble at 4k with a roughness map for the sun's glint on the oceans, NASA's real cloud cover (its edges broken up close by noise) and city lights that come on across the night side, a limb that reddens at the terminator and keeps the airglow's green line at night, point stars and the Moon at its true angular size. Each tanker docking and the departure burn are flown over the Bahamas in early afternoon, where the ascent's 0.5 km/px regional tile and its cumulus deck take over from the globe: the docking shot dollies in on the pair as the tanker closes, the burn shot starts behind the glowing engines and swings out along the hull. The ship passes through the planet's shadow on the night side, its light reddening as the sun sets behind the limb (`scripts/orbit-earth-assets.py` builds the cloud and night maps).
 
 The landing is at Gusev crater, the Spirit landing site: the regional terrain is JPL's 3D-printable DEM of Gusev (MOLA/HRSC-derived), the near field uses the HiRISE-derived DEM of Victoria crater, and the planet below is the NASA/JPL global colour mosaic — all from NASA-3D-Resources, rasterised to 16-bit heightmaps in `public/assets/mars`. Secondary craters, dunes, dust-devil tracks, regolith and the rock field are procedural; the colour maps are rasterised in a worker. The weather at arrival (season, dust storm, surface wind) is drawn from the storm record, seeded by the date.
 
@@ -85,7 +85,7 @@ src/
   i18n/     languages: message keys, number formats, the language store; en/ (the source catalogs) and tr es fr de hi zh
   wiki/     the chapters' order and the timeline marks that open them (texts in i18n/<lang>/wiki.ts)
   state/    zustand store + playback pacing
-scripts/    checks, screenshots, and the offline asset builders (cape-assets.py, earth-assets.py, stl2height.py)
+scripts/    checks, screenshots, and the offline asset builders (cape-assets.py, orbit-earth-assets.py, stl2height.py)
 docs/research/  the research behind the numbers
 ```
 

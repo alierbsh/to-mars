@@ -13,7 +13,7 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets')
 DIRS = ['cape', 'earth']
-SKIP = {'stars.jpg'}
+SKIP: set[str] = set()
 # maps whose shipped size is cut (w) before the half variants are made: the alpha masks and the
 # water colour never needed the colour map's resolution
 CAP = {'cape-': {'-alpha.png': 2048, '-water.jpg': 1024}, 'complex-': {'-alpha.png': 1024}, 'pad-': {'-alpha.png': 1024}}
