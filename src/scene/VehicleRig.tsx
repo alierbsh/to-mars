@@ -11,6 +11,7 @@ import type { MissionResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { ascentAt, entryAt } from '../ui/hud'
 import { PAD_DECK } from './capeSite'
+import { ANIMATED_PARTS, MERGE, mergeStatic } from './mergeStatic'
 import { MAT } from './parts'
 import { Plume, plumeKindFor, type PlumeKind } from './Plume'
 import { SPACECRAFT_GROUP, VehicleModel } from './vehicles'
@@ -46,6 +47,9 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       }
     })
     setAnchors(list)
+    // one mesh per material per stage instead of hundreds (the legs and the frost stay separate:
+    // they are animated by name)
+    if (MERGE) return mergeStatic(root.current, { keep: ANIMATED_PARTS })
   }, [id])
 
   useFrame(() => {

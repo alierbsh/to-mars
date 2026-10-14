@@ -6,11 +6,12 @@
  */
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { PadId } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { PAD_DECK, PAD_MOUND, padHeight } from './capeSite'
+import { MERGE, mergeStatic } from './mergeStatic'
 
 /** ground level at (x, z) around a pad: the deck sits on the mound top; the terrain falls away beyond it */
 function siteY(pad: PadId, x: number, z: number): number {
@@ -235,7 +236,7 @@ function StarshipPad() {
         </group>
       </group>
       {/* ship quick-disconnect arm: swings clear in the first seconds */}
-      <group ref={qd} position={[tx + 7, 0, 0]}>
+      <group ref={qd} position={[tx + 7, 0, 0]} userData={{ mergeRoot: true }}>
         <SwingArm x={0} z={-2} y={79} len={20} material={steel} h={3} w={4} />
       </group>
       {/* booster QD at the mount */}
@@ -297,7 +298,7 @@ function FssPad() {
       <SwingArm x={fx + 6} z={-6} y={62} len={22} material={white} h={3.2} w={3.6} />
       <Box p={[fx + 29, 62, -6]} s={[4, 4, 4]} material={white} />
       {/* transporter-erector: strongback against the rocket, tilting back at liftoff; launch mount at the base */}
-      <group ref={te} position={[0, deck, 12.5]}>
+      <group ref={te} position={[0, deck, 12.5]} userData={{ mergeRoot: true }}>
         <Lattice x={0} z={-3} y0={0} w={6} h={70} bay={7} member={0.45} material={dark} />
         {[14, 30, 46, 60].map((y) => (
           <Box key={y} p={[0, y - deck, -7.5]} s={[9, 1.2, 3]} material={dark} />
@@ -382,7 +383,7 @@ function UmbilicalPad() {
   )
 }
 
-export function PadStructures({ pad }: { pad: PadId }) {
+function PadFor({ pad }: { pad: PadId }) {
   switch (pad) {
     case 'lc39a-starship':
       return <StarshipPad />
@@ -397,6 +398,17 @@ export function PadStructures({ pad }: { pad: PadId }) {
     case 'slc37':
       return <UmbilicalPad />
   }
+}
+
+/** the pad's structures, their static meshes merged into a draw call per material (the arms that swing at liftoff are merge roots of their own) */
+export function PadStructures({ pad }: { pad: PadId }) {
+  const g = useRef<THREE.Group>(null)
+  useEffect(() => (MERGE && g.current ? mergeStatic(g.current, { byName: false }) : undefined), [pad])
+  return (
+    <group ref={g}>
+      <PadFor pad={pad} />
+    </group>
+  )
 }
 
 useGLTF.preload(`${BASE_URL}assets/pad/mobile-launcher.glb`, `${BASE_URL}draco/`)

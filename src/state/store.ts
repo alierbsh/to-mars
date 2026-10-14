@@ -41,6 +41,8 @@ export interface AppState {
   quality: Quality
   /** true once the viewer chose a tier themselves (no automatic stepping down then) */
   qualityPinned: boolean
+  /** below the low tier: the canvas renders this fraction of a CSS pixel (1 = as the tier says) */
+  dprScale: number
   /** where the pick step's preselected mission came from (it says so), or null */
   pickFrom: 'shared' | 'scoreboard' | null
   /** the scoreboard overlay is open */
@@ -63,6 +65,7 @@ export interface AppState {
   closeWiki: () => void
   /** set the graphics tier; `pin` records it as the viewer's choice (null clears the choice) */
   setQuality: (q: Quality, pin?: boolean) => void
+  setDprScale: (s: number) => void
   showToast: (text: string) => void
   setFeedback: (open: boolean) => void
   openBoard: () => void
@@ -135,6 +138,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   feedback: false,
   quality: detectQuality(),
   qualityPinned: (typeof location !== 'undefined' && new URLSearchParams(location.search).has('quality')) || (typeof localStorage !== 'undefined' && !!localStorage.getItem('occupy-mars:quality')),
+  dprScale: 1,
   result: null,
   status: 'idle',
   error: null,
@@ -176,8 +180,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeWiki: () => set({ wiki: null }),
   setQuality: (quality, pin = false) => {
     if (pin) saveQuality(quality)
-    set({ quality, qualityPinned: pin })
+    set({ quality, qualityPinned: pin, dprScale: 1 })
   },
+  setDprScale: (dprScale) => set({ dprScale }),
   showToast: (text) => set((s) => ({ toast: { text, id: (s.toast?.id ?? 0) + 1 } })),
   setFeedback: (feedback) => set({ feedback }),
   openBoard: () => set({ board: true, wiki: null, drawer: null }),

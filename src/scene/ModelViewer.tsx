@@ -9,6 +9,7 @@ import { Environment, Lightformer } from '@react-three/drei'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
+import { ANIMATED_PARTS, MERGE, mergeStatic } from './mergeStatic'
 import { Plume, plumeKindFor } from './Plume'
 import { VehicleModel } from './vehicles'
 
@@ -34,6 +35,13 @@ function StaticFire({ id, expansion, floor }: { id: string; expansion: number; f
       })}
     </group>
   )
+}
+
+/** the model as the site draws it: its static meshes merged (see mergeStatic) */
+function Merged({ id, children }: { id: string; children: React.ReactNode }) {
+  const g = useRef<THREE.Group>(null)
+  useEffect(() => (MERGE && g.current ? mergeStatic(g.current, { keep: ANIMATED_PARTS }) : undefined), [id])
+  return <group ref={g}>{children}</group>
 }
 
 export default function ModelViewer({ id, view, az, fire, expansion, floor }: { id: string; view: string; az: number; fire?: boolean; expansion?: number; floor?: number }) {
@@ -80,7 +88,9 @@ export default function ModelViewer({ id, view, az, fire, expansion, floor }: { 
           <circleGeometry args={[400, 64]} />
           <meshStandardMaterial color="#3b3a36" roughness={1} />
         </mesh>
-        <group position={[0, lift, 0]}>{fire ? <StaticFire id={v.id} expansion={expansion ?? 1} floor={floor ?? Infinity} /> : <VehicleModel id={v.id} />}</group>
+        <group position={[0, lift, 0]}>
+          <Merged id={v.id}>{fire ? <StaticFire id={v.id} expansion={expansion ?? 1} floor={floor ?? Infinity} /> : <VehicleModel id={v.id} />}</Merged>
+        </group>
       </Canvas>
     </div>
   )
