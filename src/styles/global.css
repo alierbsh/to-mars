@@ -96,7 +96,7 @@ ul, ol { padding: 0; list-style: none; }
 .craft__new { padding: 6px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t2); white-space: nowrap; transition: background 0.2s var(--ease), color 0.2s; }
 .craft__new:hover { color: var(--t1); background: rgba(255, 255, 255, 0.06); }
 .top__right { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-.status { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); display: flex; align-items: center; gap: 6px; margin-right: 8px; }
+.status { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); display: flex; align-items: center; gap: 6px; margin-right: 8px; white-space: nowrap; }
 .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .status--running::before { background: var(--warn); box-shadow: none; }
 .status--error::before { background: var(--fail); }

@@ -92,7 +92,7 @@ export const UI: UiCatalog = {
   },
   lower: {
     /** the phases along the timeline, short */
-    phases: { ascent: 'Montée', leo: 'Orbite', tmi: 'TMI', cruise: 'Croisière', entry: 'EDL', landing: 'Posé', done: 'Surface' },
+    phases: { ascent: 'Montée', leo: 'Orbite', tmi: 'TMI', cruise: 'Croisière', entry: 'EDL', landing: 'Arrivée', done: 'Surface' },
     /** the engine groups under the engine dots */
     booster: 'Propulseur',
     boosterN: (p: { n: number }) => `Latéral ${p.n}`,

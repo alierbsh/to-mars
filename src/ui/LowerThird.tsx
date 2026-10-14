@@ -7,7 +7,7 @@
  * rings draw themselves, the arcs sweep round to the live values, the timeline draws from the
  * left, the engines light one after another.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import type { MissionResult, Stage as StageDef, Vehicle } from '../sim/types'
 import { useAppStore, useThrottledT } from '../state/store'
@@ -78,8 +78,9 @@ function unitsFor(vehicle: Vehicle, L: Bundle): EngineUnit[] {
   const name = (s: StageDef, i: number, copies: number) => {
     if (vehicle.id === 'starship-v3') return s.id === 'ship' ? U.ship : U.booster
     if (s.role === 'booster') return copies > 1 ? U.boosterN({ n: i + 1 }) : U.booster
-    if (s.role === 'upper') return vehicle.stages.filter((x) => x.role !== 'booster').indexOf(s) === 1 ? U.stage2 : U.stage3
-    return U.core
+    // the stages in firing order: the first is the core, then stage 2, stage 3 (Saturn V's S-II, Long March 10's second stage)
+    const k = vehicle.stages.filter((x) => x.role !== 'booster').indexOf(s)
+    return k <= 0 ? U.core : k === 1 ? U.stage2 : U.stage3
   }
   for (const s of vehicle.stages) {
     const n = s.engines.reduce((a, e) => a + e.count, 0)
@@ -129,9 +130,30 @@ function Engines({ result, vehicle, t, open }: { result: MissionResult; vehicle:
   )
 }
 
+/** a label's width in px, estimated: tracked capitals at `latin` px per character; Han and Devanagari (set larger, untracked) */
+function textWidth(s: string, latin: number, han: number, deva: number): number {
+  let w = 0
+  for (const ch of s) w += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? han : /[\u0900-\u097f]/.test(ch) ? deva : latin
+  return w
+}
+/** a mark's name (8.5 px), a phase's label under the line (9.5 px) */
+const nameWidth = (s: string) => textWidth(s, 6.6, 10.5, 5)
+const phaseLabelWidth = (s: string) => textWidth(s, 7.6, 11, 5.5)
+
 function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onSeek: (t: number) => void }) {
   const L = useT()
   const marks = useMemo(() => marksAt(result), [result])
+  // the timeline's width, to keep the marks' names from running into each other
+  const box = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    setWidth(el.clientWidth)
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const openWiki = useAppStore((s) => s.openWiki)
   const phases = result.phases
   const n = phases.length
@@ -156,8 +178,44 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
     return layout.left[i] + f * layout.w[i]
   }
   const now = fracOf(t)
+  // the phases' labels under the line: the one under way always, the others where they do not run
+  // into a label already shown (narrow screens, long words)
+  const showPhase = new Set<number>()
+  {
+    const spans: Array<[number, number]> = []
+    const span = (i: number): [number, number] => {
+      const x = layout.left[i] * width
+      const half = phaseLabelWidth(L.ui.lower.phases[phases[i].phase]) / 2
+      return [x - half, x + half]
+    }
+    for (const i of [activeIdx, ...phases.map((_, i) => i).filter((i) => i !== activeIdx)]) {
+      const [a, b] = span(i)
+      if (i !== activeIdx && spans.some(([c, d]) => a < d + 14 && b > c - 14)) continue
+      spans.push([a, b])
+      showPhase.add(i)
+    }
+  }
+  // the names of the phase under way: above or below the line, alternating, each where it does not
+  // overlap the one before it on that row — or not at all
+  const place = new Map<number, { low: boolean; named: boolean }>()
+  const right = [-Infinity, -Infinity]
+  let k = 0
+  marks.forEach((m, i) => {
+    if (phases[activeIdx].phase !== m.phase) return
+    const x = fracOf(m.t) * width
+    const half = nameWidth(markLabel(m, L)) / 2
+    const pref = k++ % 2
+    for (const row of [pref, 1 - pref]) {
+      if (x - half >= right[row] + 6) {
+        right[row] = x + half
+        place.set(i, { low: row === 1, named: true })
+        return
+      }
+    }
+    place.set(i, { low: pref === 1, named: false })
+  })
   return (
-    <div className="tl">
+    <div className="tl" ref={box}>
       <div className="tl__line" />
       <div className="tl__fill" style={{ width: `${now * 100}%` }} />
       <div className="tl__phases">
@@ -177,7 +235,9 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
               title={`${L.t(p.msg ?? p.label)}: ${fmtT(p.start, L)} → ${fmtT(p.end, L)}`}
             >
               <span className="tl__tick" />
-              <span className="tl__phaselabel">{L.ui.lower.phases[p.phase]}</span>
+              <span className="tl__phaselabel" style={showPhase.has(i) ? undefined : { visibility: 'hidden' }}>
+                {L.ui.lower.phases[p.phase]}
+              </span>
             </button>
           )
         })}
@@ -185,14 +245,12 @@ function Timeline({ result, t, onSeek }: { result: MissionResult; t: number; onS
       {marks.map((m, i) => {
         const f = fracOf(m.t)
         const past = t >= m.t
-        const inActive = phases[activeIdx].phase === m.phase
-        const idxInPhase = marks.filter((x) => x.phase === m.phase).indexOf(m)
         const chapter = chapterForMark(m.key)
         const name = markLabel(m, L)
-        // names alternate above and below the line (the phase labels sit in a third row)
-        const low = idxInPhase % 2 === 1
+        // names sit above or below the line (the phase labels are a third row), only in the phase under way
+        const { low, named } = place.get(i) ?? { low: false, named: false }
         return (
-          <span key={`${m.key}-${m.n ?? ''}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${low ? 'tl__mark--low' : ''} ${inActive ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
+          <span key={`${m.key}-${m.n ?? ''}-${i}`} className={`tl__mark tl__mark--${m.tone} ${past ? 'tl__mark--past' : ''} ${low ? 'tl__mark--low' : ''} ${named ? 'tl__mark--named' : ''}`} style={{ left: `${f * 100}%`, animationDelay: `${0.9 + i * 0.05}s` }}>
             <span className="tl__dot" />
             {chapter ? (
               <button className="tl__name tl__name--link" onClick={() => openWiki(chapter.id)} title={L.ui.lower.wikiTitle({ title: L.wiki[chapter.id].title })}>
