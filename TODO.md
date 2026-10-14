@@ -34,6 +34,14 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **Compressed textures (KTX2 / Basis Universal).** The ground and Earth maps stay compressed on the GPU (ETC1S → ETC2/BC1/BC7/ASTC in the browser): the pad scene's texture memory 300 → ~90 MB on high, 99 → ~38 MB on low, at about the same download; the JPEGs remain as the fallback.
 - [x] **Languages — last, after everything else.** The whole site in Türkçe, Español, Français, Deutsch, हिन्दी and 中文 besides English — the interface, the intro, the verdicts and every event the simulation logs, the vehicles' texts, the scoreboard and the 14 wiki chapters — with a language picker (top bar, opening screen, Mission settings) and the browser's language on a first visit. The simulation speaks in message keys, so its English stayed byte-identical; numbers and dates follow each language.
 
+## Muhammet's list, 14 Oct (second run)
+- [x] **An address per language.** `/en/ /tr/ /es/ /fr/ /de/ /hi/ /zh/`, each with its own title, description, link-preview image and hreflang links; the bare `/` moves to the viewer's language.
+- [x] **Give us feedback.** A link under the wordmark and on the opening screen; a panel with the address, an email (subject filled in, the mission's link and the device under the signature), copy.
+- [x] **Phone performance.** Frames on demand (the clock and the scenes at the frame cap, 15 fps paused, 4 under a full-screen panel), static meshes merged (a third of the draw calls), coarser flames and no flame lights on low, no light switching (the liftoff stall), a pixel budget and a pixel step-down for weak devices, audio asleep when muted or hidden, Mars prepared after the climb. Fixed: on the low tier the sea covered the Cape a few km up.
+- [x] **The Wiki button is "Anla!"** — Understand! · ¡Entiende! · Comprendre ! · Verstehen! · समझें! · 看懂！
+- [x] **Graphics on the opening screen.** Auto / High / Medium / Low on the ship-choice step, next to the time speed.
+- [ ] Possible next: compile the next scene's shaders before the cut (orbit, cruise, entry) — on a slow phone each cut can stall for a second while its programs compile.
+
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
 - Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
