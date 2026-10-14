@@ -28,6 +28,16 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **After touchdown (Starship only): the first steps.** A 300 s `First steps` phase after a crewed landing: the hatch, the elevator, suited figures walking out, the flag, a habitat inflating, solar blankets unrolling, cargo crates — `scene/FirstSteps.tsx`, with its own camera shots.
 - [x] **A wiki.** 14 chapters in plain language (`wiki/chapters.ts`), a reading overlay (`ui/Wiki.tsx`) opened from the Wiki pill, from the timeline's event marks, or `?wiki=<chapter>`.
 
+## Muhammet's list, 14 Oct — in this order
+- [ ] **Sharing.** A link preview image (og:image), a Share button that puts the mission's settings in the link, and a shared link that opens on the ship choice with that mission ready to launch.
+- [ ] **Scoreboard.** Every rocket × departure window × assumption set at a glance — 90 missions precomputed — with the number that decided each one; a cell starts that mission.
+- [ ] **Compressed textures (KTX2 / Basis Universal).** The ground and Earth maps stay compressed on the GPU: 4–8× less video memory and bandwidth, the biggest lever left for phones.
+- [ ] **Languages — last, after everything else.** The whole site in Turkish, Chinese, Hindi, Spanish, French and German besides English: the UI, the intro, the verdicts, the event texts, the scoreboard and the wiki, with a language picker.
+
+## Parked (owner's call, 14 Oct)
+- The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
+- Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
+- Real landing-site terrain for Arcadia Planitia (Starship's lead candidate; the sim lands at Gusev because that DEM was at hand): not now.
+
 ## Model
-- [ ] Return trip (Mars ascent, Earth return) — the ascent integrator is planet-generic now; the Mars launch, the return transfer and Earth entry are not wired up yet.
 - [x] Dust storms (drawn from the storm record by arrival season), storm-lifted entry density, surface wind and the blind-landing hazard.
