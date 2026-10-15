@@ -208,8 +208,10 @@ export function Prewarm({ vehicleId, ready }: { vehicleId: string; ready: () => 
       st.swept = true
       if (DEBUG) console.log(`[warm] swept ${st.shot}: ${st.main.count} objects, programs=${gl.info.programs?.length ?? 0} ${now.toFixed(0)}`)
     }
-    if (st.swept && !drew && st.main.idle && st.main.undrawn && now >= st.drawAt) {
-      st.drawAt = now + 10_000
+    // the view on screen: once a shot, after its sweep (what it shows is drawn anyway; this is for
+    // what it hides until later)
+    if (st.swept && !drew && st.main.idle && st.main.undrawn && st.drawAt < st.since) {
+      st.drawAt = now
       st.main.prerender(gl, camera)
       if (DEBUG) console.log(`[warm] drew ${st.shot}: ${gl.info.render.calls} calls, programs=${gl.info.programs?.length ?? 0} ${now.toFixed(0)}`)
     }
