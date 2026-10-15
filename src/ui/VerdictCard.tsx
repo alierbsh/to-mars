@@ -1,6 +1,7 @@
 import { VEHICLES } from '../data/vehicles'
 import { getL, useT } from '../i18n'
-import { useAppStore } from '../state/store'
+import type { MissionResult } from '../sim/types'
+import { phaseAt, useAppStore } from '../state/store'
 import { shareMission } from './share'
 
 const MILESTONES = [
@@ -10,6 +11,32 @@ const MILESTONES = [
   ['surface', 'landing'],
 ] as const
 
+/**
+ * When the verdict shows: a few seconds into what follows the entry (on the surface, the impact,
+ * the break-up, the miss), or at the end of a mission that never gets there. Before that the
+ * card only says what has just happened — the outcome is the film's ending, not its poster.
+ */
+export function revealAt(r: MissionResult): number {
+  const after = r.phases.find((p) => p.phase === 'landing')
+  return after ? after.start + 3 : r.phases[r.phases.length - 1].end
+}
+
+/** the latest event at or before t (an index into result.events; -1 before the first) */
+function eventAt(r: MissionResult, t: number): number {
+  const ev = r.events
+  let lo = 0
+  let hi = ev.length - 1
+  let at = -1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (ev[mid].t <= t + 1e-6) {
+      at = mid
+      lo = mid + 1
+    } else hi = mid - 1
+  }
+  return at
+}
+
 /** The one thing the page is for: did they make it, and what decided it. Four numbers at most. */
 export default function VerdictCard() {
   const L = useT()
@@ -18,6 +45,10 @@ export default function VerdictCard() {
   const status = useAppStore((s) => s.status)
   const error = useAppStore((s) => s.error)
   const setDrawer = useAppStore((s) => s.setDrawer)
+  // derived from the clock as small values, so the card renders only when they change
+  const revealed = useAppStore((s) => !!s.result && s.t >= revealAt(s.result))
+  const ei = useAppStore((s) => (s.result ? eventAt(s.result, s.t) : -1))
+  const pi = useAppStore((s) => (s.result ? s.result.phases.indexOf(phaseAt(s.result, s.t)) : 0))
 
   if (status === 'error')
     return (
@@ -33,6 +64,25 @@ export default function VerdictCard() {
         <h1 className="verdict__headline">{V.running}</h1>
       </section>
     )
+  if (!revealed) {
+    // the mission as it plays: the stage it is in, and what has just happened there
+    const e = ei >= 0 ? result.events[ei] : null
+    const p = result.phases[Math.max(0, pi)]
+    return (
+      <section className={`verdict verdict--now ${status === 'running' ? 'verdict--stale' : ''}`} role="status" aria-live="polite" aria-label={V.mission}>
+        <p className={`label label--now label--${e?.severity === 'info' ? 'live' : (e?.severity ?? 'live')}`}>
+          <span className="label__dot" aria-hidden="true" />
+          {L.t(p.msg ?? p.label)}
+        </p>
+        {e && (
+          <div key={ei} className="now">
+            <h2 className="now__title">{L.t(e.msg?.label ?? e.label)}</h2>
+            <p className="now__detail">{L.t(e.msg?.detail ?? e.detail)}</p>
+          </div>
+        )}
+      </section>
+    )
+  }
   const v = result.verdict
   const vehicle = VEHICLES.find((x) => x.id === result.vehicleId)!
   const crewed = result.config.crew > 0 && vehicle.spacecraft.crewCapacity > 0
@@ -42,7 +92,7 @@ export default function VerdictCard() {
   const ranked = [...v.stats].sort((a, b) => rank(b.severity) - rank(a.severity)).slice(0, 4)
 
   return (
-    <section className={`verdict verdict--${tone} ${status === 'running' ? 'verdict--stale' : ''}`}>
+    <section className={`verdict verdict--${tone} verdict--reveal ${status === 'running' ? 'verdict--stale' : ''}`}>
       <p className={`label label--${tone}`}>
         <span className="label__dot" aria-hidden="true" />
         {statusLabel}

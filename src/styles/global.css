@@ -171,6 +171,15 @@ ul, ol { padding: 0; list-style: none; }
   transition: opacity 0.25s;
 }
 .verdict--stale { opacity: 0.55; }
+/* while the mission plays: only what has just happened (the verdict waits for the end) */
+.verdict--now { width: 300px; padding: 14px 16px 15px; }
+.label--live .label__dot { background: var(--t1); box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
+.label--now { color: var(--t3); }
+.now { animation: now-in 0.5s var(--ease) both; }
+.now__title { font-size: 17px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; margin-top: 8px; }
+.now__detail { margin-top: 4px; font-size: 12.5px; line-height: 1.45; color: var(--t2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.verdict--reveal { animation: now-in 0.7s var(--ease) both; }
+@keyframes now-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .app--details .verdict, .app--mission .lower, .app--mission .brand, .app--details .top__right { opacity: 0; pointer-events: none; }
 .verdict__headline { font-size: 21px; line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; margin: 10px 0 6px; }
 .verdict__summary { color: var(--t2); font-size: 13px; }
@@ -469,6 +478,9 @@ ul, ol { padding: 0; list-style: none; }
   .verdict { top: auto; bottom: 138px; left: 12px; right: 12px; width: auto; padding: 10px 14px 9px; }
   .verdict__headline { font-size: 15px; margin-top: 2px; }
   .verdict__summary, .keystat__note, .milestones, .keystats { display: none; }
+  .verdict--now { padding: 9px 14px 10px; }
+  .now__title { font-size: 14.5px; margin-top: 3px; }
+  .now__detail { -webkit-line-clamp: 1; font-size: 12px; margin-top: 1px; }
   .verdict__actions { margin-top: 4px; }
   .verdict__more { font-size: 12px; }
   .toast { bottom: 210px; }
