@@ -114,7 +114,8 @@ function globeCrop(img: HTMLImageElement, box: { lon0: number; lon1: number; lat
   const n = GLOBE_N
   const c = document.createElement('canvas')
   c.width = c.height = n
-  const ctx = c.getContext('2d')!
+  // (a canvas kept in memory: reading a GPU one back waits for the GPU)
+  const ctx = c.getContext('2d', { willReadFrequently: true })!
   const W = img.width
   const H = img.height
   // u = lon/2π + 0.5 (lon −π..π), v = 0.5 − lat/π (row 0 = north)

@@ -9,26 +9,32 @@ import * as THREE from 'three'
 export { hash2, noise2, fbm, sampleHeight, type Heightmap } from './noise'
 import type { Heightmap } from './noise'
 
-/** Decode an RG-encoded 16-bit heightmap PNG (R high byte, G low byte). */
+/**
+ * Decode an RG-encoded 16-bit heightmap PNG (R high byte, G low byte). The image is decoded off the
+ * main thread (`decode()`) and read back from a canvas kept in memory (`willReadFrequently`): a
+ * GPU canvas's getImageData waits for the GPU — it was a stall of its own at the cut to orbit.
+ */
 export function loadHeightmap(url: string): Promise<Heightmap> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = url
+  return img
+    .decode()
+    .catch(() => {
+      throw new Error(`heightmap ${url}`)
+    })
+    .then(() => {
       const n = img.width
       const c = document.createElement('canvas')
       c.width = n
       c.height = img.height
-      const ctx = c.getContext('2d')!
+      const ctx = c.getContext('2d', { willReadFrequently: true })!
       ctx.drawImage(img, 0, 0)
       const px = ctx.getImageData(0, 0, n, img.height).data
       const data = new Float32Array(n * img.height)
       for (let i = 0; i < data.length; i++) data[i] = (px[i * 4] * 256 + px[i * 4 + 1]) / 65535
-      resolve({ n, data })
-    }
-    img.onerror = () => reject(new Error(`heightmap ${url}`))
-    img.src = url
-  })
+      return { n, data }
+    })
 }
 
 export interface CapBounds {

@@ -47,7 +47,8 @@ function waterAt(mask: HTMLImageElement, half: number, x: number, z: number): bo
     const c = document.createElement('canvas')
     c.width = img.width
     c.height = img.height
-    const ctx = c.getContext('2d')!
+    // (a canvas kept in memory: reading a GPU one back waits for the GPU)
+    const ctx = c.getContext('2d', { willReadFrequently: true })!
     ctx.drawImage(img, 0, 0)
     img.__alpha = ctx.getImageData(0, 0, img.width, img.height).data
     img.__n = img.width

@@ -65,9 +65,12 @@ for (let i = 0; i < cuts.length; i++) {
   const mine = lt.filter(([s]) => s >= from - 200 && s < to)
   const total = mine.reduce((a, [, d]) => a + d, 0)
   const worst = mine.reduce((a, [, d]) => Math.max(a, d), 0)
-  // the first ten seconds after the view mounts: where a cut's stall lands
+  // the cut itself (its first 2 s), then the first ten seconds (where the next shot starts being
+  // built ahead), then the whole shot
+  const sum = (l) => `${l.length} (${l.reduce((a, [, d]) => a + d, 0).toFixed(0)} ms, worst ${l.reduce((a, [, d]) => Math.max(a, d), 0).toFixed(0)} ms)`
+  const cut = mine.filter(([s]) => s < from + 2_000)
   const early = mine.filter(([s]) => s < from + 10_000)
-  console.log(`${views[i]}: long tasks in the first 10 s ${early.length} (${early.reduce((a, [, d]) => a + d, 0).toFixed(0)} ms, worst ${early.reduce((a, [, d]) => Math.max(a, d), 0).toFixed(0)} ms); whole view ${mine.length} (${total.toFixed(0)} ms, worst ${worst.toFixed(0)} ms)`)
+  console.log(`${views[i]}: long tasks at the cut (2 s) ${sum(cut)}; in the first 10 s ${sum(early)}; whole shot ${sum(mine)}`)
 }
 const prog = perf.map((p) => (p.match(/programs=(\d+)/) ?? [])[1]).filter(Boolean)
 console.log('programs over time:', prog.join(' '))

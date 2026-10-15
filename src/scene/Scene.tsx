@@ -184,9 +184,12 @@ export default function Scene() {
   })
 
   // Mars's maps (two DEMs decoded, the ground rasterised in a worker) are needed at entry: start
-  // on them once the climb is over, not while a phone is still loading the opening
+  // on them once the climb is over, not while a phone is still loading the opening — and a few
+  // seconds after the cut, not in it
   useEffect(() => {
-    if (view !== 'ascent') prewarmMars()
+    if (view === 'ascent') return
+    const id = window.setTimeout(prewarmMars, 6000)
+    return () => window.clearTimeout(id)
   }, [view])
 
   return (

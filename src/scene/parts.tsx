@@ -281,7 +281,8 @@ export function getRingSkin(): { map: THREE.CanvasTexture; rough: THREE.CanvasTe
   }
   const cm = mk()
   const cr = mk()
-  const ctx = cm.getContext('2d')!
+  // (read back below: a canvas kept in memory, not on the GPU)
+  const ctx = cm.getContext('2d', { willReadFrequently: true })!
   const rtx = cr.getContext('2d')!
   let seed = 7
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
