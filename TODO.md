@@ -40,7 +40,7 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **Phone performance.** Frames on demand (the clock and the scenes at the frame cap, 15 fps paused, 4 under a full-screen panel), static meshes merged (a third of the draw calls), coarser flames and no flame lights on low, no light switching (the liftoff stall), a pixel budget and a pixel step-down for weak devices, audio asleep when muted or hidden, Mars prepared after the climb. Fixed: on the low tier the sea covered the Cape a few km up.
 - [x] **The Wiki button is "Anla!"** — Understand! · ¡Entiende! · Comprendre ! · Verstehen! · समझें! · 看懂！
 - [x] **Graphics on the opening screen.** Auto / High / Medium / Low on the ship-choice step, next to the time speed.
-- [ ] Possible next: compile the next scene's shaders before the cut (orbit, cruise, entry) — on a slow phone each cut can stall for a second while its programs compile.
+- [x] Compile the next scene's shaders before the cut — done on 15 Oct (below).
 
 ## Muhammet's list, 14 Oct (third run) — realism
 - [x] **The Earth during the dockings.** NASA's real cloud cover (edges broken up close), the city lights at night (sodium orange, broken into districts close up), the dusk band, airglow, lightning in night storms, point stars; the dockings and the departure burn flown over the Bahamas in daylight on the 0.5 km/px regional tile with its cumulus and their shadows; eclipse and orbital sunset; the tanker's thruster puffs.
@@ -48,7 +48,15 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **Staging.** Starship hot-staging with flame from the vented ring, the booster's flip and boostback burn, a pitch that turns at a rocket's rate; condensation collars through Mach 1.
 - [x] **The cruise as film.** Leaving Earth (the planet swinging round behind the ship and shrinking, the Moon beside it) and closing on Mars (growing ahead, veiled by the storm, its limb); the entry opens on the same black sky and glowing limb.
 - [x] Seams: the Cape tiles fade over ~4 km; the regional tile's beaches no longer outline every island.
-- [ ] Proposed next: the real star catalogue (constellations you can recognise, in orbit and the cruise); the sun where it really is for the launch date and hour; the booster caught by the tower's arms; a signal-delay readout through the cruise (light-minutes to Earth); a sound for hot staging and the boostback; compile the next scene's shaders before each cut.
+- [ ] Proposed next: the real star catalogue (constellations you can recognise, in orbit and the cruise); the sun where it really is for the launch date and hour; the booster caught by the tower's arms; a signal-delay readout through the cruise (light-minutes to Earth); a sound for hot staging and the boostback.
+
+## Muhammet's list, 15 Oct (fourth run)
+- [x] **No pause at the scene cuts.** The next shot is built a few seconds ahead in a scene that is never drawn, its shaders compiled a few a frame, its maps uploaded, then drawn once into a single pixel; at the cut the real view finds everything ready (`scene/Prewarm.tsx`, `scene/precompile.ts`). Long tasks after each cut, headless SwiftShader: orbit 12.6 s → 0.3 s, leaving Earth 17.8 → 0.4, closing on Mars 4.2 → 0, the entry 7.7 → 0.4 (`scripts/stalls.mjs`; `?prewarm=0` compares).
+- [x] **Give us feedback only in the wiki and in Mission settings** (at the foot of each).
+- [x] **The info card no longer gives the ending away.** While the mission plays: the stage and the latest event, as it happens; the verdict (outcome, milestones, numbers, Share) once the ship is down — or lost.
+- [x] **The wordmark in every language.** Mars'ı İşgal Et Simülasyonu, Simulación Ocupa Marte, Simulation Occupons Mars, Besetzt den Mars, मंगल पर बसो सिमुलेशन, 占领火星模拟 — the tab titles, link previews and share sheet too.
+- [x] Performance besides: no light-count change half a minute after staging (it rebuilt every shader mid-climb), the hidden flames and dust built before they are needed, flames only on the stages that can fire in orbit and at Mars, Mars's site built once per session, fog and maps set before a view's first frame.
+- [ ] Possible next: a shot-change still pays React's mount of the new view (tens of ms on a phone); the views could be mounted once, ahead, and promoted at the cut instead of built twice.
 
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
