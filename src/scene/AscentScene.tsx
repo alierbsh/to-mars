@@ -8,7 +8,7 @@
  * view, then drops to put the Earth's limb under the stack once it is coasting downrange.
  */
 import { useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import { useAppStore } from '../state/store'
@@ -48,8 +48,10 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
   const tmp = useMemo(() => new THREE.Vector3(), [])
 
-  // the scene's distance fog is for the other phases: here the atmosphere does the haze
-  useEffect(() => {
+  // the scene's distance fog is for the other phases: here the atmosphere does the haze. A layout
+  // effect: set and given back within the commit, before any frame is drawn (the shaders are
+  // built with or without fog, and the view after this one must not get a frame without it)
+  useLayoutEffect(() => {
     const fog = scene.fog
     const bg = scene.background
     scene.fog = null

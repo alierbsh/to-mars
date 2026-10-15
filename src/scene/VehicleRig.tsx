@@ -8,7 +8,7 @@
  * React re-renders).
  */
 import { createPortal, useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { VEHICLES } from '../data/vehicles'
 import type { MissionResult } from '../sim/types'
@@ -40,6 +40,8 @@ const smooth01 = (x: number) => {
   return c * c * (3 - 2 * c)
 }
 
+const GLOW_PROXY = new THREE.BoxGeometry(0.01, 0.01, 0.01)
+
 /** seconds after separation that a booster lights for its boostback */
 const BOOSTBACK_IGNITION = 6
 
@@ -68,7 +70,9 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   const parts = useRef<{ list: THREE.Group[]; frostGroup: THREE.Group | null; frostMats: THREE.MeshStandardMaterial[] } | null>(null)
   const vehicle = VEHICLES.find((v) => v.id === id)!
 
-  useEffect(() => {
+  // a layout effect: the flames (and their lights) and the merged meshes are in place before the
+  // first frame — a frame without them would build every shader for one light count, then again
+  useLayoutEffect(() => {
     if (!root.current) return
     parts.current = null
     bells.current = null
@@ -212,7 +216,8 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
     }
     for (const o of list) {
       const key = o.name
-      o.visible = !hidden.has(key)
+      if (mode === 'ascent') showStage(o, !hidden.has(key))
+      else o.visible = !hidden.has(key)
       const off = offsets[key]
       const basePos = o.userData.basePos as THREE.Vector3
       const baseRot = o.userData.baseRot as THREE.Euler
@@ -248,17 +253,50 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   })
 
   const collars = useMemo(() => (mode === 'ascent' ? vaporCollars(id) : []), [id, mode])
+  // in orbit only the last stage fires (the departure burn), at Mars only the spacecraft (the
+  // landing burn): the other stages are gone for the whole scene, their flames are not built
+  const fires = (stage: string) => (mode === 'orbit' ? stage === vehicle.stages[vehicle.stages.length - 1].id : mode === 'entry' ? stage === SPACECRAFT_GROUP[id] : true)
   return (
     <group ref={root} scale={scale}>
       <VehicleModel id={id} />
-      {anchors.map((a, i) => (
-        <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} floor={floor} floors={floors} lights={mode !== 'orbit'} />
-      ))}
+      {/* the glowing bells' material, swapped in when a stage fires: here (hidden) so that its
+          shader is built with the rest of the view (Prewarm.tsx), not at ignition */}
+      <mesh visible={false} material={MAT.bellGlow} geometry={GLOW_PROXY} />
+      {anchors.map((a, i) =>
+        fires(a.stage) ? <PlumeAt key={i} anchor={a} throttles={throttles} expansion={expansion} floor={floor} floors={floors} lights={mode !== 'orbit'} /> : null,
+      )}
       {collars.map((c, i) => (
         <VaporCollar key={i} y={c.y} r={c.r} length={c.r * (i === 0 ? 5 : 7)} strength={vapor} sun={ATMO.sunDir.value} />
       ))}
     </group>
   )
+}
+
+/**
+ * Shows or hides a stage in the climb. A stage that carries flames keeps them in the scene, with
+ * their lights (at zero when it does not fire), and hides the rest: a change in the number of
+ * lights rebuilds every shader in the view — it was a stall half a minute after staging, when the
+ * spent stage goes.
+ */
+function showStage(o: THREE.Object3D, v: boolean) {
+  const flames = (o.userData.flames ??= o.children.some((c) => c.name.startsWith('plume:'))) as boolean
+  if (!flames) {
+    o.visible = v
+    return
+  }
+  if ((o.userData.shown ?? true) === v) return
+  o.userData.shown = v
+  // each part as it was (mergeStatic keeps the merged originals hidden)
+  for (const c of o.children) {
+    if (c.name.startsWith('plume:')) continue
+    if (!v) {
+      c.userData.shownBefore = c.visible
+      c.visible = false
+    } else if (c.userData.shownBefore !== undefined) {
+      c.visible = c.userData.shownBefore as boolean
+      delete c.userData.shownBefore
+    }
+  }
 }
 
 /** where the condensation collars go: the vehicle's own list, else the nose shoulder and the first interstage */

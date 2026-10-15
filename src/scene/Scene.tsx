@@ -1,6 +1,6 @@
-import { Canvas, advance, useFrame } from '@react-three/fiber'
-import { Environment, Lightformer, Stars } from '@react-three/drei'
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Canvas, advance, useFrame, useThree } from '@react-three/fiber'
+import { Environment, Lightformer } from '@react-three/drei'
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { MissionResult } from '../sim/types'
 import { PHASE_RATE, effectiveSpeed, phaseAt, useAppStore } from '../state/store'
 import { entryAt, momentsAt, playbackRate, type Moment } from '../ui/hud'
@@ -13,6 +13,8 @@ import { prewarmMars } from './MarsSurface'
 import { ViewControls, view as viewInput } from './viewControl'
 import { AudioDriver } from '../audio/AudioDriver'
 import { PerfProbe } from './PerfProbe'
+import { Prewarm, SkyStars } from './Prewarm'
+import { globalEnv } from './warm'
 
 /**
  * The probe's state (see AdaptiveQuality): measuring right now (the frames go uncapped), done for
@@ -144,6 +146,18 @@ function AdaptiveQuality() {
   return null
 }
 
+/** keeps the canvas's environment map (set just before this, by <Environment>) for the views built ahead */
+function CaptureEnv() {
+  const scene = useThree((s) => s.scene)
+  useLayoutEffect(() => {
+    globalEnv.texture = scene.environment
+  }, [scene])
+  return null
+}
+
+/** the views after the climb are built ahead once the frame rate is no longer being measured */
+const prewarmReady = () => !probe.measuring
+
 /** the window's area in CSS pixels, following resizes and rotations */
 function useViewportArea(): number {
   const [area, setArea] = useState(() => innerWidth * innerHeight)
@@ -187,17 +201,19 @@ export default function Scene() {
           <Lightformer intensity={1.4} rotation-y={Math.PI / 2} position={[-50, 10, 0]} scale={[60, 40, 1]} color="#d9b48a" />
           <Lightformer intensity={1.0} rotation-y={-Math.PI / 2} position={[50, 10, 0]} scale={[60, 40, 1]} color="#8398ba" />
         </Environment>
+        <CaptureEnv />
       </Suspense>
       <Playback />
       <ViewControls />
       <AudioDriver />
       <PerfProbe />
       <AdaptiveQuality />
-      {view !== 'ascent' && <Stars radius={200_000} depth={50_000} count={3000} factor={600} saturation={0} fade speed={0.1} />}
+      {view !== 'ascent' && <SkyStars />}
       {view === 'ascent' && <AscentScene vehicleId={vehicleId} />}
       {view === 'orbit' && <OrbitScene vehicleId={vehicleId} />}
       {view === 'cruise' && <CruiseScene vehicleId={vehicleId} />}
       {view === 'entry' && <EntryScene vehicleId={vehicleId} />}
+      <Prewarm vehicleId={vehicleId} ready={prewarmReady} />
     </Canvas>
     </>
   )

@@ -90,6 +90,7 @@ export function mergeStatic(root: THREE.Object3D, { keep = [], byName = true }: 
     added.push(mesh)
     for (const m of b.meshes) {
       m.visible = false
+      m.userData.mergedAway = true
       // frozen: no matrix work for a hidden mesh every frame
       m.matrixAutoUpdate = false
       m.matrixWorldAutoUpdate = false
@@ -104,6 +105,7 @@ export function mergeStatic(root: THREE.Object3D, { keep = [], byName = true }: 
     }
     for (const m of hidden) {
       m.visible = true
+      delete m.userData.mergedAway
       m.matrixAutoUpdate = true
       m.matrixWorldAutoUpdate = true
     }

@@ -19,8 +19,10 @@ import { EARTH_R, Earth, SUN_DIR, earthFixed, earthState, sunGlowTexture } from 
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 import { view } from './viewControl'
+import { useWarm } from './warm'
 
 const ALT = 200
+const SPACE = new THREE.Color('#02040a')
 const DAY = 86_400
 /** the parking orbit's angular rate (rad/s), for the burn's real-time stretch */
 const OMEGA = Math.sqrt(398_600 / Math.pow(EARTH_R + ALT, 3))
@@ -133,11 +135,14 @@ export default function OrbitScene({ vehicleId }: { vehicleId: string }) {
     [scene],
   )
 
+  const warm = useWarm()
   useFrame(({ camera }, rawDt) => {
+    // built ahead of the cut: stay put (the camera and earthState belong to the scene on screen)
+    if (warm) return
     // a background tab hands back a huge delta on return: never let one frame jump far
     const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()
-    scene.background = new THREE.Color('#02040a')
+    scene.background = SPACE
     if (scene.fog) (scene.fog as THREE.Fog).color.set('#02040a')
     // the docking in progress, if any: days from it, and the weight of the docking shot (in
     // from 1.7 days before to a day after, eased at both ends)

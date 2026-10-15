@@ -16,7 +16,7 @@
  */
 import { Environment, Html, Lightformer, Line } from '@react-three/drei'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useT } from '../i18n'
 import { julianDate, planetPosition } from '../sim/ephemeris'
@@ -29,6 +29,7 @@ import { SITE_LON } from './marsSite'
 import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 import { view } from './viewControl'
+import { useWarm } from './warm'
 
 const BASE_URL = import.meta.env.BASE_URL
 const U = 1e-6 // km → map units
@@ -81,8 +82,9 @@ function hyper(t: number, rp: number, vinf: number, mu: number): { r: number; ga
 export default function CruiseScene({ vehicleId }: { vehicleId: string }) {
   const shot = useAppStore((s) => cruiseShot(s.result, s.t))
   const { scene } = useThree()
-  // the scene-wide fog is for the other phases: here a planet stands 20,000 km off
-  useEffect(() => {
+  // the scene-wide fog is for the other phases: here a planet stands 20,000 km off (before the
+  // first frame: the shaders are built with or without fog)
+  useLayoutEffect(() => {
     const fog = scene.fog
     scene.fog = null
     scene.background = SPACE
@@ -184,7 +186,7 @@ function shipTurn(nose: THREE.Vector3, toShip: THREE.Vector3): THREE.Quaternion 
   return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(nose.clone().cross(z), nose, z))
 }
 
-function Departure({ vehicleId }: { vehicleId: string }) {
+export function Departure({ vehicleId }: { vehicleId: string }) {
   const L = (SPACECRAFT_LENGTH[vehicleId] ?? 30) * SCALE
   const earthRoot = useRef<THREE.Group>(null)
   const moon = useRef<THREE.Mesh>(null)
@@ -225,8 +227,11 @@ function Departure({ vehicleId }: { vehicleId: string }) {
     return { wide: make(false), tall: make(true) }
   }, [f])
   const st = useMemo(() => ({ init: false, cam: new THREE.Vector3(), tmp: new THREE.Vector3(), dir: new THREE.Vector3(), look: new THREE.Vector3() }), [])
+  const warm = useWarm()
 
   useFrame(({ camera }, rawDt) => {
+    // built ahead of the cut: the planet's turn (earthState) belongs to the scene on screen
+    if (warm) return
     const dt = Math.min(rawDt, 0.1)
     const { result, t } = useAppStore.getState()
     const cruise = result?.phases.find((p) => p.phase === 'cruise')
@@ -334,7 +339,7 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
   )
 }
 
-function Approach({ vehicleId }: { vehicleId: string }) {
+export function Approach({ vehicleId }: { vehicleId: string }) {
   const L = (SPACECRAFT_LENGTH[vehicleId] ?? 30) * SCALE
   const result = useAppStore((s) => s.result)
   const storm = result?.weather?.storm
@@ -381,8 +386,10 @@ function Approach({ vehicleId }: { vehicleId: string }) {
     return { wide: make(false), tall: make(true) }
   }, [f])
   const st = useMemo(() => ({ init: false, cam: new THREE.Vector3(), tmp: new THREE.Vector3(), dir: new THREE.Vector3(), look: new THREE.Vector3() }), [])
+  const warm = useWarm()
 
   useFrame(({ camera }, rawDt) => {
+    if (warm) return
     const dt = Math.min(rawDt, 0.1)
     const { result: r, t } = useAppStore.getState()
     const cruise = r?.phases.find((p) => p.phase === 'cruise')
@@ -438,7 +445,7 @@ function Approach({ vehicleId }: { vehicleId: string }) {
 }
 
 /** Heliocentric map: the Sun, the orbits of Earth and Mars, both planets moving, and the ship on its arc. */
-function CruiseMap() {
+export function CruiseMap() {
   const L = useT()
   const result = useAppStore((s) => s.result)
   const tr = result?.transfer ?? null
@@ -450,6 +457,8 @@ function CruiseMap() {
   const init = useRef(false)
   const sky = useMemo(() => starField(4000, 3000), [])
   const glowTex = useMemo(() => sunGlowTexture(), [])
+  // built ahead of the cut: no labels in the page, the camera left alone
+  const warm = useWarm()
 
   const orbits = useMemo(() => {
     const jd0 = julianDate(new Date('2026-01-01T00:00:00Z'))
@@ -466,6 +475,7 @@ function CruiseMap() {
   const path = useMemo(() => (tr ? tr.samples.map((s) => new THREE.Vector3(s.ship[0] * U, s.ship[2] * U, -s.ship[1] * U)) : []), [tr])
 
   useFrame(({ camera }, rawDt) => {
+    if (warm) return
     const dt = Math.min(rawDt, 0.1)
     scene.background = SPACE
     if (!tr) return
@@ -515,14 +525,14 @@ function CruiseMap() {
           <sphereGeometry args={[4.5, 24, 24]} />
           <meshStandardMaterial color="#3f7fd6" roughness={0.7} />
         </mesh>
-        <Html center distanceFactor={600} className="label3d">{L.ui.scene.earth}</Html>
+        {!warm && <Html center distanceFactor={600} className="label3d">{L.ui.scene.earth}</Html>}
       </group>
       <group ref={mars}>
         <mesh>
           <sphereGeometry args={[3.6, 24, 24]} />
           <meshStandardMaterial color="#c8552f" roughness={0.9} />
         </mesh>
-        <Html center distanceFactor={600} className="label3d">{L.ui.scene.mars}</Html>
+        {!warm && <Html center distanceFactor={600} className="label3d">{L.ui.scene.mars}</Html>}
       </group>
       <group ref={ship}>
         <mesh>
@@ -530,7 +540,7 @@ function CruiseMap() {
           <meshBasicMaterial color="#ffffff" />
         </mesh>
         {/* above its dot: the planets' names sit below theirs, so the two never cover each other */}
-        <Html center distanceFactor={600} className="label3d label3d--above">{L.ui.scene.ship}</Html>
+        {!warm && <Html center distanceFactor={600} className="label3d label3d--above">{L.ui.scene.ship}</Html>}
       </group>
       <ambientLight intensity={0.25} />
     </group>

@@ -13,6 +13,7 @@ import { useT } from '../i18n'
 import { SPIRIT_LANDER, dustDevils, type MarsSite, type Rock } from './marsSite'
 import { fbm, hash2 } from './noise'
 import { canvasTexture } from './terrain'
+import { useWarm } from './warm'
 
 /** an icosahedron pushed around by low-frequency noise: a boulder with flat faces and a rounded top */
 function rockGeometry(seed: number): THREE.BufferGeometry {
@@ -246,6 +247,8 @@ const lander = {
  */
 export function SpiritLander({ site }: { site: MarsSite }) {
   const L = useT()
+  // no DOM label in a copy built ahead of the cut
+  const warm = useWarm()
   const { x, z, heading } = SPIRIT_LANDER
   const y = site.nearHeight(x, z)
   const petal = useMemo(() => {
@@ -295,12 +298,14 @@ export function SpiritLander({ site }: { site: MarsSite }) {
       <mesh position={[-0.5, 0.5, -0.2]} material={lander.white}>
         <boxGeometry args={[0.25, 0.1, 0.25]} />
       </mesh>
-      <Html position={[0, 2.2, 0]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
-        <div ref={label} className="label3d label3d--site">
-          <span className="label3d__title">{L.ui.scene.site}</span>
-          <span className="label3d__sub">{L.ui.scene.siteSub}</span>
-        </div>
-      </Html>
+      {!warm && (
+        <Html position={[0, 2.2, 0]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+          <div ref={label} className="label3d label3d--site">
+            <span className="label3d__title">{L.ui.scene.site}</span>
+            <span className="label3d__sub">{L.ui.scene.siteSub}</span>
+          </div>
+        </Html>
+      )}
     </group>
   )
 }

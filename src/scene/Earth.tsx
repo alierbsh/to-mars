@@ -23,6 +23,7 @@ import * as THREE from 'three'
 import { applyEdgeFade, globeQuaternion } from './EarthBelow'
 import { texName } from './quality'
 import { useMaps } from './maps'
+import { retainTextures } from './warm'
 import { capGeometry } from './terrain'
 import { useQuality } from './useQuality'
 
@@ -381,8 +382,9 @@ export function Earth({ sky = true, far = false, detail = true, root }: { sky?: 
     `${BASE_URL}assets/cape/${texName('region-clouds.webp', q.textures)}`,
   ])
   const [day, rough, clouds, night, region, regionRough, regionClouds] = textures
-  // free the GPU copies when the orbit is left (the images stay cached for the next mission)
-  useEffect(() => () => textures.forEach((t) => t.dispose()), [textures])
+  // free the GPU copies when the last scene showing the planet is gone (a warm copy of the next
+  // scene shares them; the images stay cached for the next mission)
+  useEffect(() => retainTextures(textures), [textures])
   useMemo(() => {
     for (const t of [day, night, region, regionClouds]) t.colorSpace = THREE.SRGBColorSpace
     day.anisotropy = 8

@@ -23,6 +23,7 @@ import { VehicleRig } from './VehicleRig'
 import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
 import { autoOrbit, view } from './viewControl'
 import { useQuality } from './useQuality'
+import { useWarm } from './warm'
 
 const SKY_HIGH = new THREE.Color('#02040a')
 const SKY_LOW = new THREE.Color('#b8864f')
@@ -126,7 +127,10 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
     if (limb.current) limbCamera(limb.current, limbMat)
   }, [limbMat])
 
+  const warm = useWarm()
   useFrame(({ camera }, rawDt) => {
+    // built ahead of the cut: stay put
+    if (warm) return
     // a background tab hands back a huge delta on return: never let one frame jump far
     const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()

@@ -13,10 +13,10 @@
  * centre under the vehicle.
  */
 import { useLoader } from '@react-three/fiber'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { DustDevils, Rocks, SandTails, SpiritLander, regolithNormal } from './MarsDetail'
-import { GLOBE_HALF, MID_HALF, MID_SEG, NEAR_HALF, NEAR_SEG, R_MARS, REGION_HALF, REGION_SEG, SITE_LAT, SITE_LON, SITE_X, SITE_Z, buildSite, rockField } from './marsSite'
+import { GLOBE_HALF, MID_HALF, MID_SEG, NEAR_HALF, NEAR_SEG, R_MARS, REGION_HALF, REGION_SEG, SITE_LAT, SITE_LON, SITE_X, SITE_Z, buildSite, rockField, type MarsSite } from './marsSite'
 import type { MapsWorkerRequest, MapsWorkerResponse } from './marsMaps.worker'
 import { canvasTexture, capGeometry, loadHeightmap, type Heightmap } from './terrain'
 import { qualityNow, useQuality } from './useQuality'
@@ -24,16 +24,81 @@ import { qualityNow, useQuality } from './useQuality'
 const BASE_URL = import.meta.env.BASE_URL
 const GLOBE_N = 1536
 
+/**
+ * The DEMs, decoded once for the session: prewarmMars starts on them after the climb, and the
+ * entry's copy built ahead (Prewarm.tsx) and the real one then find them ready — with the site
+ * and its meshes, built once too, so the cut to the entry does not stall on them.
+ */
+const heightmaps = new Map<string, Promise<Heightmap>>()
+const decoded = new Map<string, Heightmap>()
+function heightmap(url: string): Promise<Heightmap> {
+  let p = heightmaps.get(url)
+  if (!p) {
+    p = loadHeightmap(url).then((h) => {
+      decoded.set(url, h)
+      return h
+    })
+    p.catch(() => heightmaps.delete(url))
+    heightmaps.set(url, p)
+  }
+  return p
+}
+
 function useHeightmap(url: string): Heightmap | null {
-  const [h, setH] = useState<Heightmap | null>(null)
+  const [h, setH] = useState<Heightmap | null>(() => decoded.get(url) ?? null)
   useEffect(() => {
+    if (h) return
     let live = true
-    loadHeightmap(url).then((v) => live && setH(v)).catch(() => {})
+    heightmap(url)
+      .then((v) => live && setH(v))
+      .catch(() => {})
     return () => {
       live = false
     }
-  }, [url])
+  }, [url, h])
   return h
+}
+
+let rockCache: { site: MarsSite; rocks: ReturnType<typeof rockField> } | null = null
+function rocksFor(site: MarsSite) {
+  if (rockCache?.site !== site) rockCache = { site, rocks: rockField(site) }
+  return rockCache.rocks
+}
+
+let siteCache: { gusev: Heightmap; victoria: Heightmap; site: MarsSite } | null = null
+function siteFor(gusev: Heightmap, victoria: Heightmap): MarsSite {
+  if (siteCache?.gusev !== gusev || siteCache.victoria !== victoria) siteCache = { gusev, victoria, site: buildSite(gusev, victoria) }
+  return siteCache.site
+}
+
+type SiteGeometry = { regionGeo: THREE.BufferGeometry; midGeo: THREE.BufferGeometry; nearGeo: THREE.BufferGeometry }
+let geoCache: { site: MarsSite; mesh: number; geo: SiteGeometry } | null = null
+function siteGeometry(site: MarsSite, mesh: number): SiteGeometry {
+  if (geoCache?.site !== site || geoCache.mesh !== mesh) {
+    geoCache?.geo.regionGeo.dispose()
+    geoCache?.geo.midGeo.dispose()
+    geoCache?.geo.nearGeo.dispose()
+    const seg = (n: number) => Math.max(32, Math.round(n * mesh))
+    const regionGeo = capGeometry(R_MARS, { x0: -REGION_HALF - SITE_X, x1: REGION_HALF - SITE_X, z0: -REGION_HALF - SITE_Z, z1: REGION_HALF - SITE_Z }, seg(REGION_SEG), site.regionHeight)
+    const midGeo = capGeometry(R_MARS, MID_HALF, seg(MID_SEG), site.midHeight)
+    const nearGeo = capGeometry(R_MARS, NEAR_HALF, seg(NEAR_SEG), site.nearHeight)
+    geoCache = { site, mesh, geo: { regionGeo, midGeo, nearGeo } }
+  }
+  return geoCache.geo
+}
+
+/** the planet: a 5000 km cap (the whole entry ground track plus the horizon) */
+let globeCache: { geo: THREE.BufferGeometry; box: { lon0: number; lon1: number; lat0: number; lat1: number } } | null = null
+function globeCap() {
+  if (!globeCache) {
+    const lat0 = (SITE_LAT * Math.PI) / 180
+    const lon0 = (SITE_LON * Math.PI) / 180
+    const dLat = GLOBE_HALF / R_MARS
+    const dLon = GLOBE_HALF / (R_MARS * Math.cos(lat0))
+    const geo = capGeometry(R_MARS, GLOBE_HALF, 128, undefined, (x, z) => [(x / GLOBE_HALF + 1) / 2, (1 - z / GLOBE_HALF) / 2])
+    globeCache = { geo, box: { lon0: lon0 - dLon, lon1: lon0 + dLon, lat0: lat0 - dLat, lat1: lat0 + dLat } }
+  }
+  return globeCache
 }
 
 function textureFromPixels(data: Uint8ClampedArray, n: number, anisotropy = 8): THREE.CanvasTexture {
@@ -125,7 +190,7 @@ let prewarmed = false
 export function prewarmMars() {
   if (prewarmed) return
   prewarmed = true
-  Promise.all([loadHeightmap(`${BASE_URL}assets/mars/gusev-height.png`), loadHeightmap(`${BASE_URL}assets/mars/victoria-height.png`)])
+  Promise.all([heightmap(`${BASE_URL}assets/mars/gusev-height.png`), heightmap(`${BASE_URL}assets/mars/victoria-height.png`)])
     .then(([gusev, victoria]) => {
       const img = new Image()
       img.onload = () => {
@@ -147,27 +212,12 @@ export function MarsSurface() {
   globeImg.colorSpace = THREE.SRGBColorSpace
   const [maps, setMaps] = useState<Maps>(mapCache)
 
-  // planet: a 5000 km cap (the whole entry ground track plus the horizon)
-  const globe = useMemo(() => {
-    const lat0 = (SITE_LAT * Math.PI) / 180
-    const lon0 = (SITE_LON * Math.PI) / 180
-    const dLat = GLOBE_HALF / R_MARS
-    const dLon = GLOBE_HALF / (R_MARS * Math.cos(lat0))
-    const geo = capGeometry(R_MARS, GLOBE_HALF, 128, undefined, (x, z) => [(x / GLOBE_HALF + 1) / 2, (1 - z / GLOBE_HALF) / 2])
-    return { geo, box: { lon0: lon0 - dLon, lon1: lon0 + dLon, lat0: lat0 - dLat, lat1: lat0 + dLat } }
-  }, [])
+  const globe = globeCap()
 
-  // heightfields and geometry on the main thread (fast); the colour maps from the worker
-  const site = useMemo(() => (gusev && victoria ? buildSite(gusev, victoria) : null), [gusev, victoria])
+  // heightfields and geometry on the main thread, once (see heightmap()); the colour maps from the worker
+  const site = useMemo(() => (gusev && victoria ? siteFor(gusev, victoria) : null), [gusev, victoria])
   const mesh = useQuality().mesh
-  const geo = useMemo(() => {
-    if (!site) return null
-    const seg = (n: number) => Math.max(32, Math.round(n * mesh))
-    const regionGeo = capGeometry(R_MARS, { x0: -REGION_HALF - SITE_X, x1: REGION_HALF - SITE_X, z0: -REGION_HALF - SITE_Z, z1: REGION_HALF - SITE_Z }, seg(REGION_SEG), site.regionHeight)
-    const midGeo = capGeometry(R_MARS, MID_HALF, seg(MID_SEG), site.midHeight)
-    const nearGeo = capGeometry(R_MARS, NEAR_HALF, seg(NEAR_SEG), site.nearHeight)
-    return { regionGeo, midGeo, nearGeo }
-  }, [site, mesh])
+  const geo = useMemo(() => (site ? siteGeometry(site, mesh) : null), [site, mesh])
 
   useEffect(() => {
     if (!gusev || !victoria) return
@@ -179,7 +229,7 @@ export function MarsSurface() {
     }
   }, [gusev, victoria, globeImg, globe])
 
-  const rocks = useMemo(() => (site ? rockField(site) : null), [site])
+  const rocks = useMemo(() => (site ? rocksFor(site) : null), [site])
 
   // materials are created once and re-targeted when a map arrives (a map change needs a recompile)
   const mats = useMemo(() => {
@@ -199,7 +249,8 @@ export function MarsSurface() {
     // one tile = 40 m: the near patch (2.4 km) repeats 60×, the mid tile (16 km) 400× (grain only, faint)
     return { globe: new THREE.MeshStandardMaterial({ map: globeImg, roughness: 1, envMapIntensity: 0.2, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 }), region: mk(false, undefined, 1, 0, 3), mid: mk(true, nrm, 400, 0.3, 1), near: mk(true, nrm, 60, 0.6) }
   }, [globeImg])
-  useEffect(() => {
+  // before the first frame: a map changes the shader (a frame without it would build it twice)
+  useLayoutEffect(() => {
     for (const k of ['globe', 'region', 'mid', 'near'] as const) {
       const tex = maps[k]
       const m = mats[k]

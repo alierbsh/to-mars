@@ -1,7 +1,7 @@
 /**
  * `?debug=1`: logs the renderer's counts once a second — draw calls, triangles, programs, the
  * textures on the GPU with their estimated bytes — and exposes the renderer, the scene and the
- * camera as window.__gl, __scene, __camera.
+ * camera as window.__gl, __scene, __camera (and the store as __store).
  * Nothing is rendered; the screenshot script collects the console lines.
  */
 import { useFrame, useThree } from '@react-three/fiber'
@@ -23,7 +23,7 @@ export function PerfProbe() {
     frames.current++
     const now = performance.now() / 1000
     if (now - last.current < 1) return
-    Object.assign(window, { __gl: gl, __scene: scene, __camera: camera })
+    Object.assign(window, { __gl: gl, __scene: scene, __camera: camera, __store: useAppStore })
     // the textures referenced by the scene's materials, with a mip-mapped RGBA8 size estimate
     // by source: clones of a texture (the ring skin's per-material repeats) share one GPU copy
     const seen = new Set<unknown>()
