@@ -375,7 +375,7 @@ export const UI = {
       `Crew of ${p.crew} where the ship carries one (fewer if its capsule seats fewer). The weather at Mars is drawn from the storm record for each arrival date. Computed ${p.date}. Click a mission to fly it.`,
   },
   feedback: {
-    /** the link by the byline and on the opening screen; the panel it opens */
+    /** the link at the foot of the wiki and of the mission settings; the panel it opens */
     button: 'Give us feedback',
     label: 'Feedback',
     title: 'Give us feedback',

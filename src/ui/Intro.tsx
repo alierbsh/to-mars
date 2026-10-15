@@ -4,7 +4,6 @@ import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { describeMission } from './share'
 import { sound } from '../audio/sound'
-import { FeedbackLink } from './Feedback'
 import GraphicsPicker from './GraphicsPicker'
 import { LangList } from './LangPicker'
 import { nameLang, vehicleTexts } from './texts'
@@ -56,7 +55,6 @@ function Start() {
       <p className="intro__foot">{I.foot}</p>
       <div className="intro__links">
         <LangList />
-        <FeedbackLink className="intro__fb" />
       </div>
     </section>
   )

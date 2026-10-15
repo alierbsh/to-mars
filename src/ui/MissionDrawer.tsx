@@ -5,6 +5,7 @@ import { PRESETS } from '../sim/presets'
 import { WINDOWS } from '../sim/transfer'
 import { useAppStore } from '../state/store'
 import GraphicsPicker from './GraphicsPicker'
+import { FeedbackLink } from './Feedback'
 import { LangList } from './LangPicker'
 import { presetTexts, vehicleTexts, windowTexts } from './texts'
 
@@ -182,7 +183,9 @@ export default function MissionDrawer() {
             </div>
           )}
         </section>
-
+        <section className="section">
+          <FeedbackLink className="drawer__fb" />
+        </section>
       </div>
     </aside>
   )

@@ -89,12 +89,14 @@ ul, ol { padding: 0; list-style: none; }
 }
 .byline { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t3); padding-left: 20px; white-space: nowrap; text-decoration: none; transition: color 0.2s; }
 .byline:hover { color: var(--t1); text-decoration: none; }
-/* the byline and "Give us feedback" under the wordmark (they wrap to two lines on a phone) */
+/* the byline under the wordmark */
 .brand__links { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 14px; padding-left: 20px; }
 .brand__links .byline { padding-left: 0; }
-.fblink { display: inline-flex; align-items: center; gap: 6px; }
+/* "Give us feedback": at the foot of the wiki and of the mission settings */
+.fblink { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--t2); transition: color 0.2s; }
+.fblink:hover { color: var(--t1); }
 .fblink > svg { flex: none; }
-.byline--fb { color: var(--t2); }
+.wiki__fb { margin-top: 28px; }
 .wordmark__dot { width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e8926f, #c8552f 55%, #6a2514); box-shadow: 0 0 12px rgba(200, 85, 47, 0.5); }
 /* the ship this mission flies: a fixed badge — the rocket is chosen when a mission starts */
 .craft { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
@@ -129,8 +131,6 @@ ul, ol { padding: 0; list-style: none; }
 .langlist__item--on { color: var(--t1); border-bottom-color: var(--t2); }
 .langlist--chips { margin-top: 8px; font-size: 13px; }
 .intro__links { margin-top: 26px; display: grid; justify-items: start; gap: 14px; }
-.intro__fb { font-size: 12.5px; color: var(--t2); transition: color 0.2s; }
-.intro__fb:hover { color: var(--t1); }
 
 /* ---------- the feedback panel ---------- */
 .fb { position: absolute; inset: 0; z-index: 28; display: grid; place-items: center; padding: 16px; }

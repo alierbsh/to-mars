@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react'
 import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { CHAPTERS } from '../wiki/chapters'
+import { FeedbackLink } from './Feedback'
 
 export default function Wiki() {
   const L = useT()
@@ -94,6 +95,7 @@ export default function Wiki() {
             </button>
           )}
         </div>
+        <FeedbackLink className="wiki__fb" />
       </div>
     </div>
   )

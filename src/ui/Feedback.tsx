@@ -1,5 +1,6 @@
 /**
- * "Give us feedback": a link by the byline and on the opening screen, and the small panel it opens
+ * "Give us feedback": a link at the foot of every wiki chapter and of the mission settings (out of
+ * the way of the mission itself), and the small panel it opens
  * with the address, a button that starts an email (subject filled in; the mission's link and the
  * device under the signature line, for bug reports) and one that copies the address.
  */
