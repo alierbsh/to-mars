@@ -48,7 +48,7 @@ export const UI: UiCatalog = {
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Occupy Mars',
+    brand: '占领火星',
     title: '为什么要在火星建城？',
     text: [
       '迄今存在过的一切生命，都生活在同一颗星球上。一颗小行星、一座超级火山、一个糟糕的世纪——整个故事就此终结。第二个世界，是生命有史以来得到的第一份真正的保险。',
@@ -390,7 +390,7 @@ export const UI: UiCatalog = {
     write: '写邮件',
     copy: '复制地址',
     copied: '地址已复制',
-    subject: 'Occupy Mars Simulation — 反馈',
+    subject: '占领火星模拟 — 反馈',
     close: '关闭',
   },
   wiki: {

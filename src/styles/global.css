@@ -148,8 +148,8 @@ ul, ol { padding: 0; list-style: none; }
 .fb__copy:hover { border-color: var(--t3); }
 
 /* scripts without capitals: no tracking (it breaks Devanagari's headline stroke and spreads Chinese
-   apart) — except what is marked English inside them (the wordmark) — and the smallest labels a
-   little larger, since Devanagari and Han lose legibility at sizes Latin capitals still read */
+   apart) — except what is marked English inside them — and the smallest labels a little larger,
+   since Devanagari and Han lose legibility at sizes Latin capitals still read */
 *:lang(hi), *:lang(zh) { letter-spacing: 0 !important; }
 .tl__name:lang(hi), .tl__name:lang(zh) { font-size: 10px; }
 .tl__phaselabel:lang(hi), .tl__phaselabel:lang(zh) { font-size: 10.5px; }

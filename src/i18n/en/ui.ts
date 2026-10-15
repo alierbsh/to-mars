@@ -38,7 +38,7 @@ export const UI = {
     wiki: 'Understand!',
   },
   intro: {
-    /** above the title of the opening screen (the site's name, usually left as is) */
+    /** above the title of the opening screen: the site's name, short (meta.siteName in full) */
     brand: 'Occupy Mars',
     title: 'Why a city on Mars?',
     text: [

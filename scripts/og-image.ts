@@ -60,9 +60,9 @@ const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromi
 const W = 1640
 const H = 630
 const shot = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1.5 })
-await shot.goto(`http://localhost:${port}/en/?vehicle=starship-v3&t=${t}&still=1&clean=1&quality=high`)
+await shot.goto(`http://localhost:${port}/en/?vehicle=starship-v3&t=${t}&still=1&clean=1&quality=high&prewarm=0`)
 await shot.waitForTimeout(16000)
-const still = (await shot.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 1200, height: H } })).toString('base64')
+const still = (await shot.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 1200, height: H }, timeout: 180_000 })).toString('base64')
 await shot.close()
 
 // 2. the cards. Instrument Sans for Latin, Noto Sans Devanagari for हिन्दी; Han from the system (Noto Sans CJK)
@@ -95,7 +95,7 @@ body { width: 1200px; height: 630px; overflow: hidden; font-family: 'IS', 'Deva'
   linear-gradient(90deg, rgba(2,5,11,0.92) 0%, rgba(2,5,11,0.8) 34%, rgba(2,5,11,0.25) 56%, rgba(2,5,11,0) 66%),
   linear-gradient(0deg, rgba(2,5,11,0.6) 0%, rgba(2,5,11,0) 30%); }
 .box { position: absolute; left: 64px; top: 64px; width: 580px; }
-.mark { display: flex; align-items: center; gap: 14px; font-size: 19px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
+.mark { display: flex; align-items: center; gap: 14px; font-size: 19px; font-weight: 600; letter-spacing: ${caps ? '0.24em' : '0.02em'}; text-transform: uppercase; }
 .dot { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e8926f, #c8552f 55%, #6a2514); box-shadow: 0 0 18px rgba(200,85,47,0.6); }
 h1 { margin-top: 58px; font-size: 62px; line-height: ${caps ? 1.04 : 1.25}; font-weight: 600; letter-spacing: ${caps ? '-0.025em' : '0'}; }
 p { margin-top: 24px; font-size: 23px; line-height: 1.45; color: rgba(255,255,255,0.74); font-weight: 400; max-width: ${caps ? '30ch' : '24em'}; }
@@ -103,7 +103,7 @@ p { margin-top: 24px; font-size: 23px; line-height: 1.45; color: rgba(255,255,25
 </style></head><body>
 <div class="bg"></div><div class="shade"></div>
 <div class="box">
-  <div class="mark" lang="en"><span class="dot"></span>Occupy Mars Simulation</div>
+  <div class="mark"><span class="dot"></span>${esc(U.meta.siteName)}</div>
   <h1>${esc(U.share.question)}</h1>
   <p>${esc(U.meta.cardText)}</p>
 </div>

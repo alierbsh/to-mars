@@ -31,7 +31,7 @@ export const UI: UiCatalog = {
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Occupy Mars',
+    brand: 'Ocupa Marte',
     title: '¿Por qué una ciudad en Marte?',
     text: [
       'Todo ser vivo que ha existido ha vivido en un único planeta. Un asteroide, un supervolcán, un siglo aciago… y toda la historia se acaba. Un segundo mundo es el primer seguro de verdad que se le ha ofrecido jamás a la vida.',
@@ -373,7 +373,7 @@ export const UI: UiCatalog = {
     write: 'Escribir un correo',
     copy: 'Copiar la dirección',
     copied: 'Dirección copiada',
-    subject: 'Occupy Mars Simulation — opinión',
+    subject: 'Simulación Ocupa Marte — opinión',
     close: 'Cerrar',
   },
   wiki: {

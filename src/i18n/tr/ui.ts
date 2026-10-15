@@ -31,7 +31,7 @@ export const UI: UiCatalog = {
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Occupy Mars',
+    brand: "Mars'ı İşgal Et",
     title: "Neden Mars'ta bir şehir?",
     text: [
       'Bugüne kadar var olmuş her canlı tek bir gezegende yaşadı. Bir asteroit, bir süper yanardağ, kötü geçen tek bir yüzyıl — ve bütün hikâye biter. İkinci bir dünya, hayata şimdiye dek sunulmuş ilk gerçek sigorta poliçesi olur.',
@@ -373,7 +373,7 @@ export const UI: UiCatalog = {
     write: 'E-posta yaz',
     copy: 'Adresi kopyala',
     copied: 'Adres kopyalandı',
-    subject: 'Occupy Mars Simulation — geri bildirim',
+    subject: "Mars'ı İşgal Et Simülasyonu — geri bildirim",
     close: 'Kapat',
   },
   wiki: {

@@ -89,7 +89,7 @@ export async function shareMission(cfg: MissionConfig, result: MissionResult | n
   const touch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
   if (touch && nav.share) {
     try {
-      await nav.share({ title: 'Occupy Mars Simulation', text, url })
+      await nav.share({ title: L.ui.meta.siteName, text, url })
       return { outcome: 'shared', url }
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return { outcome: 'cancelled', url }

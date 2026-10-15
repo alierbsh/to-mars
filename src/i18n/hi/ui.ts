@@ -31,7 +31,7 @@ export const UI: UiCatalog = {
   },
   intro: {
     /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Occupy Mars',
+    brand: 'मंगल पर बसो',
     title: 'मंगल पर शहर क्यों?',
     text: [
       'अब तक जितने भी जीव अस्तित्व में आए हैं, वे सब एक ही ग्रह पर रहे हैं। एक क्षुद्रग्रह, एक महाज्वालामुखी, एक बुरी सदी — और पूरी कहानी खत्म। दूसरी दुनिया जीवन के लिए अब तक की पहली असली बीमा पॉलिसी है।',
@@ -373,7 +373,7 @@ export const UI: UiCatalog = {
     write: 'ईमेल लिखें',
     copy: 'पता कॉपी करें',
     copied: 'पता कॉपी हो गया',
-    subject: 'Occupy Mars Simulation — राय',
+    subject: 'मंगल पर बसो सिमुलेशन — राय',
     close: 'बंद करें',
   },
   wiki: {

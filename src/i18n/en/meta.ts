@@ -4,6 +4,8 @@
  * so this file imports nothing. The interface's catalog (ui.ts) carries it as `meta`.
  */
 export const META = {
+  /** the site's name: the wordmark, the link preview's site name, the share sheet's title */
+  siteName: 'Occupy Mars Simulation',
   /** the browser tab */
   title: "Occupy Mars Simulation — can today's rockets carry a crew to Mars?",
   /** the page's description for search engines */

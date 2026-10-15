@@ -29,9 +29,9 @@ export default function TopBar() {
   return (
     <header className="top">
       <div className="brand">
-        <div className="wordmark" lang="en">
+        <div className="wordmark">
           <span className="wordmark__dot" aria-hidden="true" />
-          Occupy Mars Simulation
+          {L.ui.meta.siteName}
         </div>
         <div className="brand__links">
           <a className="byline" href="https://alierbash.com" target="_blank" rel="noreferrer">

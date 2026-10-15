@@ -35,7 +35,7 @@ function langHead(lang: Lang | null): string {
     `<link rel="canonical" href="${url}" />`,
     ...ALL_LANGS.map((l) => `<link rel="alternate" hreflang="${l.html}" href="${SITE_URL}${langPath(l.id)}" />`),
     `<link rel="alternate" hreflang="x-default" href="${SITE_URL}/" />`,
-    `<meta property="og:site_name" content="Occupy Mars Simulation" />`,
+    `<meta property="og:site_name" content="${esc(M.siteName)}" />`,
     `<meta property="og:title" content="${esc(M.title)}" />`,
     `<meta property="og:description" content="${esc(M.shareDescription)}" />`,
     `<meta property="og:type" content="website" />`,
