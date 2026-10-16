@@ -36,12 +36,6 @@ export const UI: UiCatalog = {
     sharedHint: 'Ne olacağını görmek için fırlat — ya da başka bir roket seç.',
     step: 'Adım 1 / 2',
     choose: 'Roketini seç',
-    timeSpeed: 'Zaman hızı',
-    recommended: 'Önerilen',
-    speedHint:
-      'Yörünge ve yolculuk evreleri için. Kalkış her zaman 1× hızda oynatılır; saat önemli anlarda — kademe ayrılması, yörüngeye yerleşme, kenetlenmeler, ayrılış yanması, en yüksek ısınma — gerçek zamana iner, ardından yeniden hızlanır. Atmosfere giriş, alçalma ve iniş en fazla 2× hızda oynatılır.',
-    graphicsHint: (p: { q: string; auto: boolean }) =>
-      `${p.auto ? `Otomatik: bu cihaz için ${p.q.toLocaleLowerCase('tr-TR')} seçildi. ` : ''}Görüntü takılırsa ya da telefon ısınırsa daha düşük bir düzey seç; sonra Ayarlar'dan da değiştirebilirsin.`,
     launch: (p: { ship: string }) => `${p.ship} ile fırlat`,
     running: 'Fizik hesaplanıyor…',
     /** the end of the countdown */

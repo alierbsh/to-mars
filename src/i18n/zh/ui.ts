@@ -53,12 +53,6 @@ export const UI: UiCatalog = {
     sharedHint: '发射它，看看会发生什么——或者换一款火箭。',
     step: '第 1 步，共 2 步',
     choose: '选择你的火箭',
-    timeSpeed: '时间倍速',
-    recommended: '推荐',
-    speedHint:
-      '用于轨道段和巡航段。起飞始终以 1× 播放；到了关键时刻——级间分离、入轨、对接、出发点火、峰值热流——时钟会回到实时，之后再加速。进入、下降和着陆最快 2×。',
-    graphicsHint: (p: { q: string; auto: boolean }) =>
-      zh`${p.auto ? `已根据本设备自动选择“${p.q}”画质。` : ''}如果画面卡顿或手机发热，请调低画质——之后也可以在任务设置里更改。`,
     launch: (p: { ship: string }) => zh`发射${p.ship}`,
     running: '正在进行物理计算……',
     /** the end of the countdown */

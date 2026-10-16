@@ -44,13 +44,6 @@ export const UI = {
     sharedHint: 'Launch it to see what happens — or pick another ship.',
     step: 'Step 1 of 2',
     choose: 'Choose your ship',
-    timeSpeed: 'Time speed',
-    recommended: 'Recommended',
-    speedHint:
-      'For the orbit and the cruise. Liftoff always plays at 1×, and the clock drops back to real time for the moments that matter — staging, orbit insertion, the dockings, the departure burn, peak heating — then speeds up again. Entry, descent and landing never faster than 2×.',
-    /** under the graphics choice: q is the tier's name (as in settings.quality), auto when it was picked for this device */
-    graphicsHint: (p: { q: string; auto: boolean }) =>
-      `${p.auto ? `Auto chose ${p.q.toLowerCase()} for this device. ` : ''}Go lower if the picture stutters or the phone warms up — you can change it later in Mission settings.`,
     launch: (p: { ship: string }) => `Launch ${p.ship}`,
     running: 'Running the physics…',
     /** the end of the countdown */

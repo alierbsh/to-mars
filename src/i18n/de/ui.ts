@@ -36,12 +36,6 @@ export const UI: UiCatalog = {
     sharedHint: 'Starte sie und sieh, was passiert — oder wähle eine andere Rakete.',
     step: 'Schritt 1 von 2',
     choose: 'Wähle deine Rakete',
-    timeSpeed: 'Zeitraffer',
-    recommended: 'Empfohlen',
-    speedHint:
-      'Für den Orbit und den Flug zum Mars. Das Abheben läuft immer in 1×, und bei den entscheidenden Momenten fällt die Uhr auf Echtzeit zurück — Stufentrennung, Einschuss in den Orbit, das Andocken der Tanker, die Mars-Transferzündung, maximale Aufheizung — und läuft danach wieder schneller. Eintritt, Abstieg und Landung nie schneller als 2×.',
-    graphicsHint: (p: { q: string; auto: boolean }) =>
-      `${p.auto ? `Automatisch: ${p.q} für dieses Gerät. ` : ''}Ruckelt das Bild oder wird das Handy warm, stell eine niedrigere Stufe ein – später geht das auch in den Einstellungen.`,
     launch: (p: { ship: string }) => `${p.ship} starten`,
     running: 'Physik wird berechnet …',
     /** the end of the countdown */
