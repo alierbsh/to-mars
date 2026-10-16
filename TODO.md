@@ -58,6 +58,12 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] Performance besides: no light-count change half a minute after staging (it rebuilt every shader mid-climb), the hidden flames and dust built before they are needed, flames only on the stages that can fire in orbit and at Mars, Mars's site built once per session, fog and maps set before a view's first frame.
 - [ ] Possible next: a shot-change still pays React's mount of the new view (tens of ms on a phone); the views could be mounted once, ahead, and promoted at the cut instead of built twice.
 
+## Muhammet's list, 16 Oct (fifth run)
+- [x] **Never leave the rocket.** The cruise is one continuous shot from the ship: Earth swinging round behind and shrinking to a point of light, the ship and camera turning together toward the course, months side-on in sunlight with Mars a red point ahead, then the roll to the entry attitude as Mars swells beneath — the planets where the transfer really has them, the stars turning with the sun. The bird's-eye map moved into the event card, small (with the transit day and the light time to Earth). The entry now opens from the cruise's last framing; the lower third's distances follow the hyperbolas near the planets (they stood still for two days at each end).
+- [x] **Elon Musk's case for Mars** in the wiki, short, in all seven languages: his words with source and year, the dates as they moved up to October 2026, and what critics answer.
+- [x] **"Not a video" on the opening screen.** A live badge, three facts (real physics, real rockets, rendered live) and the mission behind the button computed in the browser, with how long it took.
+- [ ] Possible next: the orbit → cruise cut is still a cut (the TMI shot and the departure framing match in direction, not in distance); the real star catalogue would make the stars' turn through the cruise readable.
+
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
 - Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
