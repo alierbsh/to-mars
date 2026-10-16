@@ -25,12 +25,13 @@
  *    Mars swells and swings under the ship.
  * Drawn in kilometres around the ship (the model ×12, as in orbit).
  */
-import { Environment, Lightformer } from '@react-three/drei'
+import { Environment, Html, Lightformer } from '@react-three/drei'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { arriveBlend, arriveHyperbola, departBlend, departHyperbola, entryInterfaceTime, smooth } from '../sim/cruiseView'
 import { VEHICLES } from '../data/vehicles'
+import { useT } from '../i18n'
 import type { MissionResult, TransferResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { APPROACH_SHOT_S, DEPART_SHOT_S } from '../ui/hud'
@@ -299,15 +300,30 @@ function Dot({ dotRef, color }: { dotRef: React.RefObject<THREE.Sprite | null>; 
  * A point of light where a planet is: shown as its disc falls under a few pixels across
  * (crossfading with the disc between 1.5 and 5 px), at least `px` across, `alpha` at most.
  */
-function placeDot(dot: THREE.Sprite | null, dir: THREE.Vector3, discPx: number, px: number, alpha: number, worldPerPx: number) {
+function placeDot(dot: THREE.Sprite | null, dir: THREE.Vector3, discPx: number, px: number, alpha: number, worldPerPx: number, label?: { anchor: THREE.Group | null; el: HTMLDivElement | null }) {
   if (!dot) return
   const k = 1 - smooth(1.5, 5, discPx)
   dot.visible = k > 0.01
+  // its name under it while it is a point of light (a disc says what it is)
+  if (label?.anchor) label.anchor.position.copy(dir).multiplyScalar(DOTS)
+  if (label?.el) label.el.style.opacity = String(smooth(0.3, 0.9, k))
   if (!dot.visible) return
   dot.position.copy(dir).multiplyScalar(DOTS)
   const s = Math.max(px, discPx) * 2.2 * worldPerPx
   dot.scale.set(s, s, 1)
   ;(dot.material as THREE.SpriteMaterial).opacity = alpha * k
+}
+
+/** a planet's name, under its point of light */
+function DotLabel({ anchor, el, text }: { anchor: React.RefObject<THREE.Group | null>; el: React.RefObject<HTMLDivElement | null>; text: string }) {
+  return (
+    <group ref={anchor}>
+      {/* (drei sets the inner element's transform inline: the offset has to come the same way) */}
+      <Html ref={el} className="label3d label3d--dot" style={{ transform: 'translate(-50%, 9px)' }}>
+        {text}
+      </Html>
+    </group>
+  )
 }
 
 /** Mars: the global mosaic, veiled by a dust storm; the dusty limb (in its own frame, like Earth's) */
@@ -378,6 +394,11 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
   const earthDot = useRef<THREE.Sprite>(null)
   const moonDot = useRef<THREE.Sprite>(null)
   const marsDot = useRef<THREE.Sprite>(null)
+  const earthLabel = useRef<THREE.Group>(null)
+  const earthLabelEl = useRef<HTMLDivElement>(null)
+  const marsLabel = useRef<THREE.Group>(null)
+  const marsLabelEl = useRef<HTMLDivElement>(null)
+  const T_ = useT()
   const sky = useMemo(() => starField(5000, 30_000), [])
   const glowTex = useMemo(() => sunGlowTexture(), [])
   const moonTex = useMemo(() => moonTexture(), [])
@@ -504,7 +525,7 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       moon.current.scale.setScalar((MOON_R * d) / dMoon)
       moon.current.visible = moonPx > 1.5
     }
-    placeDot(earthDot.current, dirE, earthPx, 4, 1, worldPerPx)
+    placeDot(earthDot.current, dirE, earthPx, 4, 1, worldPerPx, { anchor: earthLabel.current, el: earthLabelEl.current })
     placeDot(moonDot.current, st.v2.copy(mPos).normalize(), moonPx, 2.4, 0.5, worldPerPx)
 
     // Mars likewise, turning to bring Gusev round under the ship at the entry
@@ -520,7 +541,7 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       const subLon = ((SITE_LON - 20) * Math.PI) / 180 + MARS_SPIN * left
       marsSpin.current.rotation.y = Math.atan2(dirM.z, -dirM.x) - subLon
     }
-    placeDot(marsDot.current, dirM, marsPx, 4, 1, worldPerPx)
+    placeDot(marsDot.current, dirM, marsPx, 4, 1, worldPerPx, { anchor: marsLabel.current, el: marsLabelEl.current })
 
     // the sun: brighter and larger at 1 AU than at 1.5; the stars turn with the heliocentric frame
     const au = ship0.length() / AU
@@ -698,6 +719,9 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       <Dot dotRef={earthDot} color="#d6e6ff" />
       <Dot dotRef={moonDot} color="#e8e4dc" />
       <Dot dotRef={marsDot} color="#ffb98a" />
+      {/* (not in a copy built ahead: no page labels there) */}
+      {!warm && <DotLabel anchor={earthLabel} el={earthLabelEl} text={T_.ui.scene.earth} />}
+      {!warm && <DotLabel anchor={marsLabel} el={marsLabelEl} text={T_.ui.scene.mars} />}
       <ShipModel vehicleId={vehicleId} shipRef={ship} />
     </group>
   )
