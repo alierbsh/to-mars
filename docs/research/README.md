@@ -12,5 +12,6 @@ Simülasyonun veri temeli. Önce rapor, sonra ham notlar.
 | [notes/simulation_physics.md](./notes/simulation_physics.md) | Simülasyon fiziği: sabitler, JPL Keplerian elementleri, USSA76 ve Mars atmosferi, Sutton–Graves, EDL anchor'ları, Lambert |
 | [notes/visual_geometry.md](./notes/visual_geometry.md) | Roketlerin segment segment geometri/renk "modelleme sayfaları" |
 | [notes/expert_feasibility.md](./notes/expert_feasibility.md) | Bağımsız uzman değerlendirmeleri: refueling, EDL, ECLSS, radyasyon, abort, takvim |
+| [notes/musk_case.md](./notes/musk_case.md) | Elon Musk'ın Mars gerekçeleri — alıntılar, tarihler, takvimin kayışı, eleştiriler (wiki'deki `musk` bölümünün kaynağı; 16 Ekim 2026) |
 
 Kural: raporda **D** (düşük güven) ve **T** (türetilmiş) etiketli her sayı simülasyonda sabit değil, parametre (slider) olur.
