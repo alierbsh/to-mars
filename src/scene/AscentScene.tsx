@@ -4,8 +4,9 @@
  * horizon curves and the coast drops away at true scale). The sky is the atmosphere itself —
  * single scattering from the camera's point of view (atmosphere.ts) — so it goes from Florida
  * blue through the pale horizon band to the thin limb and black space, and the stars come out
- * as the air thins. A chase camera orbits slowly, climbs with the vehicle while the Cape is the
- * view, then drops to put the Earth's limb under the stack once it is coasting downrange.
+ * as the air thins. The camera opens on the whole stack on its pad, then, as a slow chase orbit,
+ * climbs with the vehicle while the Cape is the view and drops to put the Earth's limb under the
+ * stack once it is coasting downrange.
  */
 import { useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
@@ -29,6 +30,27 @@ const SUN = new THREE.Vector3(180, 260, 120).normalize()
  * the upper stage's guidance takes over at staging with the nose some 30° higher — and a rocket
  * comes round over a few seconds, not in one */
 const MAX_PITCH_RATE = 3
+/** the opening shot shows the whole stack, from an eye this far up it (a little low: the stack
+ * towers), filling the screen between the top bar and the lower third (on a phone also the event
+ * card above it; CSS px) less a margin */
+const OPEN_EYE = 0.2
+const OPEN_CLEAR = { wide: { top: 70, bottom: 175 }, tall: { top: 115, bottom: 245 } }
+const OPEN_MARGIN = 0.03
+
+/**
+ * Where to stand so that a vertical stack of length 1, its foot at height 0, spans the screen
+ * heights b0..b1 (fractions from the bottom) seen from an eye at height `eye`: the horizontal
+ * distance and the height aimed at on the stack's axis, both in stack lengths. The stack subtends
+ * a fixed angle Δ, and tan Δ = d / (d² − eye·(1 − eye)) gives the distance.
+ */
+function openShot(tanHalf: number, b0: number, b1: number, eye: number) {
+  const k0 = (b0 - 0.5) * 2 * tanHalf
+  const k1 = (b1 - 0.5) * 2 * tanHalf
+  const tanD = Math.tan(Math.atan(k1) - Math.atan(k0))
+  const dist = (1 + Math.sqrt(1 + 4 * tanD * tanD * eye * (1 - eye))) / (2 * tanD)
+  const tilt = Math.atan(-eye / dist) - Math.atan(k0)
+  return { dist, aim: eye + dist * Math.tan(tilt) }
+}
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
@@ -63,7 +85,7 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     }
   }, [scene])
 
-  useFrame(({ camera }, rawDt) => {
+  useFrame(({ camera, size: screen }, rawDt) => {
     // a background tab hands back a huge delta on return: never let one frame jump far
     const dt = Math.min(rawDt, 0.1)
     const { result, t, playing } = useAppStore.getState()
@@ -120,12 +142,17 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const size = Math.max(h - bottom, 12)
     const centreModel = (bottom + h) / 2
     const centre = rig.current ? rig.current.localToWorld(new THREE.Vector3(0, centreModel - h * 0.5, 0)) : new THREE.Vector3(0, centreModel, 0)
-    // open close and low on the pad, pull out over the first 15 s, then keep framing the stack
+    // open on the whole stack on its pad (openShot: the same frame behind the opening screens and
+    // the countdown), then ease over the first 15 s to the climb's framing — the stack plus ~0.6 of
+    // its length of exhaust below it
     const ta = s?.t ?? 0
     const open = 1 - Math.min(1, ta / 15)
     const pull = open * open
-    // room for the plume below the stack: frame the stack plus ~0.6 of its length of exhaust
-    const dist = (size * (2.7 - 1.3 * pull) + Math.min(size, alt / 600)) * view.zoom
+    const clear = screen.width < screen.height ? OPEN_CLEAR.tall : OPEN_CLEAR.wide
+    const b0 = Math.min(0.5, clear.bottom / screen.height + OPEN_MARGIN)
+    const b1 = Math.max(b0 + 0.4, 1 - clear.top / screen.height - OPEN_MARGIN)
+    const shot = openShot(Math.tan(THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov / 2)), b0, b1, OPEN_EYE)
+    const dist = (size * (2.7 + (shot.dist - 2.7) * pull) + Math.min(size, alt / 600)) * view.zoom
     // climb above the vehicle as it rises, so the Cape falls away in the frame behind it; from
     // ~10 km up, hold the camera a little above the stack and aim so that the horizon — which
     // dips below the horizontal as the Earth curves away — sits in the upper half of the frame
@@ -141,13 +168,13 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     const shipAbove = Math.min(11 * (Math.PI / 180), 0.6 * (dip + extra))
     const liftHigh = Math.max(size * 0.3, dist * flat * Math.tan(dip + extra - shipAbove) - size * 0.05)
     const lift = liftLow * (1 - mid) + liftHigh * mid
-    const camUp = size * (0.05 - 0.3 * pull) + lift + elev
+    const camUp = size * (0.05 + (OPEN_EYE - 0.55) * pull) + lift + elev
     const target = new THREE.Vector3(centre.x + Math.cos(az) * dist * flat, centre.y + camUp, centre.z + Math.sin(az) * dist * flat)
     if (!camState.init) {
       camera.position.copy(target)
       camState.init = true
     } else camera.position.lerp(target, 1 - Math.exp(-Math.min(rawDt, 0.5) * (view.dragging ? 24 : 4))) // frame-rate independent
-    const lookLow = -size * (0.22 + 0.2 * pull)
+    const lookLow = -size * (0.22 + (0.28 - shot.aim) * pull)
     const lookHigh = Math.max(-size * 0.3, dist * flat * Math.tan(dip + extra) - camUp)
     // (the up first: lookAt reads it, and a view before this one may have left another)
     camera.up.set(0, 1, 0)
