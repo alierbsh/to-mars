@@ -65,6 +65,13 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] Besides: capsules cruise with their service module only (the spent upper stage dropped), framed by their width and seen three-quarters from behind on arrival; Mars's and Earth's names under their points of light; Earth's globe leaves the GPU once it is a point for good; the climb's and the entry's first frame after another view no longer come out rolled; the sources behind the Musk chapter in `docs/research/notes/musk_case.md`.
 - [ ] Possible next: the orbit → cruise cut is still a cut (the TMI shot and the departure framing match in direction, not in distance); the real star catalogue would make the stars' turn through the cruise readable.
 
+## Muhammet's list, 16 Oct (sixth run)
+- [x] **Nothing to read on the opening.** Only "Start the physics, motors and engines" and the languages, over a clear view of the stack on its pad (the why, the facts and the computed line live in the wiki).
+- [x] **No time speed on the pick step** (a mission starts at 10×; the lower third changes it in flight) **and no note under the graphics choice.**
+- [x] **The whole rocket at first glance.** The launch (and the opening screens behind it) opens on the full stack, nose to foot, sized to the screen between the top bar and the lower third; Falcon Heavy from the north-north-east, its three cores side by side and the strongback behind them.
+- [x] **The day counter as large as E+.** From the entry interface the mission day stands beside the E+ clock at its size (on a phone under it, where it used to be hidden).
+- [x] **A commit for every change**, however small (CLAUDE.md).
+
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
 - Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
