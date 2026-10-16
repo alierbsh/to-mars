@@ -19,11 +19,13 @@
  *  - leaving (E): looking back past the ship at Earth, the hull across the frame, the sun above;
  *  - turning (P): the ship and the camera turn together a quarter round the sun's direction —
  *    Earth slides out of the frame — and hold, the ship side-on in sunlight;
- *  - heading out (M): the camera pitches round behind the ship, its nose turned to Mars, a point
- *    of light ahead (the ecliptic's north up);
- *  - arriving (A): the camera rolls to put the sun above and the planet beneath, closing in as
- *    Mars swells and swings under the ship.
- * Drawn in kilometres around the ship (the model ×12, as in orbit).
+ *  - heading out (M): the camera pitches down to Mars, a point of light ahead with its name under
+ *    it; the ship side-on below it, its nose toward the planet on screen (the ecliptic's north up);
+ *  - arriving (A): the camera rolls to put the sun above and the planet beneath, behind the ship
+ *    (a capsule three-quarters from behind), closing in as Mars swells and swings under the ship;
+ *    the entry opens from this framing (EntryScene: `st.open`).
+ * Drawn in kilometres around the ship (the model ×12, as in orbit). Once Earth is a point of light
+ * for good its globe unmounts (its maps leave the GPU).
  */
 import { Environment, Html, Lightformer } from '@react-three/drei'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
