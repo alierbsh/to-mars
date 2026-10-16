@@ -681,14 +681,11 @@ ul, ol { padding: 0; list-style: none; }
 .ship__line { font-size: 11.5px; color: var(--t3); line-height: 1.35; }
 .intro__row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .intro__row .intro__cta { margin-top: 0; }
-/* the clock's speed and the graphics tier side by side, each with its note under it */
-.intro__opts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 48px; width: 100%; }
-.intro__opt--speed { flex: 1 1 380px; max-width: 540px; }
-.intro__opt--gfx { flex: 1 1 300px; max-width: 400px; }
+/* the graphics tier, beside the launch button */
+.intro__opt { flex: 0 1 400px; }
 .speedpick { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--line-2); margin: 8px 0 4px; }
 .speedpick__item { position: relative; padding: 8px 14px; border-radius: 999px; font-size: 13px; color: var(--t2); transition: background 0.2s, color 0.2s; }
 .speedpick__item--on { background: var(--t1); color: #000; }
-.speedpick__tag { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ok); white-space: nowrap; }
 .countdown { display: grid; place-items: center; width: 100%; height: 100%; }
 .countdown__n { font-size: clamp(120px, 28vw, 320px); font-weight: 600; letter-spacing: -0.06em; line-height: 1; color: var(--t1); text-shadow: 0 10px 60px rgba(0, 0, 0, 0.6); animation: tick 1s var(--ease) both; }
 .countdown__go { font-size: clamp(40px, 8vw, 96px); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #ffb45c; text-shadow: 0 0 40px rgba(255, 150, 60, 0.6); animation: rise 0.4s var(--ease) both; }
