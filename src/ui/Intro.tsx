@@ -54,8 +54,6 @@ function Pick() {
   const config = useAppStore((s) => s.config)
   const pickFrom = useAppStore((s) => s.pickFrom)
   const launch = useAppStore((s) => s.launch)
-  const quality = useAppStore((s) => s.quality)
-  const qualityPinned = useAppStore((s) => s.qualityPinned)
   const [vehicleId, setVehicleId] = useState(current)
   const v = VEHICLES.find((x) => x.id === vehicleId)!
   return (
@@ -91,7 +89,6 @@ function Pick() {
         <div className="intro__opt">
           <p className="label">{L.ui.settings.graphics}</p>
           <GraphicsPicker className="speedpick" itemClass="speedpick__item" onClass="speedpick__item--on" />
-          <p className="hint">{I.graphicsHint({ q: L.ui.settings.quality[quality], auto: !qualityPinned })}</p>
         </div>
         <button
           className="intro__cta"
