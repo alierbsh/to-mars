@@ -466,9 +466,10 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       camera.position.y += (Math.random() - 0.5) * shake
       camera.position.z += (Math.random() - 0.5) * shake
     }
-    // (opening: aimed below the ship, which sits in the upper part of the frame as the cruise left it)
-    camera.lookAt(lookX, lookY + lookUp - open * Math.tan(0.25) * camDist, 0)
+    // (opening: aimed below the ship, which sits in the upper part of the frame as the cruise left it;
+    // the up first — lookAt reads it, and the view before may have left another)
     camera.up.set(0, 1, 0)
+    camera.lookAt(lookX, lookY + lookUp - open * Math.tan(0.25) * camDist, 0)
     camera.near = 0.5
     camera.far = 6_000_000
     camera.updateProjectionMatrix()

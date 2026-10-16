@@ -383,6 +383,9 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
   const moonTex = useMemo(() => moonTexture(), [])
   // close in, the 0.5 km/px regional tile still helps; past ~9,000 km its palette shows as a square
   const [detail, setDetail] = useState(true)
+  // once Earth is a point of light for good, its globe goes (and its maps leave the GPU: a phone
+  // has the entry's to make room for)
+  const [earthGone, setEarthGone] = useState(false)
   const reflect = useRef<((r: Refl) => void) | null>(null)
 
   const st = useMemo(
@@ -483,6 +486,8 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       earthRoot.current.visible = earthPx > 1.5
     }
     if (detail !== dE < 9000) setDetail(dE < 9000)
+    const gone = earthPx < 0.5 && tau > 6 * DAY
+    if (gone !== earthGone) setEarthGone(gone)
     earthState.spin = spin0 + EARTH_SPIN * tau
     earthState.clouds = earthState.spin + 0.3 + tau * 2e-6
     // the Moon beside it, going round it once a month
@@ -656,6 +661,7 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       .addScaledVector(up, Math.sin(st.el) * L * 1.5)
     camera.position.copy(st.v2)
     camera.quaternion.copy(st.qi.setFromAxisAngle(up, st.az).multiply(K.cam))
+    camera.up.copy(up)
     cam.near = 0.02
     cam.far = 40_000
     cam.updateProjectionMatrix()
@@ -680,7 +686,7 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       <directionalLight ref={bounce} intensity={0} color="#a9c5ef" />
       <SpaceReflections api={reflect} />
       <Suspense fallback={null}>
-        <Earth sky={false} far detail={detail} root={earthRoot} />
+        {!earthGone && <Earth sky={false} far detail={detail} root={earthRoot} />}
       </Suspense>
       <mesh ref={moon} renderOrder={-22}>
         <sphereGeometry args={[1, 48, 32]} />

@@ -149,8 +149,9 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
     } else camera.position.lerp(target, 1 - Math.exp(-Math.min(rawDt, 0.5) * (view.dragging ? 24 : 4))) // frame-rate independent
     const lookLow = -size * (0.22 + 0.2 * pull)
     const lookHigh = Math.max(-size * 0.3, dist * flat * Math.tan(dip + extra) - camUp)
-    camera.lookAt(centre.x, centre.y + lookLow * (1 - mid) - lookHigh * mid, centre.z)
+    // (the up first: lookAt reads it, and a view before this one may have left another)
     camera.up.set(0, 1, 0)
+    camera.lookAt(centre.x, centre.y + lookLow * (1 - mid) - lookHigh * mid, centre.z)
     camera.near = 0.5
     camera.far = 8_000_000
     camera.updateProjectionMatrix()
