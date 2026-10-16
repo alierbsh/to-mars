@@ -300,8 +300,10 @@ export default function LowerThird() {
     const sec = Math.floor(s - m * 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
-  const main = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? `E+${mmss(Math.max(0, t - entry.start))}` : fmtT(t, L)
-  const sub = entry && (phase === 'entry' || phase === 'landing' || phase === 'done') ? fmtT(t, L) : L.ui.lower.of({ end: fmtT(end, L) })
+  const afterEntry = !!entry && (phase === 'entry' || phase === 'landing' || phase === 'done')
+  const main = afterEntry ? `E+${mmss(Math.max(0, t - entry.start))}` : fmtT(t, L)
+  // after the entry interface the mission day stays as large as the clock beside it; before, the end
+  const sub = afterEntry ? fmtT(t, L) : L.ui.lower.of({ end: fmtT(end, L) })
 
   return (
     <div className={`lower ${open ? 'lower--open' : ''} ${STILL ? 'lower--still' : ''}`}>
@@ -316,10 +318,10 @@ export default function LowerThird() {
         )}
       </div>
       <div className="lower__centre">
-        <div className="lower__clock">
+        <div className={`lower__clock ${afterEntry ? 'lower__clock--day' : ''} ${moment ? 'lower__clock--moment' : ''}`}>
           {moment ? <span className="lower__phase lower__phase--moment">{momentLabel(moment, L)}</span> : <span className="lower__phase">{hud.phaseLabel}</span>}
           <span className="lower__t">{main}</span>
-          <span className="lower__end">{sub}</span>
+          <span className={afterEntry ? 'lower__t lower__t--day' : 'lower__end'}>{sub}</span>
         </div>
         <Timeline result={result} t={t} onSeek={setT} />
       </div>
