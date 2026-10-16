@@ -36,6 +36,11 @@ const MAX_PITCH_RATE = 3
 const OPEN_EYE = 0.2
 const OPEN_CLEAR = { wide: { top: 70, bottom: 175 }, tall: { top: 115, bottom: 245 } }
 const OPEN_MARGIN = 0.03
+/** where it stands, as the chase orbit's starting azimuth (x east, z south): south-south-east of
+ * the stack with the sun behind it (1.0), except where a pad's structure would stand in between —
+ * Falcon Heavy's strongback is on the south side, so it looks from the north-north-east, where the
+ * strongback is behind the three cores and they stand side by side (side-lit) */
+const OPEN_AZ: Record<string, number> = { 'lc39a-fss': -1.0 }
 
 /**
  * Where to stand so that a vertical stack of length 1, its foot at height 0, spans the screen
@@ -66,7 +71,7 @@ export default function AscentScene({ vehicleId }: { vehicleId: string }) {
   const sun = useRef<THREE.Sprite>(null)
   const sunTex = useMemo(() => dustTexture(), [])
   const { scene } = useThree()
-  const camState = useMemo(() => ({ az: 1.0, init: false, pitch: 0, pitchT: -1 }), [])
+  const camState = useMemo(() => ({ az: OPEN_AZ[vehicle.launchSite.pad] ?? 1.0, init: false, pitch: 0, pitchT: -1 }), [vehicle])
   const cores = useMemo(() => vehicle.stages.filter((st) => st.role !== 'booster'), [vehicle])
   const tmp = useMemo(() => new THREE.Vector3(), [])
 
