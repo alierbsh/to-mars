@@ -87,7 +87,9 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
   const debris = useRef<THREE.InstancedMesh>(null)
   const limb = useRef<THREE.Mesh>(null)
   const { scene } = useThree()
-  const st = useMemo(() => ({ az: 0.4, flip: 0, init: false, heat: 0, dist: 0, el: 0, azHold: 0, shot: '' }), [])
+  // `open`: the opening from the cruise's last framing (behind and above the ship, looking down past
+  // it at the planet), fading into the fall's slow orbit
+  const st = useMemo(() => ({ az: 0.4, flip: 0, init: false, heat: 0, dist: 0, el: 0, azHold: 0, shot: '', open: 0 }), [])
   const heatMats = useRef<THREE.MeshStandardMaterial[] | null>(null)
   const sparks = useRef<THREE.Points>(null)
   const sparkState = useMemo(() => ({ pos: new Float32Array(N_SPARKS * 3), vel: new Float32Array(N_SPARKS * 3), life: new Float32Array(N_SPARKS), col: new Float32Array(N_SPARKS * 3) }), [])
@@ -429,17 +431,25 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       d = Math.atan2(Math.sin(d), Math.cos(d))
       st.az += d * (1 - Math.exp(-dt * 1.5))
     }
-    const az = st.az + view.az
+    // arriving from the cruise (the first seconds of the entry): start where the cruise left the
+    // camera — behind the ship and above it, the planet filling the view below — and swing round
+    // into the fall's framing over a few seconds
+    if (!st.init) st.open = phase && t - phase.start < 5 ? 1 : 0
+    else st.open *= Math.exp(-dt * 0.45)
+    const open = st.open < 0.002 ? 0 : st.open
+    const az = st.az + view.az + open * (2.94 - 0.4)
     st.dist += ((dist * view.zoom) - st.dist) * (1 - Math.exp(-dt * (st.dist === 0 ? 1e9 : 1.6)))
     st.el += ((elev + view.el) - st.el) * (1 - Math.exp(-dt * 1.6))
-    const flat = Math.cos(st.el)
+    const camEl = st.el + open * 0.1
+    const camDist = st.dist * (1 - 0.5 * open)
+    const flat = Math.cos(camEl)
     const lookY = after ? groundY + L * 0.4 : shot === 'descent' || shot === 'landed' ? -L * 0.15 : 0
     // once the crew is out, look toward the activity beside the ship
     const outside = isShip && landed && ended ? smooth((tauSteps - 40) / 20) : 0
     const lookX = shot === 'steps' ? -8 : -20 * outside
     // the first steps and the base are at ground level: aim there, not at the ship's middle
     const lookUp = shot === 'steps' ? groundY + 2.5 - lookY : shot === 'base' ? groundY + 9 - lookY : 6 * outside
-    const target = new THREE.Vector3(lookX + Math.cos(az) * st.dist * flat, lookY + lookUp + Math.sin(st.el) * st.dist, Math.sin(az) * st.dist * flat)
+    const target = new THREE.Vector3(lookX + Math.cos(az) * camDist * flat, lookY + lookUp + Math.sin(camEl) * camDist, Math.sin(az) * camDist * flat)
     if (!st.init) {
       camera.position.copy(target)
       st.init = true
@@ -456,7 +466,8 @@ export default function EntryScene({ vehicleId }: { vehicleId: string }) {
       camera.position.y += (Math.random() - 0.5) * shake
       camera.position.z += (Math.random() - 0.5) * shake
     }
-    camera.lookAt(lookX, lookY + lookUp, 0)
+    // (opening: aimed below the ship, which sits in the upper part of the frame as the cruise left it)
+    camera.lookAt(lookX, lookY + lookUp - open * Math.tan(0.25) * camDist, 0)
     camera.up.set(0, 1, 0)
     camera.near = 0.5
     camera.far = 6_000_000
