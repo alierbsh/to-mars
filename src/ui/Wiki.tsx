@@ -72,6 +72,11 @@ export default function Wiki() {
               <p key={i} className="wiki__bullet">
                 {p.slice(2)}
               </p>
+            ) : p.startsWith('> ') ? (
+              <figure key={i} className="wiki__quote">
+                <blockquote>{p.slice(2).split(' | ')[0]}</blockquote>
+                <figcaption>{p.split(' | ')[1]}</figcaption>
+              </figure>
             ) : (
               <p key={i}>{p}</p>
             ),

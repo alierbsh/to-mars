@@ -15,6 +15,7 @@ export interface Chapter {
 
 export const CHAPTERS: Chapter[] = [
   { id: 'why' },
+  { id: 'musk' },
   { id: 'rockets' },
   { id: 'liftoff', marks: ['liftoff', 'maxq', 'mach1'] },
   { id: 'staging', marks: ['stageSep', 'ignition', 'seco', 'fairing', 'circ'] },

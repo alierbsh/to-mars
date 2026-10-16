@@ -30,8 +30,6 @@ export const UI: UiCatalog = {
     wiki: 'Comprendre !',
   },
   intro: {
-    /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Occupons Mars',
     title: 'Pourquoi une ville sur Mars ?',
     text: [
       "Tout être vivant ayant jamais existé a vécu sur une seule planète. Un astéroïde, un supervolcan, un mauvais siècle — et toute l'histoire s'arrête. Un second monde est la première véritable assurance que la vie se soit jamais vu offrir.",
@@ -40,7 +38,18 @@ export const UI: UiCatalog = {
     ],
     cta: 'Lancez la physique et les moteurs',
     toBoard: "Ou voyez d'abord le bilan des six fusées →",
-    foot: 'La simulation tourne dans votre navigateur. Faites glisser pour regarder autour, faites défiler pour zoomer.',
+    /** above the title: what this is, before anything else */
+    live: 'Simulation en direct — pas une vidéo',
+    /** three short facts under the text: what runs, on what, where */
+    engine: [
+      { label: 'Vraie physique', text: 'Poussée, traînée, gravité et orbites, calculées pas à pas.' },
+      { label: 'Vraies fusées', text: 'Six lanceurs avec leurs masses et moteurs publiés.' },
+      { label: 'Rendu en direct', text: 'Dessiné en 3D dans votre navigateur. Aucune vidéo, nulle part.' },
+    ],
+    /** under the button: the mission behind it was just computed here (seconds, formatted) */
+    computed: (p: { s: string }) => `Cette mission vient d'être calculée dans votre navigateur, en ${p.s} s.`,
+    computing: 'Calcul de la mission dans votre navigateur…',
+    foot: 'Faites glisser pour regarder autour, faites défiler pour zoomer.',
     shared: 'On vous a envoyé une mission',
     fromBoard: 'Depuis le tableau des scores',
     sharedHint: 'Lancez-la pour voir ce qui se passe — ou choisissez une autre fusée.',

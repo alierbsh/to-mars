@@ -30,8 +30,6 @@ export const UI: UiCatalog = {
     wiki: 'Anla!',
   },
   intro: {
-    /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: "Mars'ı İşgal Et",
     title: "Neden Mars'ta bir şehir?",
     text: [
       'Bugüne kadar var olmuş her canlı tek bir gezegende yaşadı. Bir asteroit, bir süper yanardağ, kötü geçen tek bir yüzyıl — ve bütün hikâye biter. İkinci bir dünya, hayata şimdiye dek sunulmuş ilk gerçek sigorta poliçesi olur.',
@@ -40,7 +38,18 @@ export const UI: UiCatalog = {
     ],
     cta: 'Fiziği ve motorları çalıştır',
     toBoard: 'Ya da önce altı roketin sonuçlarına bak →',
-    foot: 'Simülasyon tarayıcında çalışır. Etrafa bakmak için sürükle, yakınlaşmak için kaydır.',
+    /** above the title: what this is, before anything else */
+    live: 'Canlı simülasyon — video değil',
+    /** three short facts under the text: what runs, on what, where */
+    engine: [
+      { label: 'Gerçek fizik', text: 'İtki, sürtünme, yerçekimi ve yörüngeler adım adım hesaplanıyor.' },
+      { label: 'Gerçek roketler', text: 'Altı araç, yayımlanmış kütleleri ve motorlarıyla.' },
+      { label: 'Canlı çizim', text: 'Tarayıcında 3B olarak çiziliyor. Hiçbir yerde hazır görüntü yok.' },
+    ],
+    /** under the button: the mission behind it was just computed here (seconds, formatted) */
+    computed: (p: { s: string }) => `Bu görev az önce tarayıcında ${p.s} saniyede hesaplandı.`,
+    computing: 'Görev tarayıcında hesaplanıyor…',
+    foot: 'Etrafa bakmak için sürükle, yakınlaşmak için kaydır.',
     shared: 'Biri sana bir görev gönderdi',
     fromBoard: 'Skor tablosundan',
     sharedHint: 'Ne olacağını görmek için fırlat — ya da başka bir roket seç.',

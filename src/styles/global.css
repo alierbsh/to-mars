@@ -534,6 +534,7 @@ ul, ol { padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   .drawer, .verdict, .craft__new, .toggle__track::after { transition: none; }
   .lower, .lower--open * { animation-duration: 0.01s !important; animation-delay: 0s !important; transition: none !important; }
+  .intro__livedot, .intro__computed--busy::before { animation: none; }
 }
 
 @media (max-width: 400px) {
@@ -624,6 +625,11 @@ ul, ol { padding: 0; list-style: none; }
 .wiki__h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t3); margin-top: 14px; }
 .wiki__bullet { padding-left: 18px; position: relative; }
 .wiki__bullet::before { content: ''; position: absolute; left: 0; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--rust); }
+/* a quotation, its source under it */
+.wiki__quote { margin: 4px 0; padding: 2px 0 2px 18px; border-left: 2px solid var(--rust); }
+.wiki__quote blockquote { margin: 0; font-size: 19px; line-height: 1.45; font-weight: 500; letter-spacing: -0.01em; color: var(--t1); }
+.wiki__quote figcaption { margin-top: 8px; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); }
+.wiki__quote figcaption:lang(hi), .wiki__quote figcaption:lang(zh) { font-size: 12px; }
 .wiki__foot { display: flex; justify-content: space-between; gap: 16px; max-width: 62ch; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); }
 .wiki__step { font-size: 13px; color: var(--t2); padding: 8px 0; }
 .wiki__step:hover { color: var(--t1); }
@@ -638,6 +644,7 @@ ul, ol { padding: 0; list-style: none; }
   .wiki__close { top: 12px; right: 14px; }
   .wiki__title { font-size: 28px; }
   .wiki__text { font-size: 15px; }
+  .wiki__quote blockquote { font-size: 17px; }
 }
 
 /* ---------- the opening ---------- */
@@ -659,6 +666,17 @@ ul, ol { padding: 0; list-style: none; }
 .intro__cta:hover { transform: translateY(-1px); background: #fff; }
 .intro__cta::after { content: '→'; font-weight: 500; }
 .intro__foot { margin-top: 18px; color: var(--t3); font-size: 12px; }
+/* not a film: the badge above the title, three facts under the text, the computed mission under the button */
+.intro__live { display: inline-flex; align-items: center; gap: 9px; padding: 6px 12px 6px 10px; border: 1px solid var(--line-2); border-radius: 999px; background: rgba(255, 255, 255, 0.04); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t1); }
+.intro__livedot { width: 7px; height: 7px; border-radius: 50%; background: #ff5b3a; box-shadow: 0 0 10px #ff5b3a; animation: live-pulse 1.6s ease-in-out infinite; }
+@keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.intro__engine { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 24px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); list-style: none; }
+.intro__engine li { display: flex; flex-direction: column; gap: 6px; }
+.intro__engine .label { color: var(--t1); }
+.intro__enginetext { font-size: 13px; line-height: 1.45; color: var(--t2); }
+.intro__computed { color: var(--t2); font-variant-numeric: tabular-nums; }
+.intro__computed::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: var(--ok); vertical-align: 1px; }
+.intro__computed--busy::before { background: var(--t3); animation: live-pulse 1s ease-in-out infinite; }
 .ships { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 8px 0 22px; }
 .ship { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; text-align: left; padding: 10px 10px 12px; border-radius: var(--r); border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease); }
 .ship:hover { border-color: var(--t3); transform: translateY(-2px); }
@@ -687,6 +705,9 @@ ul, ol { padding: 0; list-style: none; }
   .ship__line { display: none; }
   .intro__title { font-size: 32px; }
   .intro__text { font-size: 14px; }
+  .intro__engine { grid-template-columns: 1fr; gap: 10px; margin-top: 18px; padding-top: 14px; }
+  .intro__engine li { flex-direction: row; align-items: baseline; gap: 10px; }
+  .intro__engine .label { flex: none; width: 34%; }
   .intro__row { align-items: stretch; }
   .intro__row .intro__cta { justify-content: center; width: 100%; }
   /* long calls to action (German, French…) wrap instead of running off a phone's screen */

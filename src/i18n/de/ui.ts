@@ -30,8 +30,6 @@ export const UI: UiCatalog = {
     wiki: 'Verstehen!',
   },
   intro: {
-    /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Besetzt den Mars',
     title: 'Warum eine Stadt auf dem Mars?',
     text: [
       'Jedes Lebewesen, das je existiert hat, hat auf einem einzigen Planeten gelebt. Ein Asteroid, ein Supervulkan, ein schlechtes Jahrhundert — und die ganze Geschichte ist zu Ende. Eine zweite Welt ist die erste echte Versicherung, die dem Leben je angeboten wurde.',
@@ -40,7 +38,18 @@ export const UI: UiCatalog = {
     ],
     cta: 'Physik, Motoren und Triebwerke starten',
     toBoard: 'Oder zuerst alle sechs Raketen vergleichen →',
-    foot: 'Die Simulation läuft in deinem Browser. Ziehen zum Umsehen, Scrollen zum Zoomen.',
+    /** above the title: what this is, before anything else */
+    live: 'Live-Simulation — kein Video',
+    /** three short facts under the text: what runs, on what, where */
+    engine: [
+      { label: 'Echte Physik', text: 'Schub, Luftwiderstand, Schwerkraft und Bahnen, Schritt für Schritt berechnet.' },
+      { label: 'Echte Raketen', text: 'Sechs Fahrzeuge mit ihren veröffentlichten Massen und Triebwerken.' },
+      { label: 'Live gezeichnet', text: 'In 3D in deinem Browser. Nirgends ein Video.' },
+    ],
+    /** under the button: the mission behind it was just computed here (seconds, formatted) */
+    computed: (p: { s: string }) => `Diese Mission wurde gerade in deinem Browser berechnet, in ${p.s} s.`,
+    computing: 'Die Mission wird in deinem Browser berechnet …',
+    foot: 'Ziehen zum Umsehen, Scrollen zum Zoomen.',
     shared: 'Jemand hat dir eine Mission geschickt',
     fromBoard: 'Aus der Übersicht',
     sharedHint: 'Starte sie und sieh, was passiert — oder wähle eine andere Rakete.',

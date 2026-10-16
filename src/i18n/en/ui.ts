@@ -38,8 +38,6 @@ export const UI = {
     wiki: 'Understand!',
   },
   intro: {
-    /** above the title of the opening screen: the site's name, short (meta.siteName in full) */
-    brand: 'Occupy Mars',
     title: 'Why a city on Mars?',
     text: [
       'Every living thing that has ever existed has lived on one planet. One asteroid, one supervolcano, one bad century — and the whole story ends. A second world is the first real insurance policy life has ever been offered.',
@@ -48,7 +46,18 @@ export const UI = {
     ],
     cta: 'Start the physics, motors and engines',
     toBoard: 'Or see how all six rockets do first →',
-    foot: 'Simulation runs in your browser. Drag to look around, scroll to zoom.',
+    /** above the title: what this is, before anything else */
+    live: 'Live simulation — not a video',
+    /** three short facts under the text: what runs, on what, where */
+    engine: [
+      { label: 'Real physics', text: 'Thrust, drag, gravity and orbits, computed step by step.' },
+      { label: 'Real rockets', text: 'Six vehicles with their published masses and engines.' },
+      { label: 'Rendered live', text: 'Drawn in 3D in your browser. No footage anywhere.' },
+    ],
+    /** under the button: the mission behind it was just computed here (seconds, formatted) */
+    computed: (p: { s: string }) => `This mission was just computed in your browser, in ${p.s} s.`,
+    computing: 'Computing the mission in your browser…',
+    foot: 'Drag to look around, scroll to zoom.',
     shared: 'Someone sent you a mission',
     fromBoard: 'From the scoreboard',
     sharedHint: 'Launch it to see what happens — or pick another ship.',

@@ -2,8 +2,8 @@
  * The wiki in English: every stage of the mission explained for someone who has never followed
  * a launch — what happens, how, and why it has to be that way — with the numbers the simulation
  * uses. One entry per chapter (the order and the timeline marks that open each chapter live in
- * src/wiki/chapters.ts). In `body`, a paragraph starting with '## ' is a sub-heading and one
- * starting with '- ' a bullet.
+ * src/wiki/chapters.ts). In `body`, a paragraph starting with '## ' is a sub-heading, one
+ * starting with '- ' a bullet, and one starting with '> ' a quotation, its source after ' | '.
  */
 export const WIKI = {
   why: {
@@ -13,6 +13,43 @@ export const WIKI = {
       'Every living thing that has ever existed has lived on one planet. That makes life fragile in a way we rarely think about: a large enough asteroid, a supervolcano, a war, a bad century — and there is no backup. A second, self-sustaining settlement is the first real insurance policy life has ever been offered.',
       'Mars is the only candidate close enough. Its day is 24 hours 37 minutes, so plants and people keep a familiar rhythm. There is water, frozen in the ground and at the poles. The thin air is carbon dioxide, which with water and electricity becomes methane and oxygen — rocket fuel, and something to breathe. Sunlight is weaker than here, about 43 % at the equator, but enough for crops under glass.',
       'None of that makes it a home. It makes it a frontier that could become one. This site asks the first question on the way there: can the rockets that exist today carry a crew to the surface alive — and if not, what breaks first?',
+    ],
+  },
+  musk: {
+    title: 'Elon Musk’s case for Mars',
+    lead: 'Why the man building Starship says we have to go — in his own words, with the dates, and what his critics answer.',
+    body: [
+      'SpaceX was founded in 2002 “with the ultimate goal of enabling people to live on other planets”. Its founder’s argument has hardly changed since. His dates have, many times.',
+      '## One planet will end',
+      '> One path is we stay on Earth forever, and then there will be some eventual extinction event. | International Astronautical Congress, Guadalajara, 2016',
+      'The other path is to become multiplanetary: a second home that can carry on alone. Musk calls it “life insurance for life collectively” (2025), and speaks of carrying “the light of consciousness” to the stars.',
+      '## Why Mars',
+      '- Sunlight is still decent at one and a half times Earth’s distance from the Sun.',
+      '- The day is almost ours, a little over 24½ hours. Gravity is 38 % of Earth’s.',
+      '- Ice is almost everywhere and the air is carbon dioxide: together they make methane and oxygen — fuel for the flight home.',
+      '- The Moon is small and airless, and its day lasts a month. Venus is “a hot acid bath”.',
+      'In February 2026 he put a city on the Moon first — two days away rather than six months, so quicker to learn on — with Mars still the goal.',
+      '## While we can',
+      '> I think the wise move is to make life multiplanetary while we can. | American Geophysical Union, San Francisco, 2015',
+      'After 4.5 billion years, this is the first time life from Earth can reach another planet. And technology can go backwards: a world war, a new dark age.',
+      '## Something to look forward to',
+      '> Life cannot just be about solving one miserable problem after another. There need to be things that inspire you, that make you glad to wake up in the morning and be part of humanity. | SXSW, Austin, 2018',
+      '## The threshold',
+      'A city counts once it keeps growing even if the ships from Earth stop coming. His numbers: about a million people, around a million tonnes of cargo, and a thousand ships or more each time the planets line up — every 26 months.',
+      'That only works if a seat costs about as much as a house, not billions. His four levers: rockets reused in full, refuelling in orbit, propellant made on Mars, and methane as the fuel. Refuelling in orbit is exactly what this simulation puts to the test.',
+      '## The dates kept moving',
+      '- 2017: cargo ships to Mars in 2022, a crew in 2024.',
+      '- 2020: “highly confident” of people on Mars around 2026.',
+      '- 2025: ships carrying Optimus robots at the end of 2026; people “as soon as 2029, although 2031 is more likely”.',
+      '- February 2026: the Moon first; a city on Mars to begin in five to seven years.',
+      '- October 2026: the late-2026 window has been let pass — refuelling in orbit is not yet demonstrated — and SpaceX lists cargo to Mars no earlier than 2028.',
+      '> My timelines historically have been optimistic. | Elon Musk, SXSW, 2018',
+      '## What critics answer',
+      '- Radiation: the cruise there and back alone, as Curiosity measured it, comes to about 0.66 sievert — above NASA’s career limit of 0.6.',
+      '- Bodies: nobody knows what 38 % gravity does to a pregnancy or to a growing child.',
+      '- Earth first: the astronomer Lucianne Walkowicz (TED, 2015) called it hubris to think that settling another planet alone will save us.',
+      '- Life on Mars: people bring microbes, which could muddle the search for Martian life.',
+      '- Money: SpaceX’s own stock-market prospectus (2026) warns that its Moon and Mars plans rely on “unproven technologies”.',
     ],
   },
   rockets: {

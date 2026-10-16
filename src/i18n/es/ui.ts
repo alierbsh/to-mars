@@ -30,8 +30,6 @@ export const UI: UiCatalog = {
     wiki: '¡Entiende!',
   },
   intro: {
-    /** above the title of the opening screen (the site's name, usually left as is) */
-    brand: 'Ocupa Marte',
     title: '¿Por qué una ciudad en Marte?',
     text: [
       'Todo ser vivo que ha existido ha vivido en un único planeta. Un asteroide, un supervolcán, un siglo aciago… y toda la historia se acaba. Un segundo mundo es el primer seguro de verdad que se le ha ofrecido jamás a la vida.',
@@ -40,7 +38,18 @@ export const UI: UiCatalog = {
     ],
     cta: 'Arranca la física y los motores',
     toBoard: 'O mira antes cómo les va a los seis cohetes →',
-    foot: 'La simulación se ejecuta en tu navegador. Arrastra para mirar alrededor; desplázate para acercar o alejar.',
+    /** above the title: what this is, before anything else */
+    live: 'Simulación en vivo, no un vídeo',
+    /** three short facts under the text: what runs, on what, where */
+    engine: [
+      { label: 'Física real', text: 'Empuje, resistencia, gravedad y órbitas, calculados paso a paso.' },
+      { label: 'Cohetes reales', text: 'Seis vehículos con sus masas y motores publicados.' },
+      { label: 'Dibujado en vivo', text: 'En 3D, en tu navegador. Ni un solo vídeo.' },
+    ],
+    /** under the button: the mission behind it was just computed here (seconds, formatted) */
+    computed: (p: { s: string }) => `Esta misión se acaba de calcular en tu navegador, en ${p.s} s.`,
+    computing: 'Calculando la misión en tu navegador…',
+    foot: 'Arrastra para mirar alrededor; desplázate para acercar o alejar.',
     shared: 'Una misión compartida contigo',
     fromBoard: 'Desde el Marcador',
     sharedHint: 'Lánzala para ver qué pasa, o elige otra nave.',

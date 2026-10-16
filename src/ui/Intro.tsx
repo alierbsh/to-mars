@@ -29,10 +29,13 @@ function Start() {
   const L = useT()
   const I = L.ui.intro
   const setIntro = useAppStore((s) => s.setIntro)
+  // the proof that it is not a film: the mission behind the button was computed here, just now
+  const computeMs = useAppStore((s) => (s.status === 'done' ? (s.result?.computeMs ?? null) : null))
   return (
     <section className="intro__panel intro__panel--start">
-      <p className="label" lang="en">
-        {I.brand}
+      <p className="intro__live">
+        <span className="intro__livedot" aria-hidden="true" />
+        {I.live}
       </p>
       <h1 className="intro__title">{I.title}</h1>
       <div className="intro__text">
@@ -40,6 +43,14 @@ function Start() {
           <p key={i}>{p}</p>
         ))}
       </div>
+      <ul className="intro__engine">
+        {I.engine.map((e) => (
+          <li key={e.label}>
+            <span className="label">{e.label}</span>
+            <span className="intro__enginetext">{e.text}</span>
+          </li>
+        ))}
+      </ul>
       <button
         className="intro__cta"
         onClick={() => {
@@ -52,7 +63,9 @@ function Start() {
       <button className="intro__alt" onClick={() => useAppStore.getState().openBoard()}>
         {I.toBoard}
       </button>
-      <p className="intro__foot">{I.foot}</p>
+      <p className="intro__foot">
+        <span className={`intro__computed ${computeMs === null ? 'intro__computed--busy' : ''}`}>{computeMs === null ? I.computing : I.computed({ s: L.n.f(computeMs / 1000, 2) })}</span> {I.foot}
+      </p>
       <div className="intro__links">
         <LangList />
       </div>
