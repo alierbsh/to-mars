@@ -30,6 +30,7 @@ import { useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { arriveBlend, arriveHyperbola, departBlend, departHyperbola, entryInterfaceTime, smooth } from '../sim/cruiseView'
+import { VEHICLES } from '../data/vehicles'
 import type { MissionResult, TransferResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { APPROACH_SHOT_S, DEPART_SHOT_S } from '../ui/hud'
@@ -37,7 +38,7 @@ import { EARTH_R, Earth, SUN_DIR, earthState, moonTexture, starField, sunGlowTex
 import { limbCamera, marsLimbMaterial } from './marsLimb'
 import { SITE_LON } from './marsSite'
 import { VehicleRig } from './VehicleRig'
-import { SPACECRAFT_BASE, SPACECRAFT_LENGTH } from './vehicles'
+import { SERVICE_MODULE_LENGTH, SPACECRAFT_BASE, SPACECRAFT_DIAMETER, SPACECRAFT_LENGTH } from './vehicles'
 import { view } from './viewControl'
 import { useWarm } from './warm'
 
@@ -158,13 +159,16 @@ export class CruiseGeometry {
   }
 }
 
-/** the ship at the origin, ×12 (the shot turns it) */
+/** what flies the cruise (m): the spacecraft and the service module under it */
+const cruiseLength = (id: string) => (SPACECRAFT_LENGTH[id] ?? 30) + (SERVICE_MODULE_LENGTH[id] ?? 0)
+
+/** the ship at the origin — the middle of what flies the cruise — ×12 (the shot turns it) */
 function ShipModel({ vehicleId, shipRef }: { vehicleId: string; shipRef: React.RefObject<THREE.Group | null> }) {
-  const Lm = SPACECRAFT_LENGTH[vehicleId] ?? 30
+  const bottom = (SPACECRAFT_BASE[vehicleId] ?? 0) - (SERVICE_MODULE_LENGTH[vehicleId] ?? 0)
   return (
     <group ref={shipRef}>
-      <group scale={SCALE} position={[0, -((SPACECRAFT_BASE[vehicleId] ?? 0) + Lm / 2) * SCALE, 0]}>
-        <VehicleRig id={vehicleId} mode="orbit" />
+      <group scale={SCALE} position={[0, -(bottom + cruiseLength(vehicleId) / 2) * SCALE, 0]}>
+        <VehicleRig id={vehicleId} mode="cruise" />
       </group>
     </group>
   )
@@ -346,7 +350,9 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
 }
 
 function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; result: MissionResult; transfer: TransferResult; cruise: { start: number; end: number } }) {
-  const L = (SPACECRAFT_LENGTH[vehicleId] ?? 30) * SCALE
+  // the framings are in ship lengths — for a capsule, wide for its length, three widths
+  const L = Math.max(cruiseLength(vehicleId), 3 * (SPACECRAFT_DIAMETER[vehicleId] ?? 0)) * SCALE
+  const capsule = VEHICLES.find((v) => v.id === vehicleId)?.spacecraft.entry?.kind !== 'ship'
   const warm = useWarm()
   const storm = result.weather?.storm
   // a global storm leaves the darkest albedo marks (Syrtis, the southern highlands) only as shadows of themselves
@@ -600,7 +606,10 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
       const loc = st.v4.copy(toShip).applyQuaternion(st.qi.copy(A.cam).invert())
       A.dx = THREE.MathUtils.radToDeg(Math.atan2(loc.x, -loc.z))
       A.dy = THREE.MathUtils.radToDeg(Math.atan2(loc.y, -loc.z))
-      shipTurnTo(A.ship, fwd, toShip)
+      // a ship nose-first along the asymptote, seen past its engines; a capsule three-quarters
+      // from behind (straight from behind it is a dark disc, its service module's end)
+      const nose = capsule ? slerpDir(toShip, fwd, ((50 * Math.PI) / 180) / Math.max(toShip.angleTo(fwd), 1e-3), st.v5) : fwd
+      shipTurnTo(A.ship, nose, toShip)
       A.dist = (tall ? 2.8 : 1.6) * (1.1 - 0.15 * (1 - Math.min(1, left / APPROACH_SHOT_S)))
     }
     // how far along: in mission time, eased in real time (at 10× the clock crosses these windows

@@ -29,7 +29,7 @@ interface Anchor {
   obj: THREE.Object3D
 }
 
-export type RigMode = 'pad' | 'ascent' | 'orbit' | 'entry'
+export type RigMode = 'pad' | 'ascent' | 'orbit' | 'cruise' | 'entry'
 
 /** the climb's attitude as AscentScene shows it (pitch, degrees from vertical) — a stage that has
  * separated keeps its own attitude against it */
@@ -162,6 +162,16 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
       const tmi = result.phases.find((x) => x.phase === 'tmi')
       if (tmi && t >= tmi.start && t < tmi.end) burning.add(vehicle.refuelable ? finalStage : finalStage)
       expansion.current = 4 // vacuum
+    } else if (result && mode === 'cruise') {
+      // after the departure burn: the spacecraft and its service module — an upper stage that
+      // cannot be refuelled is dropped once its burn is done; nothing fires
+      for (const st of vehicle.stages) {
+        if (st.id !== scGroup && (st.id !== finalStage || !vehicle.refuelable)) {
+          hidden.add(st.id)
+          hidden.add(`${st.id}-lvsa`)
+        }
+      }
+      if (scGroup !== 'fairing') hidden.add('fairing')
     } else if (result && mode === 'entry') {
       for (const st of vehicle.stages) {
         if (st.id !== scGroup) {
@@ -255,7 +265,7 @@ export function VehicleRig({ id, mode, scale = 1 }: { id: string; mode: RigMode;
   const collars = useMemo(() => (mode === 'ascent' ? vaporCollars(id) : []), [id, mode])
   // in orbit only the last stage fires (the departure burn), at Mars only the spacecraft (the
   // landing burn): the other stages are gone for the whole scene, their flames are not built
-  const fires = (stage: string) => (mode === 'orbit' ? stage === vehicle.stages[vehicle.stages.length - 1].id : mode === 'entry' ? stage === SPACECRAFT_GROUP[id] : true)
+  const fires = (stage: string) => (mode === 'orbit' ? stage === vehicle.stages[vehicle.stages.length - 1].id : mode === 'entry' ? stage === SPACECRAFT_GROUP[id] : mode !== 'cruise')
   return (
     <group ref={root} scale={scale}>
       <VehicleModel id={id} />

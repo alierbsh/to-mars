@@ -61,6 +61,27 @@ export const STAGING: Record<string, { hot?: { lower: string; upper: string }; b
   'starship-v3': { hot: { lower: 'superheavy', upper: 'ship' }, boostback: { stage: 'superheavy', pivot: 26 }, vapor: [{ y: 110.7, r: 4.5 }, { y: 70.5, r: 4.5 }] },
 }
 
+/**
+ * Length (m) of the service module group (`<spacecraft>-sm`) under the spacecraft's base — it flies
+ * the cruise with it and is dropped before the entry. Apollo's includes the adapter cone.
+ */
+export const SERVICE_MODULE_LENGTH: Record<string, number> = {
+  'sls-orion': 4.6,
+  'falcon-heavy-dragon': 3.6,
+  'long-march-10': 5.4,
+  'saturn-v-apollo': 13.2,
+}
+
+/** Widest diameter (m) of the spacecraft and its service module: capsules are framed by their width */
+export const SPACECRAFT_DIAMETER: Record<string, number> = {
+  'starship-v3': 9,
+  'sls-orion': 5.04,
+  'falcon-heavy-dragon': 4,
+  'new-glenn': 7,
+  'long-march-10': 4.5,
+  'saturn-v-apollo': 3.9,
+}
+
 /** Height (m) of the spacecraft group's base above the model origin. */
 export const SPACECRAFT_BASE: Record<string, number> = {
   'starship-v3': 72.3,
