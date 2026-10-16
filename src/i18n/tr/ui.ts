@@ -392,4 +392,13 @@ export const UI: UiCatalog = {
     site: 'Columbia Anma İstasyonu',
     siteSub: "Spirit'in iniş aracı · 4 Ocak 2004",
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: 'Transfer yörüngesi, yukarıdan',
+    transit: 'Yolda',
+    day: (p: { d: number; n: number }) => `${n(p.n)} günün ${n(p.d)}. günü`,
+    /** one-way light time between the ship and Earth */
+    signal: 'Dünya’ya sinyal',
+    delay: (p: { m: number; s: number }) => `${n(p.m)} dk ${n(p.s)} sn`,
+  },
 }

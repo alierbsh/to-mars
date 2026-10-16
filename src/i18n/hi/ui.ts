@@ -392,4 +392,13 @@ export const UI: UiCatalog = {
     site: 'कोलंबिया मेमोरियल स्टेशन',
     siteSub: 'स्पिरिट का लैंडर · 4 जनवरी 2004',
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: 'ऊपर से देखी गई स्थानांतरण कक्षा',
+    transit: 'रास्ते में',
+    day: (p: { d: number; n: number }) => `${n(p.n)} में से दिन ${n(p.d)}`,
+    /** one-way light time between the ship and Earth */
+    signal: 'पृथ्वी तक संकेत',
+    delay: (p: { m: number; s: number }) => `${n(p.m)} मिनट ${n(p.s)} सेकंड`,
+  },
 }

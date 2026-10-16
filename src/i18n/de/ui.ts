@@ -392,4 +392,13 @@ export const UI: UiCatalog = {
     site: 'Columbia Memorial Station',
     siteSub: 'Lander von Spirit · 4. Januar 2004',
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: 'Der Transfer von oben',
+    transit: 'Unterwegs',
+    day: (p: { d: number; n: number }) => `Tag ${n(p.d)} von ${n(p.n)}`,
+    /** one-way light time between the ship and Earth */
+    signal: 'Signal zur Erde',
+    delay: (p: { m: number; s: number }) => `${n(p.m)} min ${n(p.s)} s`,
+  },
 }

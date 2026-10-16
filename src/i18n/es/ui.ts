@@ -392,4 +392,13 @@ export const UI: UiCatalog = {
     site: 'Estación Memorial Columbia',
     siteSub: 'Módulo de aterrizaje de Spirit · 4 de enero de 2004',
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: 'La transferencia vista desde arriba',
+    transit: 'En tránsito',
+    day: (p: { d: number; n: number }) => `Día ${n(p.d)} de ${n(p.n)}`,
+    /** one-way light time between the ship and Earth */
+    signal: 'Señal a la Tierra',
+    delay: (p: { m: number; s: number }) => `${n(p.m)} min ${n(p.s)} s`,
+  },
 }

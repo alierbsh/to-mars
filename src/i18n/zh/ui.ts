@@ -409,4 +409,13 @@ export const UI: UiCatalog = {
     site: '哥伦比亚纪念站',
     siteSub: '勇气号着陆器 · 2004 年 1 月 4 日',
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: '俯瞰转移轨道',
+    transit: '航行中',
+    day: (p: { d: number; n: number }) => zh`第${n(p.d)}天，共${n(p.n)}天`,
+    /** one-way light time between the ship and Earth */
+    signal: '与地球的信号延迟',
+    delay: (p: { m: number; s: number }) => zh`${n(p.m)}分${n(p.s)}秒`,
+  },
 }

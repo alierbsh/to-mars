@@ -2,6 +2,7 @@ import { VEHICLES } from '../data/vehicles'
 import { getL, useT } from '../i18n'
 import type { MissionResult } from '../sim/types'
 import { phaseAt, useAppStore } from '../state/store'
+import CruiseInset from './CruiseInset'
 import { shareMission } from './share'
 
 const MILESTONES = [
@@ -68,8 +69,10 @@ export default function VerdictCard() {
     // the mission as it plays: the stage it is in, and what has just happened there
     const e = ei >= 0 ? result.events[ei] : null
     const p = result.phases[Math.max(0, pi)]
+    // the cruise: the scene stays with the ship, the transfer from above goes in here
+    const cruising = p.phase === 'cruise' && !!result.transfer
     return (
-      <section className={`verdict verdict--now ${status === 'running' ? 'verdict--stale' : ''}`} role="status" aria-live="polite" aria-label={V.mission}>
+      <section className={`verdict verdict--now ${cruising ? 'verdict--cruise' : ''} ${status === 'running' ? 'verdict--stale' : ''}`} role="status" aria-live="polite" aria-label={V.mission}>
         <p className={`label label--now label--${e?.severity === 'info' ? 'live' : (e?.severity ?? 'live')}`}>
           <span className="label__dot" aria-hidden="true" />
           {L.t(p.msg ?? p.label)}
@@ -80,6 +83,7 @@ export default function VerdictCard() {
             <p className="now__detail">{L.t(e.msg?.detail ?? e.detail)}</p>
           </div>
         )}
+        {cruising && <CruiseInset result={result} />}
       </section>
     )
   }

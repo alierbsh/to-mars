@@ -403,4 +403,13 @@ export const UI = {
     site: 'Columbia Memorial Station',
     siteSub: "Spirit's lander · 4 January 2004",
   },
+  /** the cruise's map in the event card: the transfer seen from above */
+  inset: {
+    aria: 'The transfer seen from above',
+    transit: 'In transit',
+    day: (p: { d: number; n: number }) => `Day ${n(p.d)} of ${n(p.n)}`,
+    /** one-way light time between the ship and Earth */
+    signal: 'Signal to Earth',
+    delay: (p: { m: number; s: number }) => `${n(p.m)} min ${n(p.s)} s`,
+  },
 }

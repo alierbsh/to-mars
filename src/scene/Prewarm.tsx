@@ -16,29 +16,26 @@ import { Suspense, useLayoutEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import type { MissionResult } from '../sim/types'
 import { phaseAt, useAppStore } from '../state/store'
-import { Approach, CruiseMap, Departure, cruiseShot } from './CruiseScene'
+import CruiseScene from './CruiseScene'
 import EntryScene from './EntryScene'
 import OrbitScene from './OrbitScene'
 import { Precompiler, lightSignature, primeLights, type Budget } from './precompile'
 import { Warm, globalEnv } from './warm'
 
-type Shot = 'ascent' | 'orbit' | 'depart' | 'map' | 'approach' | 'entry'
+type Shot = 'ascent' | 'orbit' | 'cruise' | 'entry'
 type Job = Exclude<Shot, 'ascent'>
 
-/** the shot on screen at t: the views (Scene.tsx), the cruise split into its three shots */
+/** the view on screen at t (Scene.tsx) */
 export function shotAt(result: MissionResult, t: number): Shot {
   const p = phaseAt(result, t).phase
   if (p === 'ascent') return 'ascent'
   if (p === 'leo' || p === 'tmi') return 'orbit'
-  if (p === 'cruise') {
-    const c = cruiseShot(result, t)
-    return c === 'depart' ? 'depart' : c === 'arrive' ? 'approach' : 'map'
-  }
+  if (p === 'cruise') return 'cruise'
   return 'entry'
 }
 
-/** what to build during each shot: the next one (the entry, the heaviest, two ahead) */
-const AFTER: Record<Shot, Job[]> = { ascent: ['orbit'], orbit: ['depart'], depart: ['map'], map: ['approach', 'entry'], approach: ['entry'], entry: [] }
+/** what to build during each view: the next one */
+const AFTER: Record<Shot, Job[]> = { ascent: ['orbit'], orbit: ['cruise'], cruise: ['entry'], entry: [] }
 
 /** the shots this mission gets to */
 function reached(result: MissionResult): Set<Shot> {
@@ -47,7 +44,7 @@ function reached(result: MissionResult): Set<Shot> {
   if (ph.includes('leo')) s.add('orbit')
   const ci = ph.indexOf('cruise')
   if (ci >= 0) {
-    s.add('depart').add('map').add('approach')
+    s.add('cruise')
     if (ci + 1 < ph.length) s.add('entry')
   }
   return s
@@ -238,8 +235,8 @@ function WarmJob({ job, vehicleId }: { job: Job; vehicleId: string }) {
   })
   const [camera] = useState(() => new THREE.PerspectiveCamera(35, 1, 0.5, 600_000))
   useLayoutEffect(() => {
-    // the views without an environment of their own reflect the canvas's
-    if (job === 'map' || job === 'entry') scene.environment = globalEnv.texture
+    // the entry has no environment of its own: it reflects the canvas's
+    if (job === 'entry') scene.environment = globalEnv.texture
     const w = { pc: new Precompiler(scene), camera, nextScan: 0, built: false, drawAt: 0 }
     targets.set(job, w)
     return () => {
@@ -250,7 +247,7 @@ function WarmJob({ job, vehicleId }: { job: Job; vehicleId: string }) {
     <Warm.Provider value>
       <Suspense fallback={null}>
         <SkyStars />
-        {job === 'orbit' ? <OrbitScene vehicleId={vehicleId} /> : job === 'depart' ? <Departure vehicleId={vehicleId} /> : job === 'map' ? <CruiseMap /> : job === 'approach' ? <Approach vehicleId={vehicleId} /> : <EntryScene vehicleId={vehicleId} />}
+        {job === 'orbit' ? <OrbitScene vehicleId={vehicleId} /> : job === 'cruise' ? <CruiseScene vehicleId={vehicleId} /> : <EntryScene vehicleId={vehicleId} />}
       </Suspense>
     </Warm.Provider>,
     scene,

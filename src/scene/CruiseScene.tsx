@@ -1,26 +1,35 @@
 /**
- * The cruise, in three shots:
- *  - leaving Earth (the first 2.5 days): the ship in the foreground looking back at the planet,
- *    which shrinks from filling the sky to a marble with the Moon beside it — at its true angular
- *    size for the distance along the escape hyperbola (v∞ from the transfer). The clock runs at a
- *    fixed share of the time since the burn (store.ts: effectiveSpeed), so the planet shrinks by
- *    the same share every second; it turns at its true rate under its clouds, the cities lit on
- *    the night side;
- *  - the months between: the heliocentric map — the Sun, both orbits, both planets moving, the
- *    ship on its transfer arc (1 scene unit = 1 million km; planets not to scale);
- *  - closing on Mars (the last 1.5 days): Mars ahead, growing from a dot until it fills the view
- *    at the entry interface, turning to bring Gusev round; a dust storm veils it.
- * The close shots are drawn in kilometres around the ship (the model ×12, as in orbit). A planet
- * farther than 20,000 km is brought in to 20,000 km and shrunk by the same factor — the same
- * angular size — and drawn as a backdrop (its layers in order, writing no depth).
+ * The cruise, from the ship — one continuous shot; the camera never leaves it (the bird's-eye
+ * view of the transfer is the inset in the event card, ui/CruiseInset.tsx).
+ *
+ * The planets are where the transfer has them (sim/transfer.ts: samples every ~2 days,
+ * heliocentric), seen from the ship in a frame turned so that the sun stays where the scene's
+ * lighting has it (SUN_DIR) and the ecliptic pole on the scene's north — the stars turn with that
+ * frame, so over the months the sun slides across them. Next to a planet its hyperbola takes over
+ * (the transfer starts and ends at the planets' centres): leaving, Earth swings from beneath the
+ * ship round behind it and shrinks from filling the sky to a marble with the Moon beside it, then
+ * to a point of light; arriving, Mars grows from a point of light ahead until it fills the view at
+ * the entry interface, swinging beneath the ship. Each body is drawn at its true angular size: a
+ * body farther than BACKDROP is brought in to BACKDROP and shrunk by the same factor and drawn as
+ * a backdrop (its layers in order, writing no depth); under a few pixels across it is a point of
+ * light instead.
+ *
+ * The camera rides with the ship through four framings, eased into each other (in mission time,
+ * then smoothed in real time — the clock crosses days in a fraction of a second at 10×):
+ *  - leaving (E): looking back past the ship at Earth, the hull across the frame, the sun above;
+ *  - turning (P): the ship and the camera turn together a quarter round the sun's direction —
+ *    Earth slides out of the frame — and hold, the ship side-on in sunlight;
+ *  - heading out (M): the camera pitches round behind the ship, its nose turned to Mars, a point
+ *    of light ahead (the ecliptic's north up);
+ *  - arriving (A): the camera rolls to put the sun above and the planet beneath, closing in as
+ *    Mars swells and swings under the ship.
+ * Drawn in kilometres around the ship (the model ×12, as in orbit).
  */
-import { Environment, Html, Lightformer, Line } from '@react-three/drei'
+import { Environment, Lightformer } from '@react-three/drei'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { useT } from '../i18n'
-import { julianDate, planetPosition } from '../sim/ephemeris'
-import type { MissionResult } from '../sim/types'
+import type { MissionResult, TransferResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { APPROACH_SHOT_S, DEPART_SHOT_S } from '../ui/hud'
 import { EARTH_R, Earth, SUN_DIR, earthState, moonTexture, starField, sunGlowTexture } from './Earth'
@@ -32,30 +41,43 @@ import { view } from './viewControl'
 import { useWarm } from './warm'
 
 const BASE_URL = import.meta.env.BASE_URL
-const U = 1e-6 // km → map units
 /** model metres → km: the ship ×12, as in orbit, so it holds the foreground */
 const SCALE = 0.012
 /** km: a body farther than this is brought in to here and shrunk to match (a backdrop) */
 const BACKDROP = 20_000
+/** km: where the points of light are drawn (in front of the backdrops) */
+const DOTS = 19_000
 const MU_EARTH = 398_600
 const MU_MARS = 42_828
 const R_MARS_KM = 3389.5
 const MOON_R = 1737.4
 const MOON_DIST = 384_400
+const MOON_MONTH = 27.32 * 86_400
 const EARTH_SPIN = (2 * Math.PI) / 86_164
 const MARS_SPIN = (2 * Math.PI) / 88_642
+const AU = 149_597_870.7
+const DAY = 86_400
+/** the ecliptic's pole, heliocentric */
+const ECL_Z = new THREE.Vector3(0, 0, 1)
 
 const SPACE = new THREE.Color('#02040a')
 
-type Shot = 'depart' | 'map' | 'arrive'
-
-/** which shot the cruise is in at t */
-export function cruiseShot(result: MissionResult | null, t: number): Shot {
-  const p = result?.phases.find((x) => x.phase === 'cruise')
-  if (!p) return 'map'
-  if (t - p.start < DEPART_SHOT_S) return 'depart'
-  if (p.end - t < APPROACH_SHOT_S) return 'arrive'
-  return 'map'
+export default function CruiseScene({ vehicleId }: { vehicleId: string }) {
+  const { scene } = useThree()
+  // the scene-wide fog is for the other phases: here a planet stands 20,000 km off (before the
+  // first frame: the shaders are built with or without fog)
+  useLayoutEffect(() => {
+    const fog = scene.fog
+    scene.fog = null
+    scene.background = SPACE
+    return () => {
+      scene.fog = fog
+    }
+  }, [scene])
+  const result = useAppStore((s) => s.result)
+  const cruise = result?.phases.find((p) => p.phase === 'cruise')
+  if (!result?.transfer || !cruise) return null
+  return <Voyage vehicleId={vehicleId} result={result} transfer={result.transfer} cruise={cruise} />
 }
 
 /**
@@ -79,54 +101,102 @@ function hyper(t: number, rp: number, vinf: number, mu: number): { r: number; ga
   return { r: a * den, gamma: Math.atan2(e * sinNu, 1 + e * cosNu) }
 }
 
-export default function CruiseScene({ vehicleId }: { vehicleId: string }) {
-  const shot = useAppStore((s) => cruiseShot(s.result, s.t))
-  const { scene } = useThree()
-  // the scene-wide fog is for the other phases: here a planet stands 20,000 km off (before the
-  // first frame: the shaders are built with or without fog)
-  useLayoutEffect(() => {
-    const fog = scene.fog
-    scene.fog = null
-    scene.background = SPACE
-    return () => {
-      scene.fog = fog
-    }
-  }, [scene])
-  if (shot === 'depart')
-    return (
-      <Suspense fallback={null}>
-        <Departure vehicleId={vehicleId} />
-      </Suspense>
-    )
-  if (shot === 'arrive')
-    return (
-      <Suspense fallback={null}>
-        <Approach vehicleId={vehicleId} />
-      </Suspense>
-    )
-  return <CruiseMap />
+/** seconds before periapsis that the arrival hyperbola crosses the entry interface (125 km up) */
+function entryInterfaceTime(vinf: number): number {
+  const rp = R_MARS_KM + 30
+  let lo = 0
+  let hi = 7200
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2
+    if (hyper(mid, rp, vinf, MU_MARS).r < R_MARS_KM + 125) lo = mid
+    else hi = mid
+  }
+  return lo
 }
 
-/** the stars, the sun's glow and the light for a close shot; the stars ride with the camera */
-function DeepSky({ sunIntensity, glow }: { sunIntensity: number; glow: number }) {
-  const sky = useMemo(() => starField(5000, 30_000), [])
-  const glowTex = useMemo(() => sunGlowTexture(), [])
-  const stars = useRef<THREE.Points>(null)
-  const sun = useRef<THREE.Sprite>(null)
-  useFrame(({ camera }) => {
-    stars.current?.position.copy(camera.position)
-    sun.current?.position.copy(camera.position).addScaledVector(SUN_DIR, 30_000)
-  })
-  return (
-    <>
-      <points ref={stars} geometry={sky.geo} material={sky.mat} renderOrder={-30} frustumCulled={false} />
-      <sprite ref={sun} scale={[glow, glow, 1]} renderOrder={-29}>
-        <spriteMaterial map={glowTex} transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
-      </sprite>
-      <directionalLight position={SUN_DIR.clone().multiplyScalar(1e4).toArray()} intensity={sunIntensity} color="#fff6e8" />
-      <ambientLight intensity={0.04} color="#8fb0e0" />
-    </>
-  )
+/** 0 → 1 as x goes from a to b (either way round), eased */
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+
+type Body = 'ship' | 'earth' | 'mars'
+
+/**
+ * The transfer seen from the ship: the bodies' heliocentric positions along the cruise
+ * (Catmull-Rom through the samples) and the turn that carries heliocentric directions into the
+ * scene — the sun (from the ship) onto SUN_DIR, the ecliptic pole onto the scene's north.
+ */
+export class CruiseGeometry {
+  private readonly pts: Record<Body, THREE.Vector3[]>
+  private readonly sceneBasis = new THREE.Matrix3()
+  private readonly m = new THREE.Matrix3()
+  private readonly a = new THREE.Vector3()
+  private readonly b = new THREE.Vector3()
+  private readonly c = new THREE.Vector3()
+  /** heliocentric (unturned): the escape asymptote leaving Earth and "up" there (the sun's side) */
+  readonly uH = new THREE.Vector3()
+  readonly upEH = new THREE.Vector3()
+  /** heliocentric: the approach asymptote (ship → Mars, far out) and "up" there (the sun's side) */
+  readonly fwdH = new THREE.Vector3()
+  readonly upAH = new THREE.Vector3()
+  /** heliocentric: Earth → Moon at the burn (where the departure framing wants it) */
+  readonly moonH = new THREE.Vector3()
+
+  constructor(tr: TransferResult) {
+    const v = (p: [number, number, number]) => new THREE.Vector3(p[0], p[1], p[2])
+    this.pts = { ship: tr.samples.map((s) => v(s.ship)), earth: tr.samples.map((s) => v(s.earth)), mars: tr.samples.map((s) => v(s.mars)) }
+    const y1 = SUN_DIR.clone().normalize()
+    const y2 = new THREE.Vector3(0, 1, 0).addScaledVector(y1, -y1.y).normalize()
+    const y3 = y1.clone().cross(y2)
+    this.sceneBasis.set(y1.x, y2.x, y3.x, y1.y, y2.y, y3.y, y1.z, y2.z, y3.z)
+    const n = tr.samples.length - 1
+    const p = this.pts
+    // a sample in, the ship has drifted from Earth along v∞ (the ballistic arc starts at Earth's
+    // centre); a sample from the end, Mars lies ahead of it along the relative velocity
+    this.uH.copy(p.ship[1]).sub(p.earth[1]).normalize()
+    const sun0 = p.ship[0].clone().negate().normalize()
+    this.upEH.copy(sun0).addScaledVector(this.uH, -sun0.dot(this.uH)).normalize()
+    this.fwdH.copy(p.mars[n - 1]).sub(p.ship[n - 1]).normalize()
+    const sun1 = p.ship[n].clone().negate().normalize()
+    this.upAH.copy(sun1).addScaledVector(this.fwdH, -sun1.dot(this.fwdH)).normalize()
+    // the Moon beyond the planet and to its left, as the camera looking back sees it
+    const right = this.uH.clone().negate().cross(this.upEH).normalize()
+    this.moonH.copy(this.uH).multiplyScalar(-0.77).addScaledVector(right, -0.62).addScaledVector(this.upEH, 0.15).normalize()
+  }
+
+  /** a body's heliocentric position (km) at fraction f (0–1) of the cruise */
+  at(body: Body, f: number, out: THREE.Vector3): THREE.Vector3 {
+    const p = this.pts[body]
+    const n = p.length - 1
+    const x = Math.min(n, Math.max(0, f * n))
+    const i = Math.min(n - 1, Math.floor(x))
+    const t = x - i
+    const p0 = p[Math.max(0, i - 1)]
+    const p1 = p[i]
+    const p2 = p[i + 1]
+    const p3 = p[Math.min(n, i + 2)]
+    const t2 = t * t
+    const t3 = t2 * t
+    // Catmull-Rom
+    return out
+      .copy(p1)
+      .multiplyScalar(2)
+      .addScaledVector(this.a.copy(p2).sub(p0), t)
+      .addScaledVector(this.a.copy(p0).multiplyScalar(2).addScaledVector(p1, -5).addScaledVector(p2, 4).sub(p3), t2)
+      .addScaledVector(this.a.copy(p1).multiplyScalar(3).sub(p0).addScaledVector(p2, -3).add(p3), t3)
+      .multiplyScalar(0.5)
+  }
+
+  /** heliocentric → scene at fraction f: the sun (from the ship) onto SUN_DIR, the ecliptic pole onto the north */
+  turn(f: number, out: THREE.Matrix3): THREE.Matrix3 {
+    const x1 = this.at('ship', f, this.b).negate().normalize()
+    const x2 = this.c.set(0, 0, 1).addScaledVector(x1, -x1.z).normalize()
+    const x3 = this.a.copy(x1).cross(x2)
+    // rows: the heliocentric basis (its transpose takes a vector into it)
+    this.m.set(x1.x, x1.y, x1.z, x2.x, x2.y, x2.z, x3.x, x3.y, x3.z)
+    return out.multiplyMatrices(this.sceneBasis, this.m)
+  }
 }
 
 /** the ship at the origin, ×12 (the shot turns it) */
@@ -141,162 +211,140 @@ function ShipModel({ vehicleId, shipRef }: { vehicleId: string; shipRef: React.R
   )
 }
 
+/** the planet the steel reflects: which, where and how large (its angular radius, rad) */
+interface Refl {
+  planet: 'earth' | 'mars' | null
+  dir: [number, number, number]
+  rho: number
+}
+const NO_REFL: Refl = { planet: null, dir: [0, 1, 0], rho: 0 }
+/** angular radii (rad) at which the reflection is captured again as a planet grows */
+const REFL_LEVELS = [1.5, 4, 10, 25, 50].map((d) => (d * Math.PI) / 180)
+
 /**
  * What the steel reflects out here: black space, the sun — a bright disc, spread by the hull's
  * roughness into the broad sheen of sunlit steel — and the planet nearby, a blue-white or
- * butterscotch disc where it stands.
+ * butterscotch disc where it stands, as large as it looks. Captured again (the same map: the
+ * materials keep their programs) when the scene's frame hands it a new one through `api`.
  */
-function SpaceReflections({ planet, color, size, intensity }: { planet: THREE.Vector3; color: string; size: number; intensity: number }) {
+function SpaceReflections({ api }: { api: React.RefObject<((r: Refl) => void) | null> }) {
+  const [r, setR] = useState<Refl>(NO_REFL)
+  useLayoutEffect(() => {
+    api.current = setR
+    return () => {
+      api.current = null
+    }
+  }, [api])
   const sun = SUN_DIR.clone().multiplyScalar(10).toArray()
-  const pl = planet.clone().normalize().multiplyScalar(10).toArray()
+  const pos = new THREE.Vector3(...r.dir).multiplyScalar(10).toArray()
   return (
     <Environment resolution={64}>
       <Lightformer form="circle" intensity={16} color="#fff4e2" position={sun} scale={2.4} />
-      <Lightformer form="circle" intensity={intensity} color={color} position={pl} scale={size} />
+      <Lightformer form="circle" intensity={r.planet === 'earth' ? 0.9 : r.planet === 'mars' ? 0.7 : 0} color={r.planet === 'mars' ? '#d9925c' : '#bcd4f2'} position={pos} scale={20 * Math.tan(Math.min(r.rho, 1.3))} />
     </Environment>
   )
 }
 
-/** `v` turned on screen by (right, up) degrees, for a camera whose up is `up` */
-function offAxis(v: THREE.Vector3, up: THREE.Vector3, rightDeg: number, upDeg: number): THREE.Vector3 {
-  const r = v.clone().cross(up).normalize()
-  const u = r.clone().cross(v).normalize()
-  return v
-    .clone()
+/** `v` turned on screen by (right, up) degrees, for a camera whose up is `up` (into `out`) */
+function offAxisTo(out: THREE.Vector3, v: THREE.Vector3, up: THREE.Vector3, rightDeg: number, upDeg: number): THREE.Vector3 {
+  const r = T.a.copy(v).cross(up).normalize()
+  const u = T.b.copy(r).cross(v).normalize()
+  return out
+    .copy(v)
     .addScaledVector(r, Math.tan((rightDeg * Math.PI) / 180))
     .addScaledVector(u, Math.tan((upDeg * Math.PI) / 180))
     .normalize()
 }
 
+/** the camera's turn that looks along `view` with `up` up */
+function aim(out: THREE.Quaternion, viewDir: THREE.Vector3, up: THREE.Vector3): THREE.Quaternion {
+  return out.setFromRotationMatrix(T.m.lookAt(T.o, viewDir, up))
+}
+
+/** the direction (dx, dy) degrees right and up of the middle of the frame of a camera turned by `cam` */
+function screenDir(out: THREE.Vector3, cam: THREE.Quaternion, dx: number, dy: number): THREE.Vector3 {
+  return out.set(Math.tan((dx * Math.PI) / 180), Math.tan((dy * Math.PI) / 180), -1).normalize().applyQuaternion(cam)
+}
+
+/** the ship's turn with its nose along `nose` and the tiles (the model's +z) away from the camera: it sees steel */
+function shipTurnTo(out: THREE.Quaternion, nose: THREE.Vector3, toShip: THREE.Vector3): THREE.Quaternion {
+  const z = T.c.copy(toShip).addScaledVector(nose, -toShip.dot(nose)).normalize()
+  const x = T.d.copy(nose).cross(z)
+  return out.setFromRotationMatrix(T.m.makeBasis(x, nose, z))
+}
+
+/** scratch for the helpers above */
+const T = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(), o: new THREE.Vector3(), m: new THREE.Matrix4() }
+
+/** a unit vector part way from a to b along the great circle (into `out`, which may be either) */
+function slerpDir(a: THREE.Vector3, b: THREE.Vector3, t: number, out: THREE.Vector3): THREE.Vector3 {
+  const ang = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1))
+  if (ang < 1e-6) return out.copy(t < 0.5 ? a : b)
+  const s = Math.sin(ang)
+  const wa = Math.sin((1 - t) * ang) / s
+  const wb = Math.sin(t * ang) / s
+  return out.set(a.x * wa + b.x * wb, a.y * wa + b.y * wb, a.z * wa + b.z * wb).normalize()
+}
+
 /**
- * A close shot's composition: the camera looks along `view`, the ship sits `dist` ship lengths off
- * along `toShip` and is turned by `q`. Wide screens keep the subjects in the left two-thirds (the
- * verdict card covers the rest); a portrait screen stacks them.
+ * A framing: the camera's turn, where the ship sits on screen (degrees right and up of the
+ * middle — on a wide screen in the left two-thirds, the event card covers the rest; on a portrait
+ * one in the upper half), how far off it is (ship lengths) and the ship's own turn.
  */
-interface Layout {
-  view: THREE.Vector3
-  toShip: THREE.Vector3
+interface Key {
+  cam: THREE.Quaternion
+  dx: number
+  dy: number
   dist: number
-  q: THREE.Quaternion
+  ship: THREE.Quaternion
+  /** the ship's turn as the camera sees it (blended between framings, so it turns smoothly on screen) */
+  rel: THREE.Quaternion
+}
+const newKey = (): Key => ({ cam: new THREE.Quaternion(), dx: 0, dy: 0, dist: 1, ship: new THREE.Quaternion(), rel: new THREE.Quaternion() })
+const relTurn = (k: Key) => k.rel.copy(k.cam).invert().multiply(k.ship)
+
+let dotCache: THREE.CanvasTexture | null = null
+/** a point of light: a crisp core and a short glow */
+function dotTexture(): THREE.CanvasTexture {
+  if (dotCache) return dotCache
+  const c = document.createElement('canvas')
+  c.width = c.height = 64
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.22, 'rgba(255,255,255,0.95)')
+  g.addColorStop(0.42, 'rgba(255,255,255,0.3)')
+  g.addColorStop(0.7, 'rgba(255,255,255,0.06)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 64, 64)
+  dotCache = new THREE.CanvasTexture(c)
+  return dotCache
 }
 
-function shipTurn(nose: THREE.Vector3, toShip: THREE.Vector3): THREE.Quaternion {
-  // the tiles (the model's +z) turned away from the camera: it sees steel
-  const z = toShip.clone().addScaledVector(nose, -toShip.dot(nose)).normalize()
-  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(nose.clone().cross(z), nose, z))
-}
-
-export function Departure({ vehicleId }: { vehicleId: string }) {
-  const L = (SPACECRAFT_LENGTH[vehicleId] ?? 30) * SCALE
-  const earthRoot = useRef<THREE.Group>(null)
-  const moon = useRef<THREE.Mesh>(null)
-  const ship = useRef<THREE.Group>(null)
-  const bounce = useRef<THREE.DirectionalLight>(null)
-  const moonTex = useMemo(() => moonTexture(), [])
-  // close in, the 0.5 km/px regional tile still helps; past ~9,000 km its palette shows as a square
-  const [detail, setDetail] = useState(true)
-  // the frame: the ship heads along u (its course out, fixed); the sun 70° off that line, so the
-  // planet left behind ends a little over half lit, the cities on its night side. At periapsis —
-  // the burn — the planet lies straight "down" (d), the ground under the ship in daylight; as the
-  // ship climbs out the planet swings round behind it (the flight-path angle opening toward 90°)
-  const f = useMemo(() => {
-    const w = new THREE.Vector3(0, 1, 0).cross(SUN_DIR).normalize()
-    const u = SUN_DIR.clone().multiplyScalar(Math.cos(1.22)).addScaledVector(w, Math.sin(1.22)).normalize()
-    const up = SUN_DIR.clone().addScaledVector(u, -SUN_DIR.dot(u)).normalize() // away from the planet at periapsis
-    const right = u.clone().negate().cross(up).normalize() // the camera's right, looking back
-    // the Moon: 384,400 km out, beyond the planet and to its left — a dozen degrees off it by the
-    // end, toward the frame's middle
-    const moonDir = u.clone().multiplyScalar(-0.77).addScaledVector(right, -0.62).addScaledVector(up, 0.15).normalize()
-    // the planet's turn that has the sunlit Atlantic off Florida under the ship at the burn
-    const spin0 = Math.atan2(-up.z, up.x) + (60 * Math.PI) / 180
-    return { u, up, right, moonDir, spin0 }
-  }, [])
-  // the planet ends up a little above the ship and left of the middle (wide), or straight above it (tall)
-  const layouts = useMemo(() => {
-    const end = f.u.clone().negate()
-    const make = (tall: boolean): Layout => {
-      // on a phone the lower half is the verdict and the clock: both subjects go in the upper half
-      const view = offAxis(end, f.up, tall ? 0 : -2, tall ? -11 : -10)
-      const toShip = offAxis(view, f.up, tall ? 0 : -8, tall ? 1 : -7)
-      const r = view.clone().cross(f.up).normalize()
-      const u = r.clone().cross(view).normalize()
-      // the hull across the frame, nose to the left and a little toward the lens
-      const nose = r.clone().multiplyScalar(-0.9).addScaledVector(u, 0.2).addScaledVector(view, -0.35).normalize()
-      return { view, toShip, dist: tall ? 3.6 : 1.6, q: shipTurn(nose, toShip) }
-    }
-    return { wide: make(false), tall: make(true) }
-  }, [f])
-  const st = useMemo(() => ({ init: false, cam: new THREE.Vector3(), tmp: new THREE.Vector3(), dir: new THREE.Vector3(), look: new THREE.Vector3() }), [])
-  const warm = useWarm()
-
-  useFrame(({ camera }, rawDt) => {
-    // built ahead of the cut: the planet's turn (earthState) belongs to the scene on screen
-    if (warm) return
-    const dt = Math.min(rawDt, 0.1)
-    const { result, t } = useAppStore.getState()
-    const cruise = result?.phases.find((p) => p.phase === 'cruise')
-    const tau = cruise ? Math.max(0, t - cruise.start) : 0
-    const vinf = result?.transfer?.vInfDep ?? 3.5
-    // out along the escape hyperbola: periapsis at the middle of the burn, ~53 s before it ended
-    const { r: D, gamma } = hyper(tau + 53, EARTH_R + 200, vinf, MU_EARTH)
-    // where the planet is from the ship: below at periapsis, swinging round behind
-    const dir = st.dir.copy(f.u).multiplyScalar(-Math.sin(gamma)).addScaledVector(f.up, -Math.cos(gamma))
-    if (earthRoot.current) {
-      const d = Math.min(D, BACKDROP)
-      earthRoot.current.position.copy(dir).multiplyScalar(d)
-      earthRoot.current.scale.setScalar(d / D)
-    }
-    if (detail !== D < 9000) setDetail(D < 9000)
-    earthState.spin = f.spin0 + EARTH_SPIN * tau
-    earthState.clouds = earthState.spin + 0.3 + tau * 2e-6
-    if (moon.current) {
-      const m = st.tmp.copy(dir).multiplyScalar(D).addScaledVector(f.moonDir, MOON_DIST)
-      const dm = m.length()
-      const d = Math.min(dm, BACKDROP * 1.15)
-      moon.current.position.copy(m).multiplyScalar(d / dm)
-      moon.current.scale.setScalar((MOON_R * d) / dm)
-    }
-    // the planet's light on the ship, while it fills a good part of the sky
-    if (bounce.current) {
-      bounce.current.position.copy(dir).multiplyScalar(1e4)
-      bounce.current.intensity = 1.2 * Math.pow(Math.min(1, EARTH_R / D), 2)
-    }
-    // the camera: off the ship's flank, looking back past it at the planet — at first its limb low
-    // in the frame, then the whole disc rising and shrinking above the ship; a slow pull back; the
-    // viewer's drag swings it about the ship
-    const lay = (camera as THREE.PerspectiveCamera).aspect < 1 ? layouts.tall : layouts.wide
-    ship.current?.quaternion.copy(lay.q)
-    const s = Math.min(1, tau / DEPART_SHOT_S)
-    const target = st.tmp
-      .copy(lay.toShip)
-      .multiplyScalar(-lay.dist * L * view.zoom * (1 + 0.15 * s))
-      .applyAxisAngle(f.up, view.az)
-      .addScaledVector(f.up, Math.sin(view.el) * L * 1.5)
-    if (!st.init) {
-      st.cam.copy(target)
-      st.init = true
-    } else st.cam.lerp(target, 1 - Math.exp(-dt * (view.dragging ? 24 : 4)))
-    camera.position.copy(st.cam)
-    camera.up.copy(f.up)
-    camera.lookAt(st.look.copy(lay.view).applyAxisAngle(f.up, view.az).multiplyScalar(10 * L).add(st.cam))
-    camera.near = 0.02
-    camera.far = 40_000
-    ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
-  })
-
+/** a planet as a point of light, for when its disc is smaller than a few pixels */
+function Dot({ dotRef, color }: { dotRef: React.RefObject<THREE.Sprite | null>; color: string }) {
+  const tex = useMemo(() => dotTexture(), [])
   return (
-    <group>
-      <DeepSky sunIntensity={3.2} glow={6000} />
-      <SpaceReflections planet={f.u.clone().negate()} color="#bcd4f2" size={7} intensity={0.9} />
-      <directionalLight ref={bounce} intensity={0} color="#a9c5ef" />
-      <Earth sky={false} far detail={detail} root={earthRoot} />
-      <mesh ref={moon} renderOrder={-22}>
-        <sphereGeometry args={[1, 48, 32]} />
-        <meshStandardMaterial map={moonTex} roughness={1} depthWrite={false} transparent />
-      </mesh>
-      <ShipModel vehicleId={vehicleId} shipRef={ship} />
-    </group>
+    <sprite ref={dotRef} renderOrder={-18} visible={false}>
+      <spriteMaterial map={tex} color={color} transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
+    </sprite>
   )
+}
+
+/**
+ * A point of light where a planet is: shown as its disc falls under a few pixels across
+ * (crossfading with the disc between 1.5 and 5 px), at least `px` across, `alpha` at most.
+ */
+function placeDot(dot: THREE.Sprite | null, dir: THREE.Vector3, discPx: number, px: number, alpha: number, worldPerPx: number) {
+  if (!dot) return
+  const k = 1 - smooth(1.5, 5, discPx)
+  dot.visible = k > 0.01
+  if (!dot.visible) return
+  dot.position.copy(dir).multiplyScalar(DOTS)
+  const s = Math.max(px, discPx) * 2.2 * worldPerPx
+  dot.scale.set(s, s, 1)
+  ;(dot.material as THREE.SpriteMaterial).opacity = alpha * k
 }
 
 /** Mars: the global mosaic, veiled by a dust storm; the dusty limb (in its own frame, like Earth's) */
@@ -304,7 +352,6 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
   const tex = useLoader(THREE.TextureLoader, `${BASE_URL}assets/mars/mars-global.jpg`)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.anisotropy = 4
-  const globe = useRef<THREE.Mesh>(null)
   const limb = useRef<THREE.Mesh>(null)
   const mat = useMemo(() => {
     const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 1, metalness: 0, envMapIntensity: 0, depthWrite: false, transparent: true })
@@ -327,7 +374,7 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
   return (
     <group ref={root}>
       <group ref={spin}>
-        <mesh ref={globe} material={mat} renderOrder={-20} name="marsGlobe">
+        <mesh material={mat} renderOrder={-20} name="marsGlobe">
           <sphereGeometry args={[R_MARS_KM, 128, 80]} />
         </mesh>
       </group>
@@ -339,210 +386,345 @@ function MarsBody({ root, spin, veil, dust }: { root: React.RefObject<THREE.Grou
   )
 }
 
-export function Approach({ vehicleId }: { vehicleId: string }) {
+function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; result: MissionResult; transfer: TransferResult; cruise: { start: number; end: number } }) {
   const L = (SPACECRAFT_LENGTH[vehicleId] ?? 30) * SCALE
-  const result = useAppStore((s) => s.result)
-  const storm = result?.weather?.storm
+  const warm = useWarm()
+  const storm = result.weather?.storm
   // a global storm leaves the darkest albedo marks (Syrtis, the southern highlands) only as shadows of themselves
   const veil = storm === 'global' ? 0.66 : storm === 'regional' ? 0.28 : 0
   const dust = storm === 'global' ? 1 : storm === 'regional' ? 0.4 : 0
+  const geo = useMemo(() => new CruiseGeometry(transfer), [transfer])
+  const tEI = useMemo(() => entryInterfaceTime(transfer.vInfArr), [transfer])
+  // the planet's turn that has the sunlit Atlantic off Florida under the ship at the burn
+  const spin0 = useMemo(() => {
+    const up = geo.upEH.clone().applyMatrix3(geo.turn(0, new THREE.Matrix3()))
+    return Math.atan2(-up.z, up.x) + (60 * Math.PI) / 180
+  }, [geo])
+
+  const earthRoot = useRef<THREE.Group>(null)
+  const moon = useRef<THREE.Mesh>(null)
   const marsRoot = useRef<THREE.Group>(null)
   const marsSpin = useRef<THREE.Group>(null)
   const ship = useRef<THREE.Group>(null)
-  // the frame: the ship comes in along fwd; far out Mars lies straight ahead, and as it closes
-  // the planet swings down under the ship (the flight-path angle closing toward the ~11° of the
-  // entry). The sun 60° off the line back to the ship: a gibbous disc, the terminator on one side
-  const f = useMemo(() => {
-    const w = new THREE.Vector3(0, 1, 0).cross(SUN_DIR).normalize()
-    const back = SUN_DIR.clone().multiplyScalar(Math.cos(1.05)).addScaledVector(w, -Math.sin(1.05)).normalize() // Mars → ship, far out
-    const fwd = back.clone().negate()
-    // "down" at the entry: toward the planet across the course, on its sunlit side
-    const up = SUN_DIR.clone().addScaledVector(fwd, -SUN_DIR.dot(fwd)).normalize()
-    const right = fwd.clone().cross(up).normalize()
-    return { fwd, up, right }
-  }, [])
-  // the entry interface (125 km up) on the arrival hyperbola, as time before periapsis
-  const tEI = useMemo(() => {
-    const vinf = result?.transfer?.vInfArr ?? 2.8
-    const rp = R_MARS_KM + 30
-    let lo = 0
-    let hi = 7200
-    for (let i = 0; i < 60; i++) {
-      const mid = (lo + hi) / 2
-      if (hyper(mid, rp, vinf, MU_MARS).r < R_MARS_KM + 125) lo = mid
-      else hi = mid
-    }
-    return lo
-  }, [result])
-  // Mars ahead a little left of the middle and up (wide), or above the ship (tall); the ship below
-  // and left, seen from behind its engines
-  const layouts = useMemo(() => {
-    const make = (tall: boolean): Layout => {
-      // on a phone: the ship's silhouette against the disc, both in the upper half
-      const view = offAxis(f.fwd, f.up, tall ? 0 : 4, tall ? -10 : -5)
-      const toShip = offAxis(view, f.up, tall ? 0 : -13, tall ? 1 : -10)
-      return { view, toShip, dist: tall ? 2.8 : 1.45, q: shipTurn(f.fwd, toShip) }
-    }
-    return { wide: make(false), tall: make(true) }
-  }, [f])
-  const st = useMemo(() => ({ init: false, cam: new THREE.Vector3(), tmp: new THREE.Vector3(), dir: new THREE.Vector3(), look: new THREE.Vector3() }), [])
-  const warm = useWarm()
+  const bounce = useRef<THREE.DirectionalLight>(null)
+  const sunLight = useRef<THREE.DirectionalLight>(null)
+  const sunGlow = useRef<THREE.Sprite>(null)
+  const stars = useRef<THREE.Points>(null)
+  const earthDot = useRef<THREE.Sprite>(null)
+  const moonDot = useRef<THREE.Sprite>(null)
+  const marsDot = useRef<THREE.Sprite>(null)
+  const sky = useMemo(() => starField(5000, 30_000), [])
+  const glowTex = useMemo(() => sunGlowTexture(), [])
+  const moonTex = useMemo(() => moonTexture(), [])
+  // close in, the 0.5 km/px regional tile still helps; past ~9,000 km its palette shows as a square
+  const [detail, setDetail] = useState(true)
+  const reflect = useRef<((r: Refl) => void) | null>(null)
 
-  useFrame(({ camera }, rawDt) => {
+  const st = useMemo(
+    () => ({
+      init: false,
+      refl: { planet: null as Refl['planet'], level: -1, dir: new THREE.Vector3() },
+      a: 0,
+      b: 0,
+      c: 0,
+      // the viewer's drag, eased (the camera is placed exactly from the framing: a lagging camera
+      // would let the ship drift on screen while the framing turns)
+      az: 0,
+      el: 0,
+      zoom: 1,
+      R: new THREE.Matrix3(),
+      R4: new THREE.Matrix4(),
+      s: new THREE.Vector3(),
+      rel: new THREE.Vector3(),
+      u: new THREE.Vector3(),
+      upE: new THREE.Vector3(),
+      fwd: new THREE.Vector3(),
+      upA: new THREE.Vector3(),
+      pole: new THREE.Vector3(),
+      dirE: new THREE.Vector3(),
+      helioM: new THREE.Vector3(),
+      axisM: new THREE.Vector3(),
+      dirM: new THREE.Vector3(),
+      moonDir: new THREE.Vector3(),
+      moonPos: new THREE.Vector3(),
+      v1: new THREE.Vector3(),
+      v2: new THREE.Vector3(),
+      v3: new THREE.Vector3(),
+      v4: new THREE.Vector3(),
+      v5: new THREE.Vector3(),
+      yaw: new THREE.Quaternion(),
+      qi: new THREE.Quaternion(),
+      E: newKey(),
+      P: newKey(),
+      M: newKey(),
+      A: newKey(),
+      K: newKey(),
+    }),
+    [],
+  )
+
+  useFrame(({ camera, size }, rawDt) => {
+    // built ahead of the cut: the planet's turn (earthState) and the camera belong to the scene on screen
     if (warm) return
     const dt = Math.min(rawDt, 0.1)
-    const { result: r, t } = useAppStore.getState()
-    const cruise = r?.phases.find((p) => p.phase === 'cruise')
-    const left = cruise ? Math.max(0, cruise.end - t) : 0
-    const vinf = r?.transfer?.vInfArr ?? 2.8
-    const { r: D, gamma } = hyper(tEI + left, R_MARS_KM + 30, vinf, MU_MARS)
-    // where Mars is from the ship: ahead far out, swinging down beneath it on the way in
-    const dir = st.dir.copy(f.fwd).multiplyScalar(Math.sin(gamma)).addScaledVector(f.up, -Math.cos(gamma))
+    // (the clock's own cap: on a slow device the framings keep pace with it)
+    const dtClock = Math.min(rawDt, 0.3)
+    const { t } = useAppStore.getState()
+    const dur = Math.max(1, cruise.end - cruise.start)
+    const tau = Math.min(dur, Math.max(0, t - cruise.start))
+    const left = dur - tau
+    const frac = tau / dur
+    const cam = camera as THREE.PerspectiveCamera
+    const tall = cam.aspect < 1
+    const R = geo.turn(frac, st.R)
+    // the two ends' frames and the ecliptic's pole, turned into the scene
+    const u = st.u.copy(geo.uH).applyMatrix3(R)
+    const upE = st.upE.copy(geo.upEH).applyMatrix3(R)
+    const fwd = st.fwd.copy(geo.fwdH).applyMatrix3(R)
+    const upA = st.upA.copy(geo.upAH).applyMatrix3(R)
+    const pole = st.pole.copy(ECL_Z).applyMatrix3(R)
+    const ship0 = geo.at('ship', frac, st.s)
+
+    // Earth: where the transfer has it; the first days the escape hyperbola instead — beneath the
+    // ship at the burn, swinging round behind it as it climbs out
+    const De = geo.at('earth', frac, st.rel).sub(ship0).length()
+    const dirE = st.dirE.copy(st.rel).applyMatrix3(R).normalize()
+    const hE = hyper(tau + 53, EARTH_R + 200, transfer.vInfDep, MU_EARTH)
+    const wE = smooth(2.5 * DAY, 6 * DAY, tau)
+    slerpDir(st.v1.copy(u).multiplyScalar(-Math.sin(hE.gamma)).addScaledVector(upE, -Math.cos(hE.gamma)), dirE, wE, dirE)
+    const dE = hE.r + (De - hE.r) * wE
+    // Mars likewise: the last days on the arrival hyperbola, ahead far out, beneath at the entry
+    const Dm = geo.at('mars', frac, st.rel).sub(ship0).length()
+    const helioM = st.helioM.copy(st.rel).applyMatrix3(R).normalize()
+    const hM = hyper(tEI + left, R_MARS_KM + 30, transfer.vInfArr, MU_MARS)
+    const wM = smooth(4 * DAY, 1.5 * DAY, left)
+    const dirM = slerpDir(helioM, st.v1.copy(fwd).multiplyScalar(Math.sin(hM.gamma)).addScaledVector(upA, -Math.cos(hM.gamma)), wM, st.dirM)
+    // where the shot looks for it: where it is, then the asymptote it comes in along
+    const axisM = slerpDir(helioM, fwd, wM, st.axisM)
+    const dM = hM.r + (Dm - hM.r) * (1 - wM)
+
+    // their sizes in pixels
+    const fov = THREE.MathUtils.degToRad(cam.fov)
+    const pxPerRad = size.height / fov
+    const worldPerPx = (2 * DOTS * Math.tan(fov / 2)) / Math.max(1, size.height)
+    const earthPx = ((2 * EARTH_R) / dE) * pxPerRad
+    const marsPx = ((2 * R_MARS_KM) / dM) * pxPerRad
+
+    // Earth: a backdrop while it is a disc, a point of light after
+    if (earthRoot.current) {
+      const d = Math.min(dE, BACKDROP)
+      earthRoot.current.position.copy(dirE).multiplyScalar(d)
+      earthRoot.current.scale.setScalar(d / dE)
+      earthRoot.current.visible = earthPx > 1.5
+    }
+    if (detail !== dE < 9000) setDetail(dE < 9000)
+    earthState.spin = spin0 + EARTH_SPIN * tau
+    earthState.clouds = earthState.spin + 0.3 + tau * 2e-6
+    // the Moon beside it, going round it once a month
+    const moonDir = st.moonDir
+      .copy(geo.moonH)
+      .applyAxisAngle(ECL_Z, (2 * Math.PI * tau) / MOON_MONTH)
+      .applyMatrix3(R)
+    const mPos = st.moonPos.copy(dirE).multiplyScalar(dE).addScaledVector(moonDir, MOON_DIST)
+    const dMoon = mPos.length()
+    const moonPx = ((2 * MOON_R) / dMoon) * pxPerRad
+    if (moon.current) {
+      const d = Math.min(dMoon, BACKDROP * 1.15)
+      moon.current.position.copy(mPos).multiplyScalar(d / dMoon)
+      moon.current.scale.setScalar((MOON_R * d) / dMoon)
+      moon.current.visible = moonPx > 1.5
+    }
+    placeDot(earthDot.current, dirE, earthPx, 4, 1, worldPerPx)
+    placeDot(moonDot.current, st.v2.copy(mPos).normalize(), moonPx, 2.4, 0.5, worldPerPx)
+
+    // Mars likewise, turning to bring Gusev round under the ship at the entry
     if (marsRoot.current) {
-      const d = Math.min(D, BACKDROP)
-      marsRoot.current.position.copy(dir).multiplyScalar(d)
-      marsRoot.current.scale.setScalar(d / D)
+      const d = Math.min(dM, BACKDROP)
+      marsRoot.current.position.copy(dirM).multiplyScalar(d)
+      marsRoot.current.scale.setScalar(d / dM)
+      marsRoot.current.visible = marsPx > 1.5
     }
     if (marsSpin.current) {
       // Mars turns at its own rate (the longitude under the ship falls as it turns east); at the
       // entry the ground below is ~20° short of Gusev
       const subLon = ((SITE_LON - 20) * Math.PI) / 180 + MARS_SPIN * left
-      marsSpin.current.rotation.y = Math.atan2(dir.z, -dir.x) - subLon
+      marsSpin.current.rotation.y = Math.atan2(dirM.z, -dirM.x) - subLon
     }
-    // the camera: behind the ship, past its engines, Mars ahead — tilting down with the planet as
-    // it swings beneath on the way in, closing a little as it grows; the drag swings it about the ship
-    const lay = (camera as THREE.PerspectiveCamera).aspect < 1 ? layouts.tall : layouts.wide
-    ship.current?.quaternion.copy(lay.q)
-    const s = 1 - Math.min(1, left / APPROACH_SHOT_S)
-    const target = st.tmp
-      .copy(lay.toShip)
-      .multiplyScalar(-lay.dist * L * view.zoom * (1.1 - 0.15 * s))
-      .applyAxisAngle(f.up, view.az)
-      .addScaledVector(f.up, Math.sin(view.el) * L * 1.5)
+    placeDot(marsDot.current, dirM, marsPx, 4, 1, worldPerPx)
+
+    // the sun: brighter and larger at 1 AU than at 1.5; the stars turn with the heliocentric frame
+    const au = ship0.length() / AU
+    if (sunLight.current) sunLight.current.intensity = 3.2 / Math.pow(au, 0.7)
+    if (sunGlow.current) {
+      const g = 6000 / au
+      sunGlow.current.scale.set(g, g, 1)
+    }
+    // the planet's light on the ship while it fills a good part of the sky
+    if (bounce.current) {
+      const ke = Math.pow(Math.min(1, EARTH_R / dE), 2)
+      const km = Math.pow(Math.min(1, R_MARS_KM / dM), 2)
+      const towardEarth = ke >= km
+      bounce.current.position.copy(towardEarth ? dirE : dirM).multiplyScalar(1e4)
+      bounce.current.color.set(towardEarth ? '#a9c5ef' : '#e2a878')
+      bounce.current.intensity = towardEarth ? 1.2 * ke : 0.9 * km
+    }
+    // what the steel reflects: the planet that looks larger, captured again as it grows or swings round
+    {
+      const rhoE = Math.asin(Math.min(1, EARTH_R / dE))
+      const rhoM = Math.asin(Math.min(1, R_MARS_KM / dM))
+      const rho = Math.max(rhoE, rhoM)
+      const level = REFL_LEVELS.filter((x) => rho >= x).length
+      const planet = level === 0 ? null : rhoE >= rhoM ? 'earth' : 'mars'
+      const dir = planet === 'mars' ? dirM : dirE
+      const r = st.refl
+      if (reflect.current && (level !== r.level || planet !== r.planet || (planet && dir.angleTo(r.dir) > 0.2))) {
+        r.level = level
+        r.planet = planet
+        r.dir.copy(dir)
+        reflect.current({ planet, dir: [dir.x, dir.y, dir.z], rho })
+      }
+    }
+
+    // —— the framings ——
+    const { E, P, M, A, K } = st
+    // E: off the ship's flank, looking back past it at Earth — at first its limb low in the frame,
+    // then the whole disc rising and shrinking above the ship; a slow pull back
+    {
+      const v = offAxisTo(st.v1, st.v2.copy(u).negate(), upE, tall ? 0 : -2, tall ? -11 : -10)
+      aim(E.cam, v, upE)
+      E.dx = tall ? 0 : -8
+      E.dy = tall ? 1 : -7
+      // the hull across the frame, nose to the left and a little toward the lens
+      const r = st.v3.copy(v).cross(upE).normalize()
+      const uu = st.v4.copy(r).cross(v).normalize()
+      const nose = st.v5.copy(r).multiplyScalar(-0.9).addScaledVector(uu, 0.2).addScaledVector(v, -0.35).normalize()
+      shipTurnTo(E.ship, nose, screenDir(st.v2, E.cam, E.dx, E.dy))
+      E.dist = (tall ? 3.6 : 1.6) * (1 + 0.15 * Math.min(1, tau / DEPART_SHOT_S))
+    }
+    // P: the same, the ship and the camera turned together about the sun's direction until the
+    // camera looks along the ecliptic's pole — the nose now along the ecliptic, toward Mars's side
+    {
+      const S = SUN_DIR
+      const from = st.v1.copy(u).negate().addScaledVector(S, u.dot(S)).normalize()
+      const to = st.v2.copy(pole).addScaledVector(S, -pole.dot(S)).normalize()
+      const ang = Math.atan2(st.v3.copy(from).cross(to).dot(S), from.dot(to))
+      st.yaw.setFromAxisAngle(S, ang)
+      P.cam.copy(E.cam).premultiply(st.yaw)
+      P.ship.copy(E.ship).premultiply(st.yaw)
+      P.dx = E.dx
+      P.dy = E.dy
+      P.dist = tall ? 4 : 2
+    }
+    // M: Mars a point of light ahead, up and right of the middle (above, on a portrait screen); the
+    // ship below it, side-on, its nose toward the planet on screen; the ecliptic's north up. (Seen
+    // side-on the steel mirrors the sun behind the camera — Mars is near opposition for months —
+    // as a bright band; seen from behind it would be dark.)
+    {
+      const v = offAxisTo(st.v1, axisM, pole, tall ? 0 : -6, tall ? -13 : -6)
+      aim(M.cam, v, pole)
+      M.dx = tall ? 0 : -11
+      M.dy = tall ? -1 : -2
+      const toShip = screenDir(st.v2, M.cam, M.dx, M.dy)
+      // along the great circle through the ship and Mars — on screen, the line from one to the other — 80° off the line of sight
+      const nose = slerpDir(toShip, axisM, (80 * Math.PI) / 180 / Math.max(toShip.angleTo(axisM), 1e-3), st.v3)
+      shipTurnTo(M.ship, nose, toShip)
+      M.dist = tall ? 4.2 : 2.6
+    }
+    // A: behind the ship past its engines, Mars ahead a little left of the middle and up, the sun
+    // above — tilting down with the planet as it swings beneath on the way in, closing a little
+    {
+      const v = offAxisTo(st.v1, fwd, upA, tall ? 0 : 4, tall ? -10 : -5)
+      const toShip = offAxisTo(st.v2, v, upA, tall ? 0 : -11, tall ? 1 : -5)
+      const look = st.v3.copy(v).addScaledVector(dirM, (tall ? 0.18 : 0.45) * (1 - Math.sin(hM.gamma))).normalize()
+      aim(A.cam, look, upA)
+      // the ship stays where the untilted view had it
+      const loc = st.v4.copy(toShip).applyQuaternion(st.qi.copy(A.cam).invert())
+      A.dx = THREE.MathUtils.radToDeg(Math.atan2(loc.x, -loc.z))
+      A.dy = THREE.MathUtils.radToDeg(Math.atan2(loc.y, -loc.z))
+      shipTurnTo(A.ship, fwd, toShip)
+      A.dist = (tall ? 2.8 : 1.6) * (1.1 - 0.15 * (1 - Math.min(1, left / APPROACH_SHOT_S)))
+    }
+    // how far along: in mission time, eased in real time (at 10× the clock crosses these windows
+    // in a fraction of a second)
+    const aT = smooth(1.5 * DAY, 8 * DAY, tau)
+    const bT = smooth(0.05, 0.25, frac)
+    const cT = smooth(15 * DAY, 4 * DAY, left)
     if (!st.init) {
-      st.cam.copy(target)
-      st.init = true
-    } else st.cam.lerp(target, 1 - Math.exp(-dt * (view.dragging ? 24 : 4)))
-    camera.position.copy(st.cam)
-    camera.up.copy(f.up)
-    const tall = (camera as THREE.PerspectiveCamera).aspect < 1
-    st.look.copy(lay.view).addScaledVector(dir, (tall ? 0.18 : 0.45) * (1 - Math.sin(gamma))).normalize().applyAxisAngle(f.up, view.az)
-    camera.lookAt(st.look.multiplyScalar(10 * L).add(st.cam))
-    camera.near = 0.02
-    camera.far = 40_000
-    ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
-  })
-
-  return (
-    <group>
-      {/* at 1.5 AU the sun is two-fifths as bright and two-thirds the size */}
-      <DeepSky sunIntensity={2.4} glow={4200} />
-      <SpaceReflections planet={f.fwd} color="#d9925c" size={5} intensity={0.7} />
-      <MarsBody root={marsRoot} spin={marsSpin} veil={veil} dust={dust} />
-      <ShipModel vehicleId={vehicleId} shipRef={ship} />
-    </group>
-  )
-}
-
-/** Heliocentric map: the Sun, the orbits of Earth and Mars, both planets moving, and the ship on its arc. */
-export function CruiseMap() {
-  const L = useT()
-  const result = useAppStore((s) => s.result)
-  const tr = result?.transfer ?? null
-  const earth = useRef<THREE.Group>(null)
-  const mars = useRef<THREE.Group>(null)
-  const ship = useRef<THREE.Group>(null)
-  const stars = useRef<THREE.Points>(null)
-  const { scene } = useThree()
-  const init = useRef(false)
-  const sky = useMemo(() => starField(4000, 3000), [])
-  const glowTex = useMemo(() => sunGlowTexture(), [])
-  // built ahead of the cut: no labels in the page, the camera left alone
-  const warm = useWarm()
-
-  const orbits = useMemo(() => {
-    const jd0 = julianDate(new Date('2026-01-01T00:00:00Z'))
-    const e: THREE.Vector3[] = []
-    const m: THREE.Vector3[] = []
-    for (let i = 0; i <= 120; i++) {
-      const pe = planetPosition('earth', jd0 + (i / 120) * 365.25)
-      e.push(new THREE.Vector3(pe[0] * U, pe[2] * U, -pe[1] * U))
-      const pm = planetPosition('mars', jd0 + (i / 120) * 687)
-      m.push(new THREE.Vector3(pm[0] * U, pm[2] * U, -pm[1] * U))
+      st.a = aT
+      st.b = bT
+      st.c = cT
+    } else {
+      const k = 1 - Math.exp(-dtClock * 1.6)
+      st.a += (aT - st.a) * k
+      st.b += (bT - st.b) * k
+      st.c += (cT - st.c) * k
     }
-    return { e, m }
-  }, [])
-  const path = useMemo(() => (tr ? tr.samples.map((s) => new THREE.Vector3(s.ship[0] * U, s.ship[2] * U, -s.ship[1] * U)) : []), [tr])
+    const mix = (e: number, p: number, m: number, a: number) => {
+      const x = e + (p - e) * st.a
+      const y = x + (m - x) * st.b
+      return y + (a - y) * st.c
+    }
+    K.cam.copy(E.cam).slerp(P.cam, st.a).slerp(M.cam, st.b).slerp(A.cam, st.c)
+    // the ship's turn blended as the camera sees it: between framings it turns on screen, never
+    // showing its tiles or swinging its nose at the lens on the way
+    K.rel.copy(relTurn(E)).slerp(relTurn(P), st.a).slerp(relTurn(M), st.b).slerp(relTurn(A), st.c)
+    K.ship.copy(K.cam).multiply(K.rel)
+    K.dx = mix(E.dx, P.dx, M.dx, A.dx)
+    K.dy = mix(E.dy, P.dy, M.dy, A.dy)
+    K.dist = mix(E.dist, P.dist, M.dist, A.dist)
 
-  useFrame(({ camera }, rawDt) => {
-    if (warm) return
-    const dt = Math.min(rawDt, 0.1)
-    scene.background = SPACE
-    if (!tr) return
-    const { t } = useAppStore.getState()
-    const cruise = result!.phases.find((p) => p.phase === 'cruise')!
-    const f = Math.max(0, Math.min(1, (t - cruise.start) / Math.max(cruise.end - cruise.start, 1)))
-    const idx = Math.min(tr.samples.length - 1, Math.floor(f * (tr.samples.length - 1)))
-    const s = tr.samples[idx]
-    const toV = (p: [number, number, number]) => new THREE.Vector3(p[0] * U, p[2] * U, -p[1] * U)
-    earth.current?.position.copy(toV(s.earth))
-    mars.current?.position.copy(toV(s.mars))
-    ship.current?.position.copy(toV(s.ship))
-    // camera high above the ecliptic, framing the inner solar system; the viewer can tilt and swing it
-    const R = 775 * view.zoom
-    const tilt = Math.max(0.25, Math.min(1.5, 1.39 - view.el))
-    const target = new THREE.Vector3(Math.sin(view.az) * R * Math.cos(tilt), R * Math.sin(tilt), Math.cos(view.az) * R * Math.cos(tilt) + 140 * Math.cos(tilt))
-    if (!init.current) {
-      camera.position.copy(target)
-      init.current = true
-    } else camera.position.lerp(target, 1 - Math.exp(-Math.min(dt, 0.5) * (view.dragging ? 24 : 3)))
-    camera.up.set(0, 1, 0)
-    camera.lookAt(0, 0, -20)
-    camera.near = 0.5
-    camera.far = 5000
-    ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
-    stars.current?.position.copy(camera.position)
+    ship.current?.quaternion.copy(K.ship)
+    // the camera, `dist` ship lengths off the ship where the framing puts it on screen; the
+    // viewer's drag swings it about the ship
+    const kd = st.init ? 1 - Math.exp(-dt * (view.dragging ? 24 : 4)) : 1
+    st.az += (view.az - st.az) * kd
+    st.el += (view.el - st.el) * kd
+    st.zoom += (view.zoom - st.zoom) * kd
+    st.init = true
+    const up = st.v1.set(0, 1, 0).applyQuaternion(K.cam)
+    screenDir(st.v2, K.cam, K.dx, K.dy)
+      .multiplyScalar(-K.dist * L * st.zoom)
+      .applyAxisAngle(up, st.az)
+      .addScaledVector(up, Math.sin(st.el) * L * 1.5)
+    camera.position.copy(st.v2)
+    camera.quaternion.copy(st.qi.setFromAxisAngle(up, st.az).multiply(K.cam))
+    cam.near = 0.02
+    cam.far = 40_000
+    cam.updateProjectionMatrix()
+    camera.updateMatrixWorld()
+
+    // the sky rides with the camera
+    if (sunGlow.current) sunGlow.current.position.copy(camera.position).addScaledVector(SUN_DIR, 30_000)
+    if (stars.current) {
+      stars.current.position.copy(camera.position)
+      stars.current.quaternion.setFromRotationMatrix(st.R4.setFromMatrix3(R))
+    }
   })
 
-  if (!tr) return null
   return (
     <group>
       <points ref={stars} geometry={sky.geo} material={sky.mat} renderOrder={-30} frustumCulled={false} />
-      {/* Sun */}
-      <mesh>
-        <sphereGeometry args={[6, 32, 32]} />
-        <meshBasicMaterial color="#ffd978" />
-      </mesh>
-      <sprite scale={[70, 70, 1]}>
-        <spriteMaterial map={glowTex} color="#ffe2a8" transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
+      <sprite ref={sunGlow} renderOrder={-29}>
+        <spriteMaterial map={glowTex} transparent blending={THREE.AdditiveBlending} depthWrite={false} fog={false} />
       </sprite>
-      <pointLight intensity={4} distance={2000} decay={0.5} color="#fff2d0" />
-      <Line points={orbits.e} color="#4f7fb8" lineWidth={1} transparent opacity={0.7} />
-      <Line points={orbits.m} color="#a8482a" lineWidth={1} transparent opacity={0.7} />
-      {path.length > 1 && <Line points={path} color="#e6edf3" lineWidth={1.2} dashed dashSize={3} gapSize={2} />}
-      <group ref={earth}>
-        <mesh>
-          <sphereGeometry args={[4.5, 24, 24]} />
-          <meshStandardMaterial color="#3f7fd6" roughness={0.7} />
-        </mesh>
-        {!warm && <Html center distanceFactor={600} className="label3d">{L.ui.scene.earth}</Html>}
-      </group>
-      <group ref={mars}>
-        <mesh>
-          <sphereGeometry args={[3.6, 24, 24]} />
-          <meshStandardMaterial color="#c8552f" roughness={0.9} />
-        </mesh>
-        {!warm && <Html center distanceFactor={600} className="label3d">{L.ui.scene.mars}</Html>}
-      </group>
-      <group ref={ship}>
-        <mesh>
-          <sphereGeometry args={[2.2, 12, 12]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-        {/* above its dot: the planets' names sit below theirs, so the two never cover each other */}
-        {!warm && <Html center distanceFactor={600} className="label3d label3d--above">{L.ui.scene.ship}</Html>}
-      </group>
-      <ambientLight intensity={0.25} />
+      <directionalLight ref={sunLight} position={SUN_DIR.clone().multiplyScalar(1e4).toArray()} intensity={3.2} color="#fff6e8" />
+      <ambientLight intensity={0.04} color="#8fb0e0" />
+      <directionalLight ref={bounce} intensity={0} color="#a9c5ef" />
+      <SpaceReflections api={reflect} />
+      <Suspense fallback={null}>
+        <Earth sky={false} far detail={detail} root={earthRoot} />
+      </Suspense>
+      <mesh ref={moon} renderOrder={-22}>
+        <sphereGeometry args={[1, 48, 32]} />
+        <meshStandardMaterial map={moonTex} roughness={1} depthWrite={false} transparent />
+      </mesh>
+      <Suspense fallback={null}>
+        <MarsBody root={marsRoot} spin={marsSpin} veil={veil} dust={dust} />
+      </Suspense>
+      <Dot dotRef={earthDot} color="#d6e6ff" />
+      <Dot dotRef={moonDot} color="#e8e4dc" />
+      <Dot dotRef={marsDot} color="#ffb98a" />
+      <ShipModel vehicleId={vehicleId} shipRef={ship} />
     </group>
   )
 }
