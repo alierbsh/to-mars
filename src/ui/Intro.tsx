@@ -12,7 +12,7 @@ const BASE_URL = import.meta.env.BASE_URL
 const SPEEDS = [0.5, 1, 2, 4, 10]
 const RECOMMENDED = 10
 
-/** The opening: why a city on Mars, then the ship and the clock, then five… four… ignition. */
+/** The opening: one button over the stack on its pad (the why is in the wiki), then the ship, then five… four… ignition. */
 export default function Intro() {
   const intro = useAppStore((s) => s.intro)
   if (!intro) return null
@@ -25,32 +25,13 @@ export default function Intro() {
   )
 }
 
+/** nothing to read: the button and the languages under the stack on its pad (the heading is for screen readers) */
 function Start() {
   const L = useT()
-  const I = L.ui.intro
   const setIntro = useAppStore((s) => s.setIntro)
-  // the proof that it is not a film: the mission behind the button was computed here, just now
-  const computeMs = useAppStore((s) => (s.status === 'done' ? (s.result?.computeMs ?? null) : null))
   return (
     <section className="intro__panel intro__panel--start">
-      <p className="intro__live">
-        <span className="intro__livedot" aria-hidden="true" />
-        {I.live}
-      </p>
-      <h1 className="intro__title">{I.title}</h1>
-      <div className="intro__text">
-        {I.text.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-      </div>
-      <ul className="intro__engine">
-        {I.engine.map((e) => (
-          <li key={e.label}>
-            <span className="label">{e.label}</span>
-            <span className="intro__enginetext">{e.text}</span>
-          </li>
-        ))}
-      </ul>
+      <h1 className="sr-only">{L.ui.meta.siteName}</h1>
       <button
         className="intro__cta"
         onClick={() => {
@@ -58,17 +39,9 @@ function Start() {
           setIntro('pick')
         }}
       >
-        {I.cta}
+        {L.ui.intro.cta}
       </button>
-      <button className="intro__alt" onClick={() => useAppStore.getState().openBoard()}>
-        {I.toBoard}
-      </button>
-      <p className="intro__foot">
-        <span className={`intro__computed ${computeMs === null ? 'intro__computed--busy' : ''}`}>{computeMs === null ? I.computing : I.computed({ s: L.n.f(computeMs / 1000, 2) })}</span> {I.foot}
-      </p>
-      <div className="intro__links">
-        <LangList />
-      </div>
+      <LangList className="langlist--intro" />
     </section>
   )
 }
