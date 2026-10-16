@@ -30,26 +30,7 @@ export const UI: UiCatalog = {
     wiki: 'Comprendre !',
   },
   intro: {
-    title: 'Pourquoi une ville sur Mars ?',
-    text: [
-      "Tout être vivant ayant jamais existé a vécu sur une seule planète. Un astéroïde, un supervolcan, un mauvais siècle — et toute l'histoire s'arrête. Un second monde est la première véritable assurance que la vie se soit jamais vu offrir.",
-      "Mars est le seul candidat à notre portée : une journée presque aussi longue que la nôtre, de l'eau piégée sous forme de glace, du dioxyde de carbone pour fabriquer du carburant et de l'oxygène, assez de soleil pour des cultures sous serre. Pas encore un foyer. Une frontière qui peut le devenir.",
-      "Personne n'y est encore allé. Ceci est une simulation physique : les fusées dont nous disposons aujourd'hui — vraies masses, vrais moteurs, vraie mécanique orbitale — pourraient-elles déposer un équipage vivant à la surface, et qu'est-ce qui lâche en premier quand elles n'y arrivent pas ?",
-    ],
     cta: 'Lancez la physique et les moteurs',
-    toBoard: "Ou voyez d'abord le bilan des six fusées →",
-    /** above the title: what this is, before anything else */
-    live: 'Simulation en direct — pas une vidéo',
-    /** three short facts under the text: what runs, on what, where */
-    engine: [
-      { label: 'Vraie physique', text: 'Poussée, traînée, gravité et orbites, calculées pas à pas.' },
-      { label: 'Vraies fusées', text: 'Six lanceurs avec leurs masses et moteurs publiés.' },
-      { label: 'Rendu en direct', text: 'Dessiné en 3D dans votre navigateur. Aucune vidéo, nulle part.' },
-    ],
-    /** under the button: the mission behind it was just computed here (seconds, formatted) */
-    computed: (p: { s: string }) => `Cette mission vient d'être calculée dans votre navigateur, en ${p.s} s.`,
-    computing: 'Calcul de la mission dans votre navigateur…',
-    foot: 'Faites glisser pour regarder autour, faites défiler pour zoomer.',
     shared: 'On vous a envoyé une mission',
     fromBoard: 'Depuis le tableau des scores',
     sharedHint: 'Lancez-la pour voir ce qui se passe — ou choisissez une autre fusée.',

@@ -47,26 +47,7 @@ export const UI: UiCatalog = {
     wiki: '看懂！',
   },
   intro: {
-    title: '为什么要在火星建城？',
-    text: [
-      '迄今存在过的一切生命，都生活在同一颗星球上。一颗小行星、一座超级火山、一个糟糕的世纪——整个故事就此终结。第二个世界，是生命有史以来得到的第一份真正的保险。',
-      '火星是唯一触手可及的候选：一天几乎和地球一样长，水以冰的形式封存，二氧化碳可以用来制造燃料和氧气，阳光足以让温室里的作物生长。它还不是家园，而是一片有望成为家园的边疆。',
-      '还没有人去过那里。这是一个物理模拟：今天已有的火箭——真实的质量、真实的发动机、真实的轨道力学——能否把乘组活着送上火星表面；如果不能，最先失效的又是什么。',
-    ],
     cta: '启动物理引擎，点燃发动机',
-    toBoard: '或者先看看六款火箭各自的表现 →',
-    /** above the title: what this is, before anything else */
-    live: '实时模拟——不是视频',
-    /** three short facts under the text: what runs, on what, where */
-    engine: [
-      { label: '真实物理', text: '推力、阻力、重力和轨道，逐步计算。' },
-      { label: '真实火箭', text: '六款运载器，采用公开的质量与发动机数据。' },
-      { label: '实时渲染', text: '在你的浏览器中以 3D 绘制，没有任何视频素材。' },
-    ],
-    /** under the button: the mission behind it was just computed here (seconds, formatted) */
-    computed: (p: { s: string }) => zh`这次任务刚刚在你的浏览器中计算完成，用时${p.s}秒。`,
-    computing: '正在你的浏览器中计算任务……',
-    foot: '拖动可环顾四周，滚动可缩放。',
     shared: '有人给你发来了一个任务',
     fromBoard: '来自总览表',
     sharedHint: '发射它，看看会发生什么——或者换一款火箭。',

@@ -30,26 +30,7 @@ export const UI: UiCatalog = {
     wiki: 'Verstehen!',
   },
   intro: {
-    title: 'Warum eine Stadt auf dem Mars?',
-    text: [
-      'Jedes Lebewesen, das je existiert hat, hat auf einem einzigen Planeten gelebt. Ein Asteroid, ein Supervulkan, ein schlechtes Jahrhundert — und die ganze Geschichte ist zu Ende. Eine zweite Welt ist die erste echte Versicherung, die dem Leben je angeboten wurde.',
-      'Der Mars ist der einzige Kandidat in Reichweite: ein Tag fast so lang wie unserer, in Eis gebundenes Wasser, Kohlendioxid als Rohstoff für Treibstoff und Sauerstoff, genug Sonnenlicht für Pflanzen unter Glas. Noch kein Zuhause. Ein Neuland, das eines werden kann.',
-      'Niemand ist je dorthin geflogen. Dies ist eine Physiksimulation der Frage, ob die Raketen, die wir heute haben — echte Massen, echte Triebwerke, echte Bahnmechanik —, eine Crew lebend auf die Oberfläche bringen könnten, und was zuerst versagt, wenn sie es nicht können.',
-    ],
     cta: 'Physik, Motoren und Triebwerke starten',
-    toBoard: 'Oder zuerst alle sechs Raketen vergleichen →',
-    /** above the title: what this is, before anything else */
-    live: 'Live-Simulation — kein Video',
-    /** three short facts under the text: what runs, on what, where */
-    engine: [
-      { label: 'Echte Physik', text: 'Schub, Luftwiderstand, Schwerkraft und Bahnen, Schritt für Schritt berechnet.' },
-      { label: 'Echte Raketen', text: 'Sechs Fahrzeuge mit ihren veröffentlichten Massen und Triebwerken.' },
-      { label: 'Live gezeichnet', text: 'In 3D in deinem Browser. Nirgends ein Video.' },
-    ],
-    /** under the button: the mission behind it was just computed here (seconds, formatted) */
-    computed: (p: { s: string }) => `Diese Mission wurde gerade in deinem Browser berechnet, in ${p.s} s.`,
-    computing: 'Die Mission wird in deinem Browser berechnet …',
-    foot: 'Ziehen zum Umsehen, Scrollen zum Zoomen.',
     shared: 'Jemand hat dir eine Mission geschickt',
     fromBoard: 'Aus der Übersicht',
     sharedHint: 'Starte sie und sieh, was passiert — oder wähle eine andere Rakete.',
