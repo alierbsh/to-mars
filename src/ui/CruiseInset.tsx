@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useT } from '../i18n'
+import { cruiseDistances } from '../sim/cruiseView'
 import { planetPosition } from '../sim/ephemeris'
 import type { MissionResult, TransferResult } from '../sim/types'
 import { useThrottledT } from '../state/store'
@@ -60,7 +61,7 @@ export default function CruiseInset({ result }: { result: MissionResult }) {
   const [mx, my] = xy(mars)
   const flown = pts([...map.arc.slice(0, i + 1), [sx, sy]])
   // one-way light time from the ship to Earth
-  const light = Math.hypot(ship[0] - earth[0], ship[1] - earth[1], ship[2] - earth[2]) / C_KM_S
+  const light = cruiseDistances(tr, t - cruise.start, cruise.end - cruise.start).fromEarth / C_KM_S
   const days = Math.round(tr.transitDays)
   const day = Math.min(days, Math.floor((f * (cruise.end - cruise.start)) / 86_400) + 1)
 

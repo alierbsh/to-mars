@@ -29,6 +29,7 @@ import { Environment, Lightformer } from '@react-three/drei'
 import { useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { arriveBlend, arriveHyperbola, departBlend, departHyperbola, entryInterfaceTime, smooth } from '../sim/cruiseView'
 import type { MissionResult, TransferResult } from '../sim/types'
 import { useAppStore } from '../state/store'
 import { APPROACH_SHOT_S, DEPART_SHOT_S } from '../ui/hud'
@@ -47,8 +48,6 @@ const SCALE = 0.012
 const BACKDROP = 20_000
 /** km: where the points of light are drawn (in front of the backdrops) */
 const DOTS = 19_000
-const MU_EARTH = 398_600
-const MU_MARS = 42_828
 const R_MARS_KM = 3389.5
 const MOON_R = 1737.4
 const MOON_DIST = 384_400
@@ -78,46 +77,6 @@ export default function CruiseScene({ vehicleId }: { vehicleId: string }) {
   const cruise = result?.phases.find((p) => p.phase === 'cruise')
   if (!result?.transfer || !cruise) return null
   return <Voyage vehicleId={vehicleId} result={result} transfer={result.transfer} cruise={cruise} />
-}
-
-/**
- * On a hyperbola (periapsis rp km, excess speed vinf km/s), |t| s from periapsis: the distance
- * from the planet's centre (km) and the flight-path angle (rad, between the velocity and the
- * local horizontal — 0 at periapsis, toward 90° far out, where the planet lies straight behind).
- */
-function hyper(t: number, rp: number, vinf: number, mu: number): { r: number; gamma: number } {
-  const a = mu / (vinf * vinf)
-  const e = 1 + rp / a
-  const M = Math.sqrt(mu / (a * a * a)) * Math.abs(t)
-  let F = Math.asinh(M / e)
-  for (let i = 0; i < 40; i++) {
-    const step = (e * Math.sinh(F) - F - M) / (e * Math.cosh(F) - 1)
-    F -= step
-    if (Math.abs(step) < 1e-12) break
-  }
-  const den = e * Math.cosh(F) - 1
-  const cosNu = (e - Math.cosh(F)) / den
-  const sinNu = (Math.sqrt(e * e - 1) * Math.sinh(F)) / den
-  return { r: a * den, gamma: Math.atan2(e * sinNu, 1 + e * cosNu) }
-}
-
-/** seconds before periapsis that the arrival hyperbola crosses the entry interface (125 km up) */
-function entryInterfaceTime(vinf: number): number {
-  const rp = R_MARS_KM + 30
-  let lo = 0
-  let hi = 7200
-  for (let i = 0; i < 60; i++) {
-    const mid = (lo + hi) / 2
-    if (hyper(mid, rp, vinf, MU_MARS).r < R_MARS_KM + 125) lo = mid
-    else hi = mid
-  }
-  return lo
-}
-
-/** 0 → 1 as x goes from a to b (either way round), eased */
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
-  return t * t * (3 - 2 * t)
 }
 
 type Body = 'ship' | 'earth' | 'mars'
@@ -489,15 +448,15 @@ function Voyage({ vehicleId, result, transfer, cruise }: { vehicleId: string; re
     // ship at the burn, swinging round behind it as it climbs out
     const De = geo.at('earth', frac, st.rel).sub(ship0).length()
     const dirE = st.dirE.copy(st.rel).applyMatrix3(R).normalize()
-    const hE = hyper(tau + 53, EARTH_R + 200, transfer.vInfDep, MU_EARTH)
-    const wE = smooth(2.5 * DAY, 6 * DAY, tau)
+    const hE = departHyperbola(transfer, tau)
+    const wE = departBlend(tau)
     slerpDir(st.v1.copy(u).multiplyScalar(-Math.sin(hE.gamma)).addScaledVector(upE, -Math.cos(hE.gamma)), dirE, wE, dirE)
     const dE = hE.r + (De - hE.r) * wE
     // Mars likewise: the last days on the arrival hyperbola, ahead far out, beneath at the entry
     const Dm = geo.at('mars', frac, st.rel).sub(ship0).length()
     const helioM = st.helioM.copy(st.rel).applyMatrix3(R).normalize()
-    const hM = hyper(tEI + left, R_MARS_KM + 30, transfer.vInfArr, MU_MARS)
-    const wM = smooth(4 * DAY, 1.5 * DAY, left)
+    const hM = arriveHyperbola(transfer, left, tEI)
+    const wM = 1 - arriveBlend(left)
     const dirM = slerpDir(helioM, st.v1.copy(fwd).multiplyScalar(Math.sin(hM.gamma)).addScaledVector(upA, -Math.cos(hM.gamma)), wM, st.dirM)
     // where the shot looks for it: where it is, then the asymptote it comes in along
     const axisM = slerpDir(helioM, fwd, wM, st.axisM)

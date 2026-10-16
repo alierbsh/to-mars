@@ -2,6 +2,7 @@ import type { AscentSample, EntrySample, MissionResult, Phase, SimEvent, Vehicle
 import { PHASE_RATE, phaseAt } from '../state/store'
 import { norm, sub } from '../sim/vec'
 import { DAY_S } from '../sim/constants'
+import { cruiseDistances } from '../sim/cruiseView'
 import type { Bundle, MarkKey } from '../i18n'
 import type { KeyMsg, Text } from '../i18n/msg'
 
@@ -117,10 +118,10 @@ export function hudAt(r: MissionResult, t: number, L: Bundle): HudState {
     const n = r.transfer.samples.length
     const idx = Math.min(n - 1, Math.max(0, Math.floor((days / r.transfer.transitDays) * (n - 1))))
     out.cruiseIndex = idx
-    const s = r.transfer.samples[idx]
+    const d = cruiseDistances(r.transfer, t - p.start, p.end - p.start)
     lines.push({ label: H.day, value: H.of({ a: Math.round(days), b: r.transfer.transitDays }) })
-    lines.push({ label: H.fromEarth, value: H.millionKm({ x: norm(sub(s.ship, s.earth)) / 1e6 }) })
-    lines.push({ label: H.toMars, value: H.millionKm({ x: norm(sub(s.ship, s.mars)) / 1e6 }) })
+    lines.push({ label: H.fromEarth, value: H.millionKm({ x: d.fromEarth / 1e6 }) })
+    lines.push({ label: H.toMars, value: H.millionKm({ x: d.toMars / 1e6 }) })
     if (r.cruise && r.config.crew > 0) {
       lines.push({ label: H.radiation, value: `${fmt((r.cruise.doseMsv * days) / r.cruise.days)} mSv`, tone: (r.cruise.doseMsv * days) / r.cruise.days > 300 ? 'warn' : undefined })
       if (r.cruise.consumablesRunOutDay !== null && days > r.cruise.consumablesRunOutDay) lines.push({ label: H.life, value: H.exhausted, tone: 'fail' })
@@ -186,13 +187,11 @@ export function dialsAt(r: MissionResult, t: number, L: Bundle): [Dial, Dial] {
   }
   if (p.phase === 'cruise' && r.transfer) {
     const days = (t - p.start) / DAY_S
-    const n = r.transfer.samples.length
-    const idx = Math.min(n - 1, Math.max(0, Math.floor((days / r.transfer.transitDays) * (n - 1))))
-    const s = r.transfer.samples[idx]
+    const d = cruiseDistances(r.transfer, t - p.start, p.end - p.start)
     const s0 = r.transfer.samples[0]
-    const toMars = norm(sub(s.ship, s.mars)) / 1e6
+    const toMars = d.toMars / 1e6
     const toMars0 = norm(sub(s0.ship, s0.mars)) / 1e6
-    const fromEarth = norm(sub(s.ship, s.earth)) / 1e6
+    const fromEarth = d.fromEarth / 1e6
     return [
       { label: D.toMars, text: f(toMars, toMars < 10 ? 2 : 1), unit: D.millionKm, frac: clamp01(1 - toMars / Math.max(toMars0, 1)) },
       { label: D.fromEarth, text: f(fromEarth, fromEarth < 10 ? 2 : 1), unit: D.millionKm, frac: clamp01(days / r.transfer.transitDays) },
