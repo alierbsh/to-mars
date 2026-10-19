@@ -8,8 +8,9 @@
  * that plays on its own) the next click or key starts it.
  */
 const SRC = `${import.meta.env.BASE_URL}music/back.mp3`
-/** the old sound switch's key: who turned the site's sound off keeps it off */
-const KEY = 'occupy-mars:muted'
+/** the switch's own key ('off' once turned off): on for everyone at first — the old sound
+ * switch's choice ('occupy-mars:muted') does not carry over */
+const KEY = 'occupy-mars:music'
 const VOLUME = 0.7
 /** a full fade, in ms; the volume moves in steps */
 const FADE_MS = 1600
@@ -32,7 +33,7 @@ class Music {
 
   constructor() {
     try {
-      this.on = localStorage.getItem(KEY) !== '1'
+      this.on = localStorage.getItem(KEY) !== 'off'
     } catch {
       /* storage blocked: on */
     }
@@ -49,7 +50,7 @@ class Music {
   setOn(on: boolean) {
     this.on = on
     try {
-      localStorage.setItem(KEY, on ? '0' : '1')
+      localStorage.setItem(KEY, on ? 'on' : 'off')
     } catch {
       /* not remembered */
     }
