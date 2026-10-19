@@ -11,7 +11,6 @@ import EntryScene from './EntryScene'
 import OrbitScene from './OrbitScene'
 import { prewarmMars } from './MarsSurface'
 import { ViewControls, view as viewInput } from './viewControl'
-import { AudioDriver } from '../audio/AudioDriver'
 import { PerfProbe } from './PerfProbe'
 import { Prewarm, SkyStars } from './Prewarm'
 import { globalEnv } from './warm'
@@ -208,7 +207,6 @@ export default function Scene() {
       </Suspense>
       <Playback />
       <ViewControls />
-      <AudioDriver />
       <PerfProbe />
       <AdaptiveQuality />
       {view !== 'ascent' && <SkyStars />}
