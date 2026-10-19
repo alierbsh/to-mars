@@ -2,8 +2,8 @@ import { Canvas, advance, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { MissionResult } from '../sim/types'
-import { PHASE_RATE, effectiveSpeed, phaseAt, useAppStore } from '../state/store'
-import { entryAt, momentsAt, playbackRate, type Moment } from '../ui/hud'
+import { phaseAt, useAppStore } from '../state/store'
+import { clockStep, momentsAt, type Moment } from '../ui/hud'
 import { QUALITY, lowerQuality } from './quality'
 import AscentScene from './AscentScene'
 import CruiseScene from './CruiseScene'
@@ -66,7 +66,7 @@ function Pacer() {
 
 /**
  * The mission clock, first in every frame: each phase advances at its natural rate × the chosen
- * speed, dropped to real time around the moments that matter (ui/hud.ts: playbackRate).
+ * speed, dropped to real time around the moments that matter (ui/hud.ts: clockStep).
  */
 function Playback() {
   const memo = useRef<{ result: MissionResult | null; moments: Moment[] }>({ result: null, moments: [] })
@@ -77,12 +77,7 @@ function Playback() {
     // at 4 frames a second under a panel the clock still keeps real pace; after a stall it does not leap
     const dt = Math.min(0.3, rawDt)
     const end = result.phases[result.phases.length - 1].end
-    const phase = result.phases.find((p) => cur >= p.start && cur < p.end) ?? result.phases[result.phases.length - 1]
-    const alt = phase.phase === 'entry' ? entryAt(result, cur)?.alt : undefined
-    const base = PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt, left: phase.end - cur })
-    let next = cur + dt * playbackRate(base, cur, memo.current.moments, speed, phase).rate
-    // never skip the end of a phase in one frame
-    if (next > phase.end && cur < phase.end) next = phase.end + 1e-3
+    const next = clockStep(result, memo.current.moments, cur, dt, speed)
     if (next >= end) {
       setT(end)
       setPlaying(false)

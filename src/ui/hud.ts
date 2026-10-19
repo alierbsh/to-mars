@@ -1,5 +1,5 @@
 import type { AscentSample, EntrySample, MissionResult, Phase, SimEvent, Vehicle } from '../sim/types'
-import { PHASE_RATE, phaseAt } from '../state/store'
+import { PHASE_RATE, effectiveSpeed, phaseAt } from '../state/store'
 import { norm, sub } from '../sim/vec'
 import { DAY_S } from '../sim/constants'
 import { cruiseDistances } from '../sim/cruiseView'
@@ -447,6 +447,19 @@ export function playbackRate(base: number, t: number, moments: Moment[], chosen:
     }
   }
   return { rate, moment }
+}
+
+/**
+ * One step of the mission clock (Playback, and the music's map of it): from mission time `cur`,
+ * `dt` real seconds on at the chosen speed — each phase at its natural rate × the speed, dropped
+ * to real time around the moments that matter (playbackRate), never past a phase's end in one step.
+ */
+export function clockStep(r: MissionResult, moments: Moment[], cur: number, dt: number, speed: number): number {
+  const phase = phaseAt(r, cur)
+  const alt = phase.phase === 'entry' ? entryAt(r, cur)?.alt : undefined
+  const base = PHASE_RATE[phase.phase] * effectiveSpeed(phase.phase, cur - phase.start, speed, { alt, left: phase.end - cur })
+  const next = cur + dt * playbackRate(base, cur, moments, speed, phase).rate
+  return next > phase.end && cur < phase.end ? phase.end + 1e-3 : next
 }
 
 /** the moment whose window holds t, if any */
