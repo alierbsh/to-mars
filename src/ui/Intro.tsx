@@ -125,9 +125,11 @@ function Countdown() {
   const status = useAppStore((s) => s.status)
   const at = useAppStore((s) => s.countdownAt)
   const [n, setN] = useState(COUNTDOWN.from)
-  // the first number shows once the physics is done (the music starts with it)
+  // the first number shows once the physics is done (the music starts with it); should it run
+  // again, the count waits for it and starts over
   useEffect(() => {
     if (status === 'done' && at === null) useAppStore.setState({ countdownAt: performance.now() })
+    else if (status !== 'done' && at !== null) useAppStore.setState({ countdownAt: null })
   }, [status, at])
   // from then on the numbers and the ignition keep to the clock, however late the page's timers
   // run (a phone's are): the music counts from the same instant

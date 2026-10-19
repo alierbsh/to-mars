@@ -205,7 +205,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
     const crew = vehicle ? Math.min(cur.crew, Math.max(vehicle.spacecraft.crewCapacity, 0)) || cur.crew : cur.crew
     set({ speed, intro: 'countdown', countdown: 5, countdownAt: null, t: 0, playing: false, drawer: null, pickFrom: null })
-    if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
+    if (vehicleId !== cur.vehicleId) {
+      // another ship: its physics runs first (the countdown waits for it — say so at once, not when
+      // the run starts after setConfig's pause, or the countdown starts on the last ship's result)
+      set({ status: 'running' })
+      get().setConfig({ vehicleId, crew })
+    }
   },
   // (t0: the mission starts that far in when the ignition came late and the music is already there)
   ignite: (t0 = 0) => set((s) => ({ intro: null, t: t0, playing: true, openSeq: s.openSeq + 1, countdownAt: null })),
