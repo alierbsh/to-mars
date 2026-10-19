@@ -46,6 +46,9 @@ class Music {
   private running = false
   private target = 0
   private mode: Mode = 'free'
+  /** a Starship countdown waits for the physics: a primed track keeps playing, silent, rather than
+   * stop (on iOS a start without a click may be refused) */
+  private armed = false
   /** when the target was given (performance.now) */
   private targetAt = 0
   /** when the track was last moved or started (performance.now) */
@@ -95,7 +98,8 @@ class Music {
     if (!el.paused) return
     el.play().then(
       () => {
-        if (!this.audible()) el.pause()
+        if (this.armed) el.muted = !this.audible()
+        else if (!this.audible()) el.pause()
       },
       () => {},
     )
@@ -107,11 +111,12 @@ class Music {
    * while it plays — 'hold' at the start speed, 'jump' when the mission has just jumped (a seek, a
    * restart), 'free' at another speed (it runs on by itself).
    */
-  drive(running: boolean, target: number, mode: Mode) {
+  drive(running: boolean, target: number, mode: Mode, armed = false) {
     this.running = running
     this.target = target
     this.targetAt = performance.now()
     this.mode = mode
+    this.armed = armed
     this.apply()
   }
 
@@ -139,10 +144,12 @@ class Music {
 
   private apply(gesture = false) {
     if (!this.audible()) {
-      this.stop()
+      if (this.armed && this.el && !this.el.paused) this.el.muted = true
+      else this.stop()
       return
     }
     const el = this.element()
+    el.muted = false
     const now = performance.now()
     const want = this.expected(now)
     const off = Math.abs(el.currentTime - want)

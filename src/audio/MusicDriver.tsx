@@ -35,53 +35,64 @@ export function useHasMusic(): boolean {
 const JUMP_S = 2
 
 export function MusicDriver() {
-  const has = useHasMusic()
-  const result = useAppStore((s) => s.result)
   useEffect(() => {
-    if (!has || !result) {
-      music.drive(false, 0, 'free')
-      return
-    }
-    // the map from mission time to the track: built on the first look (during the countdown,
-    // which has the time to spare, or at once for a mission opened by its link)
+    // the map from mission time to the track, for the mission it was built for: built on the first
+    // look (during the countdown, which has the time to spare, or at once for a mission opened by
+    // its link)
+    let clockFor: MissionResult | null = null
     let clock: ((t: number) => number) | null = null
     let last: { target: number; wall: number; running: boolean } | null = null
     const tick = () => {
       const s = useAppStore.getState()
       const now = performance.now() / 1000
-      let running = false
-      let target = 0
+      // a Starship countdown still waiting for the physics: a primed track waits with it, silent
+      const armed = s.intro === 'countdown' && s.countdownAt === null && s.config.vehicleId === MUSIC_VEHICLE
       // (the store as it is now: a launch of another ship changes the ship a moment after the intro)
-      if (!hasMusic(s.result, s.config.vehicleId)) {
-        music.drive(false, 0, 'free')
+      if (!s.result || !hasMusic(s.result, s.config.vehicleId) || (s.intro !== null && s.intro !== 'countdown')) {
+        last = null
+        music.drive(false, 0, 'free', armed)
         return
       }
+      if (clockFor !== s.result) {
+        clockFor = s.result
+        clock = null
+      }
+      clock ??= musicClock(s.result)
+      let running: boolean
+      let target: number
       if (s.intro === 'countdown') {
-        clock ??= musicClock(result)
         // from the countdown's first number (it waits for the physics; Intro keeps to the same instant)
         running = s.countdownAt !== null
         target = running ? now - s.countdownAt! / 1000 : 0
-      } else if (!s.intro) {
-        clock ??= musicClock(result)
+      } else {
         running = s.playing
         target = clock(s.t)
       }
       const jumped = !!last && Math.abs(target - last.target - (last.running && running ? now - last.wall : 0)) > JUMP_S
       last = { target, wall: now, running }
-      music.drive(running, target, jumped ? 'jump' : s.speed === SPEED ? 'hold' : 'free')
+      music.drive(running, target, jumped ? 'jump' : s.speed === SPEED ? 'hold' : 'free', armed)
     }
     tick()
     const id = window.setInterval(tick, 250)
-    // at once on a start, a pause, the countdown, a change of speed
-    // (after the current update has finished: a launch sets the countdown and the ship one after the other)
+    // at once on a start, a pause, the countdown, a new result, a change of speed (after the current
+    // update has finished: a launch sets the countdown and the ship one after the other)
     const unsub = useAppStore.subscribe((s, p) => {
-      if (s.intro !== p.intro || s.countdownAt !== p.countdownAt || s.playing !== p.playing || s.status !== p.status || s.speed !== p.speed || s.config.vehicleId !== p.config.vehicleId) queueMicrotask(tick)
+      if (
+        s.intro !== p.intro ||
+        s.countdownAt !== p.countdownAt ||
+        s.playing !== p.playing ||
+        s.status !== p.status ||
+        s.result !== p.result ||
+        s.speed !== p.speed ||
+        s.config.vehicleId !== p.config.vehicleId
+      )
+        queueMicrotask(tick)
     })
     return () => {
       window.clearInterval(id)
       unsub()
       music.drive(false, 0, 'free')
     }
-  }, [has, result])
+  }, [])
   return null
 }
