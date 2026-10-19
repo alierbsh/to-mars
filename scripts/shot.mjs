@@ -12,7 +12,7 @@ const waitMs = Number(process.argv[5] ?? 4000)
 const query = process.argv[6] ?? ''
 const click = process.argv[7]
 const root = new URL('../dist', import.meta.url).pathname
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' }
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.mp3': 'audio/mpeg' }
 
 const server = createServer(async (req, res) => {
   let p = decodeURIComponent((req.url ?? '/').split('?')[0])
