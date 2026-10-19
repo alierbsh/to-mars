@@ -75,6 +75,8 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 ## Muhammet's list, 19 Oct
 - [x] **No sound effects.** The synthesised roar, crackle, plasma hiss and thuds are gone (`audio/sound.ts`, `AudioDriver`).
 - [x] **Music for successful Starship flights only.** His track (`public/music/back.mp3`) from the countdown on, while the mission plays, when the flight is Starship and lands with its crew alive; on by default, the top bar's switch turns it off (remembered).
+- [x] **The music on for everyone at first** (it had read the old sound switch's key, so whoever had once muted the site — the owner too — started without it).
+- [x] **The music keeps to the rocket.** It was made on the default flight from the countdown's 5 (its swells on Mach 1 and the stage separation, its end at touchdown), so its place follows the mission clock: switched off, paused, hidden or jumped, it resumes where it would have been playing all along. It ends with the landing.
 
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
