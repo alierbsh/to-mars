@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { music } from '../audio/music'
+import { MUSIC_VEHICLE } from '../audio/MusicDriver'
 import { VEHICLES } from '../data/vehicles'
 import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
@@ -91,6 +93,8 @@ function Pick() {
         <button
           className="intro__cta"
           onClick={() => {
+            // the click lets the music start later, once the physics says how the flight ends
+            if (vehicleId === MUSIC_VEHICLE) music.prime()
             launch(vehicleId, SPEED)
           }}
         >

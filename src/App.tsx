@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
+import { MusicDriver } from './audio/MusicDriver'
 import { useAppStore } from './state/store'
 import DetailsSheet from './ui/DetailsSheet'
 import FeedbackPanel from './ui/Feedback'
@@ -52,6 +53,7 @@ export default function App() {
       )}
       <FeedbackPanel />
       <Toast />
+      <MusicDriver />
     </div>
   )
 }
