@@ -2,9 +2,9 @@
  * Drives the music: through a Starship mission that ends well (the verdict card's ok — the physics
  * runs before the countdown), it tells the player a few times a second whether the mission is
  * running (the countdown, from its first number; or playing) and where the track should be —
- * the time since the countdown's 5, then musicClock(t) — and whether to hold it there: at the
- * start speed the track keeps to the mission, at another it runs on by itself, except when the
- * mission jumps (a seek, a restart).
+ * the time since the countdown's 5, then musicClock(t) — and how closely to keep it there: at the
+ * start speed the track is held to the mission (which keeps real time while it plays), at another
+ * it runs on by itself, and when the mission jumps (a seek, a restart) it follows at once.
  */
 import { useEffect, useRef } from 'react'
 import { VEHICLES } from '../data/vehicles'
@@ -41,7 +41,7 @@ export function MusicDriver() {
   const countdownAt = useRef<number | null>(null)
   useEffect(() => {
     if (!has || !result) {
-      music.drive(false, 0, false)
+      music.drive(false, 0, 'free')
       return
     }
     // the map from mission time to the track: built on the first look (during the countdown,
@@ -55,7 +55,7 @@ export function MusicDriver() {
       let target = 0
       // (the store as it is now: a launch of another ship changes the ship a moment after the intro)
       if (!hasMusic(s.result, s.config.vehicleId)) {
-        music.drive(false, 0, false)
+        music.drive(false, 0, 'free')
         return
       }
       if (s.intro === 'countdown') {
@@ -73,7 +73,7 @@ export function MusicDriver() {
       }
       const jumped = !!last && Math.abs(target - last.target - (last.running && running ? now - last.wall : 0)) > JUMP_S
       last = { target, wall: now, running }
-      music.drive(running, target, s.speed === SPEED || jumped)
+      music.drive(running, target, jumped ? 'jump' : s.speed === SPEED ? 'hold' : 'free')
     }
     tick()
     const id = window.setInterval(tick, 250)
@@ -85,7 +85,7 @@ export function MusicDriver() {
     return () => {
       window.clearInterval(id)
       unsub()
-      music.drive(false, 0, false)
+      music.drive(false, 0, 'free')
     }
   }, [has, result])
   return null

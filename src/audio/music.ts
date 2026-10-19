@@ -22,15 +22,19 @@ const VOLUME = 0.7
 const FADE_IN_MS = 600
 const FADE_OUT_MS = 350
 const STEP_MS = 40
-/** how far the track may stray from where it should be before it is moved: once playing (and
- * only when MusicDriver says the mission keeps the default pace), and when it starts */
-const DRIFT_S = 1
+/** how far the track may stray from where it should be before it is moved, s: once playing (only
+ * while MusicDriver holds it to the mission) — rarely needed, as the mission keeps real time while
+ * the track plays (keepsTime) — and when it starts or the mission jumps. Never by playing faster or
+ * slower: on a phone that warbles, and a phone's coarse clock would keep it changing. */
+const DRIFT_S = 2
 const START_S = 0.15
-/** under DRIFT_S it is brought back by playing a little faster or slower (pitch kept): at most
- * this share, a quarter of the gap per second */
-const NUDGE = 0.06
+/** after the track is moved it is left alone this long, ms (a phone fetches the new place over the
+ * network: measured at once, it would look late and be moved again, and again) */
+const SETTLE_MS = 4000
 /** the events that let a page start sound (keydown, a mouse press, the end of a touch) */
 const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'keydown'] as const
+
+type Mode = 'free' | 'hold' | 'jump'
 
 class Music {
   /** the listener's switch */
@@ -39,6 +43,9 @@ class Music {
   /** the mission is running with its music (the countdown, or playing), and where the track should be */
   private running = false
   private target = 0
+  private mode: Mode = 'free'
+  /** when the track was last moved or started (performance.now) */
+  private moved = -Infinity
   private timer: number | null = null
   /** where the running fade is going */
   private fading = -1
@@ -73,7 +80,7 @@ class Music {
       /* not remembered */
     }
     this.listeners.forEach((fn) => fn())
-    this.apply(false)
+    this.apply()
   }
 
   /** inside a click (the launch button): start the element (the track opens in silence) so that
@@ -92,13 +99,21 @@ class Music {
 
   /**
    * Where things stand, from MusicDriver (a few times a second and on every change): whether the
-   * mission is running with its music, where the track should be, and whether to hold it there
-   * while it plays (the default pace, or just after a jump) or let it run on.
+   * mission is running with its music, where the track should be, and how closely to keep it there
+   * while it plays — 'hold' at the start speed, 'jump' when the mission has just jumped (a seek, a
+   * restart), 'free' at another speed (it runs on by itself).
    */
-  drive(running: boolean, target: number, hold: boolean) {
+  drive(running: boolean, target: number, mode: Mode) {
     this.running = running
     this.target = target
-    this.apply(hold)
+    this.mode = mode
+    this.apply()
+  }
+
+  /** the track is playing, held to the mission: the mission should keep real time through a stall
+   * (Playback lifts its cap on a frame's step) so the two stay together without moving the track */
+  keepsTime() {
+    return !!this.el && !this.el.paused && this.mode !== 'free' && this.audible()
   }
 
   private element() {
@@ -117,25 +132,23 @@ class Music {
     return this.running && this.on && document.visibilityState !== 'hidden' && this.target < end - 0.05
   }
 
-  private apply(hold: boolean, gesture = false) {
+  private apply(gesture = false) {
     if (!this.audible()) {
       this.stop()
       return
     }
     const el = this.element()
-    const ahead = el.currentTime - this.target
+    const off = Math.abs(el.currentTime - this.target)
+    const now = performance.now()
     if (!el.paused) {
-      if (hold && Math.abs(ahead) > DRIFT_S) {
-        el.currentTime = this.target
-        el.playbackRate = 1
-      } else el.playbackRate = hold && Math.abs(ahead) > 0.05 ? 1 - Math.max(-NUDGE, Math.min(NUDGE, ahead * 0.25)) : 1
+      if ((this.mode === 'jump' && off > START_S) || (this.mode === 'hold' && off > DRIFT_S && now - this.moved > SETTLE_MS)) this.seek(el, now)
       this.fadeTo(VOLUME, FADE_IN_MS)
       return
     }
     // refused once, it waits for a click or a key rather than asking again every tick
     if (this.waiting && !gesture) return
-    el.playbackRate = 1
-    if (Math.abs(ahead) > START_S) el.currentTime = this.target
+    if (off > START_S) this.seek(el, now)
+    else this.moved = now
     el.play().then(
       () => {
         this.stopWaiting()
@@ -148,6 +161,15 @@ class Music {
         if (e instanceof DOMException && e.name === 'NotAllowedError') this.waitForGesture()
       },
     )
+  }
+
+  private seek(el: HTMLAudioElement, now: number) {
+    this.moved = now
+    try {
+      el.currentTime = this.target
+    } catch {
+      /* (an old WebKit refuses before the file's length is known: it starts where it is) */
+    }
   }
 
   private stop() {
@@ -185,7 +207,7 @@ class Music {
     }, STEP_MS)
   }
 
-  private retry = () => this.apply(true, true)
+  private retry = () => this.apply(true)
 
   private waitForGesture() {
     if (this.waiting) return
