@@ -40,6 +40,8 @@ class Music {
   private running = false
   private target = 0
   private timer: number | null = null
+  /** where the running fade is going */
+  private fading = -1
   private waiting = false
   private listeners = new Set<() => void>()
 
@@ -159,8 +161,11 @@ class Music {
   private fadeTo(target: number, full: number, done?: () => void) {
     const el = this.el
     if (!el) return
+    // a fade already on its way there goes on (drive() asks again every tick)
+    if (this.timer !== null && this.fading === target) return
     if (this.timer !== null) window.clearInterval(this.timer)
     this.timer = null
+    this.fading = target
     const from = el.volume
     const ms = (Math.abs(target - from) / VOLUME) * full
     if (ms < 1) {
