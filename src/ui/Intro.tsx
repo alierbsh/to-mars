@@ -7,12 +7,10 @@ import { useAppStore } from '../state/store'
 import { describeMission } from './share'
 import GraphicsPicker from './GraphicsPicker'
 import { LangList } from './LangPicker'
+import { COUNTDOWN, SPEED } from './launch'
 import { nameLang, vehicleTexts } from './texts'
 
 const BASE_URL = import.meta.env.BASE_URL
-/** the clock's speed a mission starts at (the orbit and the cruise; liftoff and the moments that
- * matter still play in real time) — the lower third's buttons change it in flight */
-const SPEED = 10
 
 /** The opening: one button over the stack on its pad (the why is in the wiki), then the ship, then five… four… ignition. */
 export default function Intro() {
@@ -125,17 +123,17 @@ function Countdown() {
   const L = useT()
   const ignite = useAppStore((s) => s.ignite)
   const status = useAppStore((s) => s.status)
-  const [n, setN] = useState(5)
+  const [n, setN] = useState(COUNTDOWN.from)
   useEffect(() => {
     if (status !== 'done') return // wait for the physics before the clock starts
     if (n <= 0) {
-      const id = window.setTimeout(ignite, 900)
+      const id = window.setTimeout(ignite, COUNTDOWN.igniteMs)
       return () => window.clearTimeout(id)
     }
     const id = window.setTimeout(() => {
       setN(n - 1)
       useAppStore.setState({ countdown: n - 1 })
-    }, 1000)
+    }, COUNTDOWN.tickMs)
     return () => window.clearTimeout(id)
   }, [n, status, ignite])
   return (
