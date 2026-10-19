@@ -2,6 +2,7 @@ import { Canvas, advance, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { MissionResult } from '../sim/types'
+import { music } from '../audio/music'
 import { phaseAt, useAppStore } from '../state/store'
 import { clockStep, momentsAt, type Moment } from '../ui/hud'
 import { QUALITY, lowerQuality } from './quality'
@@ -74,8 +75,10 @@ function Playback() {
     const { result, playing, speed, t: cur, setT, setPlaying } = useAppStore.getState()
     if (!result || !playing) return
     if (memo.current.result !== result) memo.current = { result, moments: momentsAt(result) }
-    // at 4 frames a second under a panel the clock still keeps real pace; after a stall it does not leap
-    const dt = Math.min(0.3, rawDt)
+    // at 4 frames a second under a panel the clock still keeps real pace; after a stall it does not
+    // leap — unless the music is playing, held to the mission: then the mission keeps real time
+    // through the stall too (a phone stalls for seconds at a cut), so the two stay together
+    const dt = Math.min(music.keepsTime() ? 2.5 : 0.3, rawDt)
     const end = result.phases[result.phases.length - 1].end
     const next = clockStep(result, memo.current.moments, cur, dt, speed)
     if (next >= end) {
