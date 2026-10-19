@@ -28,6 +28,8 @@ const STEP_MS = 40
  * slower: on a phone that warbles, and a phone's coarse clock would keep it changing. */
 const DRIFT_S = 2
 const START_S = 0.15
+/** within what is already loaded a move costs no fetch: then a smaller stray is put right, s */
+const NEAR_S = 0.75
 /** after the track is moved it is left alone this long, ms (a phone fetches the new place over the
  * network: measured at once, it would look late and be moved again, and again) */
 const SETTLE_MS = 4000
@@ -44,6 +46,8 @@ class Music {
   private running = false
   private target = 0
   private mode: Mode = 'free'
+  /** when the target was given (performance.now) */
+  private targetAt = 0
   /** when the track was last moved or started (performance.now) */
   private moved = -Infinity
   private timer: number | null = null
@@ -106,6 +110,7 @@ class Music {
   drive(running: boolean, target: number, mode: Mode) {
     this.running = running
     this.target = target
+    this.targetAt = performance.now()
     this.mode = mode
     this.apply()
   }
@@ -138,23 +143,36 @@ class Music {
       return
     }
     const el = this.element()
-    const off = Math.abs(el.currentTime - this.target)
     const now = performance.now()
+    const want = this.expected(now)
+    const off = Math.abs(el.currentTime - want)
     if (!el.paused) {
-      if ((this.mode === 'jump' && off > START_S) || (this.mode === 'hold' && off > DRIFT_S && now - this.moved > SETTLE_MS)) this.seek(el, now)
+      if (
+        (this.mode === 'jump' && off > START_S) ||
+        (this.mode === 'hold' && ((off > NEAR_S && this.loaded(el, want)) || (off > DRIFT_S && now - this.moved > SETTLE_MS)))
+      )
+        this.seek(el, want, now)
       this.fadeTo(VOLUME, FADE_IN_MS)
       return
     }
     // refused once, it waits for a click or a key rather than asking again every tick
     if (this.waiting && !gesture) return
-    if (off > START_S) this.seek(el, now)
+    if (off > START_S) this.seek(el, want, now)
     else this.moved = now
     el.play().then(
       () => {
         this.stopWaiting()
         // (it may no longer be wanted by the time the browser has started it)
-        if (this.audible()) this.fadeTo(VOLUME, FADE_IN_MS)
-        else this.stop()
+        if (!this.audible()) {
+          this.stop()
+          return
+        }
+        // the start took time (a phone fetches the place over the network): the mission has moved
+        // on — catch up once, now that the place is loaded and a move costs nothing
+        const at = performance.now()
+        const late = this.expected(at) - el.currentTime
+        if (this.mode !== 'free' && late > 0.25 && this.loaded(el, this.expected(at))) this.seek(el, this.expected(at), at)
+        this.fadeTo(VOLUME, FADE_IN_MS)
       },
       (e: unknown) => {
         // refused without a click: try again on the next one (anything else — a missing file — gives up)
@@ -163,10 +181,23 @@ class Music {
     )
   }
 
-  private seek(el: HTMLAudioElement, now: number) {
+  /** where the track should be now: the last target, moved on by the time since while the mission
+   * runs at the start speed (the target comes a few times a second; a start takes a while) */
+  private expected(now: number) {
+    return this.target + (this.running && this.mode !== 'free' ? (now - this.targetAt) / 1000 : 0)
+  }
+
+  /** the track is loaded around `t` (a move there costs no fetch) */
+  private loaded(el: HTMLAudioElement, t: number) {
+    const b = el.buffered
+    for (let i = 0; i < b.length; i++) if (t >= b.start(i) && t + 1 <= b.end(i)) return true
+    return false
+  }
+
+  private seek(el: HTMLAudioElement, t: number, now: number) {
     this.moved = now
     try {
-      el.currentTime = this.target
+      el.currentTime = t
     } catch {
       /* (an old WebKit refuses before the file's length is known: it starts where it is) */
     }
