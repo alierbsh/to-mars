@@ -26,10 +26,11 @@ export const UI = {
     computing: 'computing',
     error: 'error',
     live: 'live',
-    mute: 'Mute',
-    unmute: 'Unmute',
-    soundOn: 'Sound on',
-    soundOff: 'Sound off',
+    /** the music switch (only on a mission that has music): what pressing it does, and its state */
+    musicStop: 'Turn the music off',
+    musicPlay: 'Turn the music on',
+    musicOn: 'Music on',
+    musicOff: 'Music off',
     settings: 'Mission settings',
     /** the same on phones, where the bar is narrow */
     settingsShort: 'Settings',
