@@ -128,21 +128,29 @@ class Music {
     this.fadeTo(0, () => el.pause())
   }
 
+  /** move the volume to `target` over a share of FADE_MS, by the clock (a busy or background page
+   * runs its timers late) */
   private fadeTo(target: number, done?: () => void) {
     const el = this.el
     if (!el) return
     if (this.timer !== null) window.clearInterval(this.timer)
-    const step = (VOLUME * STEP_MS) / FADE_MS
+    const from = el.volume
+    const ms = (Math.abs(target - from) / VOLUME) * FADE_MS
+    const t0 = performance.now()
+    const finish = () => {
+      if (this.timer !== null) window.clearInterval(this.timer)
+      this.timer = null
+      done?.()
+    }
+    if (ms < 1) {
+      finish()
+      return
+    }
     this.timer = window.setInterval(() => {
-      const v = el.volume
-      const next = v < target ? Math.min(target, v + step) : Math.max(target, v - step)
-      el.volume = next
-      // (where the volume cannot be set, it never moves: finish at once)
-      if (next === target || el.volume === v) {
-        window.clearInterval(this.timer!)
-        this.timer = null
-        done?.()
-      }
+      const k = Math.min(1, (performance.now() - t0) / ms)
+      el.volume = from + (target - from) * k
+      // (where the volume cannot be set it never moves — iOS: finish at once)
+      if (k >= 1 || el.volume === from) finish()
     }, STEP_MS)
   }
 
