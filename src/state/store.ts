@@ -33,6 +33,9 @@ export interface AppState {
   intro: Intro
   /** seconds left in the opening countdown (5 → 0), for the pad effects */
   countdown: number
+  /** when the countdown's first number showed (performance.now, ms; it waits for the physics) —
+   * the numbers, the ignition and the music all count from it; null outside the countdown */
+  countdownAt: number | null
   /** bumps at ignition and on restart: the lower third replays its opening */
   openSeq: number
   /** the wiki chapter open, or null */
@@ -75,7 +78,7 @@ export interface AppState {
   /** from the picker: set the ship and the clock, then count down */
   launch: (vehicleId: string, speed: number) => void
   /** the countdown reached zero: ignition */
-  ignite: () => void
+  ignite: (t0?: number) => void
   reset: () => void
 }
 
@@ -130,6 +133,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   config: initialConfig(),
   intro: hasParams ? null : sharedMission ? 'pick' : 'start',
   countdown: 5,
+  countdownAt: null,
   openSeq: 0,
   wiki: initialWiki,
   pickFrom: sharedMission ? 'shared' : null,
@@ -200,10 +204,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const cur = get().config
     const vehicle = VEHICLES.find((v) => v.id === vehicleId)
     const crew = vehicle ? Math.min(cur.crew, Math.max(vehicle.spacecraft.crewCapacity, 0)) || cur.crew : cur.crew
-    set({ speed, intro: 'countdown', countdown: 5, t: 0, playing: false, drawer: null, pickFrom: null })
+    set({ speed, intro: 'countdown', countdown: 5, countdownAt: null, t: 0, playing: false, drawer: null, pickFrom: null })
     if (vehicleId !== cur.vehicleId) get().setConfig({ vehicleId, crew })
   },
-  ignite: () => set((s) => ({ intro: null, t: 0, playing: true, openSeq: s.openSeq + 1 })),
+  // (t0: the mission starts that far in when the ignition came late and the music is already there)
+  ignite: (t0 = 0) => set((s) => ({ intro: null, t: t0, playing: true, openSeq: s.openSeq + 1, countdownAt: null })),
   reset: () => set((s) => ({ t: 0, playing: true, openSeq: s.openSeq + 1 })),
 }))
 

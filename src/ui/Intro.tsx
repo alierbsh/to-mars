@@ -123,19 +123,34 @@ function Countdown() {
   const L = useT()
   const ignite = useAppStore((s) => s.ignite)
   const status = useAppStore((s) => s.status)
+  const at = useAppStore((s) => s.countdownAt)
   const [n, setN] = useState(COUNTDOWN.from)
+  // the first number shows once the physics is done (the music starts with it)
   useEffect(() => {
-    if (status !== 'done') return // wait for the physics before the clock starts
-    if (n <= 0) {
-      const id = window.setTimeout(ignite, COUNTDOWN.igniteMs)
-      return () => window.clearTimeout(id)
+    if (status === 'done' && at === null) useAppStore.setState({ countdownAt: performance.now() })
+  }, [status, at])
+  // from then on the numbers and the ignition keep to the clock, however late the page's timers
+  // run (a phone's are): the music counts from the same instant
+  useEffect(() => {
+    if (at === null) return
+    const total = COUNTDOWN.from * COUNTDOWN.tickMs + COUNTDOWN.igniteMs
+    let id = 0
+    const step = () => {
+      const ms = performance.now() - at
+      if (ms >= total) {
+        // late, with the music already there, the mission starts where the music has got to
+        ignite(music.keepsTime() ? Math.min(3, (ms - total) / 1000) : 0)
+        return
+      }
+      const left = Math.max(0, COUNTDOWN.from - Math.floor(ms / COUNTDOWN.tickMs))
+      setN(left)
+      if (useAppStore.getState().countdown !== left) useAppStore.setState({ countdown: left })
+      const next = left > 0 ? (COUNTDOWN.from - left + 1) * COUNTDOWN.tickMs : total
+      id = window.setTimeout(step, Math.max(0, next - ms))
     }
-    const id = window.setTimeout(() => {
-      setN(n - 1)
-      useAppStore.setState({ countdown: n - 1 })
-    }, COUNTDOWN.tickMs)
+    step()
     return () => window.clearTimeout(id)
-  }, [n, status, ignite])
+  }, [at, ignite])
   return (
     <div className="countdown" aria-live="assertive">
       {status !== 'done' ? (

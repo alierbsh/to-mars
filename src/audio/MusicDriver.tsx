@@ -6,7 +6,7 @@
  * start speed the track is held to the mission (which keeps real time while it plays), at another
  * it runs on by itself, and when the mission jumps (a seek, a restart) it follows at once.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { VEHICLES } from '../data/vehicles'
 import type { MissionResult } from '../sim/types'
 import { useAppStore } from '../state/store'
@@ -37,8 +37,6 @@ const JUMP_S = 2
 export function MusicDriver() {
   const has = useHasMusic()
   const result = useAppStore((s) => s.result)
-  // when the countdown's 5 appeared (the countdown waits for the physics to finish)
-  const countdownAt = useRef<number | null>(null)
   useEffect(() => {
     if (!has || !result) {
       music.drive(false, 0, 'free')
@@ -60,16 +58,13 @@ export function MusicDriver() {
       }
       if (s.intro === 'countdown') {
         clock ??= musicClock(result)
-        if (countdownAt.current === null && s.status === 'done') countdownAt.current = now
-        running = countdownAt.current !== null
-        target = running ? now - countdownAt.current! : 0
-      } else {
-        countdownAt.current = null
-        if (!s.intro) {
-          clock ??= musicClock(result)
-          running = s.playing
-          target = clock(s.t)
-        }
+        // from the countdown's first number (it waits for the physics; Intro keeps to the same instant)
+        running = s.countdownAt !== null
+        target = running ? now - s.countdownAt! / 1000 : 0
+      } else if (!s.intro) {
+        clock ??= musicClock(result)
+        running = s.playing
+        target = clock(s.t)
       }
       const jumped = !!last && Math.abs(target - last.target - (last.running && running ? now - last.wall : 0)) > JUMP_S
       last = { target, wall: now, running }
@@ -80,7 +75,7 @@ export function MusicDriver() {
     // at once on a start, a pause, the countdown, a change of speed
     // (after the current update has finished: a launch sets the countdown and the ship one after the other)
     const unsub = useAppStore.subscribe((s, p) => {
-      if (s.intro !== p.intro || s.playing !== p.playing || s.status !== p.status || s.speed !== p.speed || s.config.vehicleId !== p.config.vehicleId) queueMicrotask(tick)
+      if (s.intro !== p.intro || s.countdownAt !== p.countdownAt || s.playing !== p.playing || s.status !== p.status || s.speed !== p.speed || s.config.vehicleId !== p.config.vehicleId) queueMicrotask(tick)
     })
     return () => {
       window.clearInterval(id)
