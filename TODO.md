@@ -72,6 +72,10 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **The day counter as large as E+.** From the entry interface the mission day stands beside the E+ clock at its size (on a phone under it, where it used to be hidden).
 - [x] **A commit for every change**, however small (CLAUDE.md).
 
+## Muhammet's list, 19 Oct
+- [x] **No sound effects.** The synthesised roar, crackle, plasma hiss and thuds are gone (`audio/sound.ts`, `AudioDriver`).
+- [x] **Music for successful Starship flights only.** His track (`public/music/back.mp3`) from the countdown on, while the mission plays, when the flight is Starship and lands with its crew alive; on by default, the top bar's switch turns it off (remembered).
+
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
 - Deploy protection (CI before Vercel): not while traffic is small; revisit if the site takes off.
