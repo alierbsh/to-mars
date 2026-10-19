@@ -77,6 +77,8 @@ Owner's list (Muhammet) and the work queue. Tick things off in commits.
 - [x] **Music for successful Starship flights only.** His track (`public/music/back.mp3`) from the countdown on, while the mission plays, when the flight is Starship and lands with its crew alive; on by default, the top bar's switch turns it off (remembered).
 - [x] **The music on for everyone at first** (it had read the old sound switch's key, so whoever had once muted the site — the owner too — started without it).
 - [x] **The music keeps to the rocket.** It was made on the default flight from the countdown's 5 (its swells on Mach 1 and the stage separation, its end at touchdown), so its place follows the mission clock: switched off, paused, hidden or jumped, it resumes where it would have been playing all along. It ends with the landing.
+- [x] **The music on a phone.** It warbled and skipped: the catch-up played it faster or slower (iOS time-stretch, changed every quarter second by the phone's coarse clock), and each stall left the rocket behind so the track was moved back, again and again. Now the rocket keeps time while the music plays, the countdown keeps to the clock, the track is moved rarely and only where it is loaded, and it waits silently (not paused) while a new launch's physics runs. Also fixed: a launch of another ship started its countdown on the last ship's result.
+- [ ] Check on an iPhone: the music from the countdown, through a pause, the switch, a restart, and a launch after another ship.
 
 ## Parked (owner's call, 14 Oct)
 - The return trip (Mars ascent, Earth return, the surface stay): the first crews are not expected to come back — not now.
