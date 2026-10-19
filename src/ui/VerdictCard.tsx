@@ -3,6 +3,7 @@ import { getL, useT } from '../i18n'
 import type { MissionResult } from '../sim/types'
 import { phaseAt, useAppStore } from '../state/store'
 import CruiseInset from './CruiseInset'
+import { verdictTone } from './hud'
 import { shareMission } from './share'
 
 const MILESTONES = [
@@ -90,7 +91,7 @@ export default function VerdictCard() {
   const v = result.verdict
   const vehicle = VEHICLES.find((x) => x.id === result.vehicleId)!
   const crewed = result.config.crew > 0 && vehicle.spacecraft.crewCapacity > 0
-  const tone = v.outcome === 'landed' && (v.crewAlive || !crewed) ? 'ok' : v.outcome === 'landed' ? 'warn' : 'fail'
+  const tone = verdictTone(result, vehicle)
   const statusLabel = tone === 'ok' ? (crewed ? V.crewLanded : V.landed) : tone === 'warn' ? V.landedLost : v.outcome === 'flyby' ? V.flyby : V.lost
   // the stats that decided it: failures and warnings first, then the rest, four at most
   const ranked = [...v.stats].sort((a, b) => rank(b.severity) - rank(a.severity)).slice(0, 4)

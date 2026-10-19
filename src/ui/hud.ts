@@ -62,6 +62,14 @@ function interp<T extends { t: number }>(arr: T[], t: number): [T, T, number] | 
 
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f
 
+/** how the mission ended, as the verdict card colours it: ok — landed with the crew alive (or
+ * uncrewed); warn — landed, the crew lost; fail — anything short of a landing */
+export function verdictTone(r: MissionResult, vehicle: Vehicle): 'ok' | 'warn' | 'fail' {
+  const v = r.verdict
+  const crewed = r.config.crew > 0 && vehicle.spacecraft.crewCapacity > 0
+  return v.outcome === 'landed' && (v.crewAlive || !crewed) ? 'ok' : v.outcome === 'landed' ? 'warn' : 'fail'
+}
+
 export function ascentAt(r: MissionResult, t: number): AscentSample | undefined {
   const p = r.phases.find((x) => x.phase === 'ascent')
   if (!p) return
