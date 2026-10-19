@@ -53,6 +53,11 @@ export function MusicDriver() {
       const now = performance.now() / 1000
       let running = false
       let target = 0
+      // (the store as it is now: a launch of another ship changes the ship a moment after the intro)
+      if (!hasMusic(s.result, s.config.vehicleId)) {
+        music.drive(false, 0, false)
+        return
+      }
       if (s.intro === 'countdown') {
         clock ??= musicClock(result)
         if (countdownAt.current === null && s.status === 'done') countdownAt.current = now
@@ -73,8 +78,9 @@ export function MusicDriver() {
     tick()
     const id = window.setInterval(tick, 250)
     // at once on a start, a pause, the countdown, a change of speed
+    // (after the current update has finished: a launch sets the countdown and the ship one after the other)
     const unsub = useAppStore.subscribe((s, p) => {
-      if (s.intro !== p.intro || s.playing !== p.playing || s.status !== p.status || s.speed !== p.speed) tick()
+      if (s.intro !== p.intro || s.playing !== p.playing || s.status !== p.status || s.speed !== p.speed || s.config.vehicleId !== p.config.vehicleId) queueMicrotask(tick)
     })
     return () => {
       window.clearInterval(id)
