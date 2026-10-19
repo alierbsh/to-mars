@@ -1,10 +1,13 @@
+import { useSyncExternalStore } from 'react'
+import { music } from '../audio/music'
+import { useHasMusic } from '../audio/MusicDriver'
 import { VEHICLES } from '../data/vehicles'
 import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { LangMenu } from './LangPicker'
 import { nameLang, vehicleTexts } from './texts'
 
-/** Wordmark, the ship this mission flies (changed only by starting a new mission), and the panel toggles. */
+/** Wordmark, the ship this mission flies (changed only by starting a new mission), the music's switch (on a mission that has music) and the panel toggles. */
 export default function TopBar() {
   const L = useT()
   const T = L.ui.top
@@ -14,6 +17,12 @@ export default function TopBar() {
   const setIntro = useAppStore((s) => s.setIntro)
   const setPlaying = useAppStore((s) => s.setPlaying)
   const status = useAppStore((s) => s.status)
+  // the music's switch, on a mission that has music (a successful Starship flight)
+  const withMusic = useHasMusic()
+  const musicOn = useSyncExternalStore(
+    (fn) => music.subscribe(fn),
+    () => music.on,
+  )
   const wiki = useAppStore((s) => s.wiki)
   const openWiki = useAppStore((s) => s.openWiki)
   const closeWiki = useAppStore((s) => s.closeWiki)
@@ -56,6 +65,15 @@ export default function TopBar() {
       </div>
       <div className="top__right">
         <span className={`status status--${status}`}>{status === 'running' ? T.computing : status === 'error' ? T.error : T.live}</span>
+        {withMusic && (
+          <button className={`pill pill--icon ${musicOn ? '' : 'pill--muted'}`} onClick={() => music.setOn(!musicOn)} aria-label={musicOn ? T.musicStop : T.musicPlay} aria-pressed={musicOn} title={musicOn ? T.musicOn : T.musicOff}>
+            {musicOn ? (
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" /><path d="M11 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9" stroke="currentColor" strokeWidth="1.4" fill="none" /></svg>
+            ) : (
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor" /><path d="M11 6l3 4M14 6l-3 4" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+            )}
+          </button>
+        )}
         <LangMenu />
         <button className={`pill ${drawer === 'mission' ? 'pill--on' : ''}`} onClick={() => setDrawer('mission')}>
           {T.settingsShort === T.settings ? (
