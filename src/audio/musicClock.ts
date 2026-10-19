@@ -9,8 +9,10 @@ import type { MissionResult } from '../sim/types'
 import { clockStep, momentsAt } from '../ui/hud'
 import { COUNTDOWN_S, SPEED } from '../ui/launch'
 
-/** the map's real-time step, s */
-const STEP = 1 / 30
+/** the map's real-time step, s, and how far it goes (the track's 4:48 and some: past it the music
+ * has ended) — a phone builds it in the countdown, so it is kept short */
+const STEP = 1 / 20
+const SPAN_S = 330
 
 /** the music's position (s into the track) at each mission time t ≥ 0 of this mission */
 export function musicClock(r: MissionResult): (t: number) => number {
@@ -18,7 +20,7 @@ export function musicClock(r: MissionResult): (t: number) => number {
   const end = r.phases[r.phases.length - 1].end
   // the mission time after each step of real time
   const ts = [0]
-  for (let t = 0; t < end && ts.length < 200_000; ) {
+  for (let t = 0; t < end && ts.length * STEP < SPAN_S; ) {
     t = Math.min(end, clockStep(r, moments, t, STEP, SPEED))
     ts.push(t)
   }
