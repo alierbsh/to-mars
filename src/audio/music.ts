@@ -115,7 +115,7 @@ class Music {
     return this.running && this.on && document.visibilityState !== 'hidden' && this.target < end - 0.05
   }
 
-  private apply(hold: boolean) {
+  private apply(hold: boolean, gesture = false) {
     if (!this.audible()) {
       this.stop()
       return
@@ -130,6 +130,8 @@ class Music {
       this.fadeTo(VOLUME, FADE_IN_MS)
       return
     }
+    // refused once, it waits for a click or a key rather than asking again every tick
+    if (this.waiting && !gesture) return
     el.playbackRate = 1
     if (Math.abs(ahead) > START_S) el.currentTime = this.target
     el.play().then(
@@ -178,7 +180,7 @@ class Music {
     }, STEP_MS)
   }
 
-  private retry = () => this.apply(true)
+  private retry = () => this.apply(true, true)
 
   private waitForGesture() {
     if (this.waiting) return
