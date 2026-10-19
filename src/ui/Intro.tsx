@@ -3,7 +3,6 @@ import { VEHICLES } from '../data/vehicles'
 import { useT } from '../i18n'
 import { useAppStore } from '../state/store'
 import { describeMission } from './share'
-import { sound } from '../audio/sound'
 import GraphicsPicker from './GraphicsPicker'
 import { LangList } from './LangPicker'
 import { nameLang, vehicleTexts } from './texts'
@@ -36,7 +35,6 @@ function Start() {
       <button
         className="intro__cta"
         onClick={() => {
-          sound.enable()
           setIntro('pick')
         }}
       >
@@ -93,7 +91,6 @@ function Pick() {
         <button
           className="intro__cta"
           onClick={() => {
-            sound.enable()
             launch(vehicleId, SPEED)
           }}
         >
